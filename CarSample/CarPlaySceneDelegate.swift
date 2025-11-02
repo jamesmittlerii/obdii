@@ -102,20 +102,8 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
         self.interfaceController = interfaceController
         
-        let gridButton = CPGridButton(titleVariants: ["Albums"],
-                                      image: UIImage(systemName: "list.triangle")!)
-        { [weak self] _ in
-            guard let self else { return }
-            let gridTemplate = self.makeAlbumsGridTemplate()
-            interfaceController.pushTemplate(gridTemplate,
-                                             animated: true,
-                                             completion: nil)
-        }
+        let gridTemplate = self.makeAlbumsGridTemplate()
         
-        let gridTemplate = CPGridTemplate(title: "A Grid Interface", gridButtons:  [gridButton])
-        
-        // SwiftC apparently requires the explicit inclusion of the completion parameter,
-        // otherwise it will throw a warning
         interfaceController.setRootTemplate(gridTemplate,
                                             animated: true,
                                             completion: nil)
@@ -131,7 +119,8 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
             let dynamicImage = drawGaugeImage(for: album.price)
             let button = CPGridButton(titleVariants: [album.title],
                                       image: dynamicImage) { [weak self] _ in
-                self?.logger.info("Album selected: \(album.title, privacy: .public)")
+                guard let self else { return }
+                self.presentInformationTemplate(for: album)
             }
             return button
         }
@@ -139,6 +128,19 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         
         albumsGridTemplate = template
         return template
+    }
+    
+    @MainActor
+    private func presentInformationTemplate(for album: Album) {
+        let artistItem = CPInformationItem(title: "Artist", detail: album.artist)
+        let priceItem = CPInformationItem(title: "Price", detail: String(format: "$%.2f", album.price))
+        
+        let template = CPInformationTemplate(title: album.title,
+                                             layout: .twoColumn,
+                                             items: [artistItem, priceItem],
+                                             actions: [])
+        
+        interfaceController?.pushTemplate(template, animated: true, completion: nil)
     }
     
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene, didDisconnectInterfaceController interfaceController: CPInterfaceController) {
@@ -172,7 +174,8 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
             let dynamicImage = drawGaugeImage(for: album.price)
             let button = CPGridButton(titleVariants: [album.title],
                                       image: dynamicImage) { [weak self] _ in
-                self?.logger.info("Album selected: \(album.title, privacy: .public)")
+                guard let self else { return }
+                self.presentInformationTemplate(for: album)
             }
             return button
         }
