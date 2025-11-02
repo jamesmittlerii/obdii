@@ -93,7 +93,6 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     
     // Keep references to update UI efficiently
     private var albumsGridTemplate: CPGridTemplate?
-    private var isSortedAlphabetically = false
     
     // Background task to update prices
     private var priceUpdateTask: Task<Void, Never>?
@@ -138,37 +137,8 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         }
         let template = CPGridTemplate(title: "Albums", gridButtons: buttons)
         
-        let sortButton = CPBarButton(title: "Sort A-Z") { [weak self] _ in
-            guard let self else { return }
-            self.sortAndRefreshAlbums()
-        }
-        template.trailingNavigationBarButtons = [sortButton]
-        
         albumsGridTemplate = template
         return template
-    }
-    
-    @MainActor
-    private func sortAndRefreshAlbums() {
-        isSortedAlphabetically.toggle()
-        
-        let newSortTitle: String
-        if isSortedAlphabetically {
-            albums.sort { $0.title < $1.title }
-            newSortTitle = "Sort by Price"
-        } else {
-            // Sort by price descending for the other state
-            albums.sort { $0.price > $1.price }
-            newSortTitle = "Sort A-Z"
-        }
-        
-        // Update the button title to reflect the next sort action
-        if let template = albumsGridTemplate,
-           let sortButton = template.trailingNavigationBarButtons.first {
-            sortButton.title = newSortTitle
-        }
-        
-        refreshAlbumGridIfVisible()
     }
     
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene, didDisconnectInterfaceController interfaceController: CPInterfaceController) {
