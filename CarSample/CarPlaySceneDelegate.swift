@@ -11,7 +11,7 @@ import UIKit
 import CarPlay
 import os.log
 
-func drawGaugeImage(for value: Double, size: CGSize = CGSize(width: 40, height: 40)) -> UIImage {
+func drawGaugeImage(for value: Double, size: CGSize = CGSize(width: 72, height: 72)) -> UIImage {
     // Clamp value to 0...20, then normalize to 0...1
     let clamped = max(0.0, min(20.0, value))
     let progress = CGFloat(clamped / 20.0)
@@ -25,7 +25,7 @@ func drawGaugeImage(for value: Double, size: CGSize = CGSize(width: 40, height: 
         let center = CGPoint(x: rect.midX, y: rect.midY)
 
         // Make it a ring that fits within the smallest dimension
-        let lineWidth: CGFloat = max(2, min(size.width, size.height) * 0.15)
+        let lineWidth: CGFloat = max(4, min(size.width, size.height) * 0.25)
         let radius = (min(size.width, size.height) - lineWidth) / 2.0
 
         // Angles (start at top, clockwise)
@@ -80,11 +80,20 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         Album(title: "Rubber Soul", artist: "The Beatles", price: 12.99),
         Album(title: "Kind of Blue", artist: "Miles Davis", price: 10.99),
         Album(title: "Rumours", artist: "Fleetwood Mac", price: 11.49),
-        Album(title: "The Dark Side of the Moon", artist: "Pink Floyd", price: 13.99)
+        Album(title: "The Dark Side of the Moon", artist: "Pink Floyd", price: 13.99),
+        Album(title: "Abbey Road", artist: "The Beatles", price: 14.49),
+        Album(title: "Back in Black", artist: "AC/DC", price: 12.29),
+        Album(title: "Thriller", artist: "Michael Jackson", price: 15.99),
+        Album(title: "Hotel California", artist: "Eagles", price: 11.99),
+        Album(title: "Led Zeppelin IV", artist: "Led Zeppelin", price: 13.49),
+        Album(title: "What's Going On", artist: "Marvin Gaye", price: 10.49),
+        Album(title: "Nevermind", artist: "Nirvana", price: 11.99),
+        Album(title: "Born to Run", artist: "Bruce Springsteen", price: 9.99)
     ]
     
     // Keep references to update UI efficiently
     private var albumsGridTemplate: CPGridTemplate?
+    private var isSortedAlphabetically = false
     
     // Background task to update prices
     private var priceUpdateTask: Task<Void, Never>?
@@ -128,8 +137,38 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
             return button
         }
         let template = CPGridTemplate(title: "Albums", gridButtons: buttons)
+        
+        let sortButton = CPBarButton(title: "Sort A-Z") { [weak self] _ in
+            guard let self else { return }
+            self.sortAndRefreshAlbums()
+        }
+        template.trailingNavigationBarButtons = [sortButton]
+        
         albumsGridTemplate = template
         return template
+    }
+    
+    @MainActor
+    private func sortAndRefreshAlbums() {
+        isSortedAlphabetically.toggle()
+        
+        let newSortTitle: String
+        if isSortedAlphabetically {
+            albums.sort { $0.title < $1.title }
+            newSortTitle = "Sort by Price"
+        } else {
+            // Sort by price descending for the other state
+            albums.sort { $0.price > $1.price }
+            newSortTitle = "Sort A-Z"
+        }
+        
+        // Update the button title to reflect the next sort action
+        if let template = albumsGridTemplate,
+           let sortButton = template.trailingNavigationBarButtons.first {
+            sortButton.title = newSortTitle
+        }
+        
+        refreshAlbumGridIfVisible()
     }
     
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene, didDisconnectInterfaceController interfaceController: CPInterfaceController) {
