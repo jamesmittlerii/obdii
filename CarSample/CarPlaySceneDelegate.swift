@@ -84,8 +84,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     ]
     
     // Keep references to update UI efficiently
-    private var listItems: [CPListItem] = []
-    private var albumsListTemplate: CPListTemplate?
+    private var albumsGridTemplate: CPGridTemplate?
     
     // Background task to update prices
     private var priceUpdateTask: Task<Void, Never>?
@@ -99,8 +98,8 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
                                       image: UIImage(systemName: "list.triangle")!)
         { [weak self] _ in
             guard let self else { return }
-            let listTemplate = self.listTemplate()
-            interfaceController.pushTemplate(listTemplate,
+            let gridTemplate = self.makeAlbumsGridTemplate()
+            interfaceController.pushTemplate(gridTemplate,
                                              animated: true,
                                              completion: nil)
         }
@@ -117,30 +116,19 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         startPriceUpdates()
     }
 
-    func listTemplate() -> CPListTemplate {
-        // Build CPListItems from current albums and keep references
-        listItems = albums.map { album in
-            
+    // MARK: - Albums Grid
+
+    func makeAlbumsGridTemplate() -> CPGridTemplate {
+        let buttons = albums.map { album -> CPGridButton in
             let dynamicImage = drawGaugeImage(for: album.price)
-            
-            let item = CPListItem(
-                text: album.title,
-                detailText: "\(album.artist) • $\(String(format: "%.2f", album.price))",
-                image: dynamicImage
-            )
-            // Set playbackProgress as price percentage of $20 (clamped 0...1)
-            let progress = min(1.0, max(0.0, album.price / 20.0))
-            item.playbackProgress = CGFloat(progress)
-            item.handler = { [weak self] _, completion in
-                self?.logger.info("Item selected: \(album.title, privacy: .public)")
-                completion()
+            let button = CPGridButton(titleVariants: [album.title],
+                                      image: dynamicImage) { [weak self] _ in
+                self?.logger.info("Album selected: \(album.title, privacy: .public)")
             }
-            return item
+            return button
         }
-        
-        let section = CPListSection(items: listItems)
-        let template = CPListTemplate(title: "Albums", sections: [section])
-        albumsListTemplate = template
+        let template = CPGridTemplate(title: "Albums", gridButtons: buttons)
+        albumsGridTemplate = template
         return template
     }
     
@@ -162,36 +150,24 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1))
                 await self.randomlyAdjustPrices()
-                await self.refreshAlbumListIfVisible()
+                await self.refreshAlbumGridIfVisible()
             }
         }
     }
     
     @MainActor
-    private func refreshAlbumListIfVisible() {
-        guard let currentTemplate = albumsListTemplate else { return }
-        
-        // Rebuild CPListItems to reflect new prices (CPListItem text is read-only)
-        listItems = albums.map { album in
+    private func refreshAlbumGridIfVisible() {
+        guard let currentTemplate = albumsGridTemplate else { return }
+        // Rebuild buttons with updated dynamic images
+        let updatedButtons = albums.map { album -> CPGridButton in
             let dynamicImage = drawGaugeImage(for: album.price)
-            let item = CPListItem(
-                text: album.title,
-                detailText: "\(album.artist) • $\(String(format: "%.2f", album.price))",
-                image: dynamicImage
-            )
-            // Update playbackProgress to match the latest price
-            let progress = min(1.0, max(0.0, album.price / 20.0))
-            item.playbackProgress = CGFloat(progress)
-            item.handler = { [weak self] _, completion in
-                self?.logger.info("Item selected: \(album.title, privacy: .public)")
-                completion()
+            let button = CPGridButton(titleVariants: [album.title],
+                                      image: dynamicImage) { [weak self] _ in
+                self?.logger.info("Album selected: \(album.title, privacy: .public)")
             }
-            return item
+            return button
         }
-        
-        // Update the section in place (iOS 14+)
-        let newSection = CPListSection(items: listItems)
-        currentTemplate.updateSections([newSection])
+        currentTemplate.updateGridButtons(updatedButtons)
     }
     
     @MainActor
