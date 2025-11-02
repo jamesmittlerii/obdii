@@ -39,13 +39,24 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     }
 
     func listTemplate() -> CPListTemplate {
-        let item = CPListItem(text: "Rubber Soul", detailText: "The Beatles")
-        item.handler = { item, completion in
-
-            self.logger.info("Item selected")
-            completion()
+        let albums: [(title: String, detail: String)] = [
+            ("Rubber Soul", "The Beatles • $12.99"),
+            ("Kind of Blue", "Miles Davis • $10.99"),
+            ("Rumours", "Fleetwood Mac • $11.49"),
+            ("The Dark Side of the Moon", "Pink Floyd • $13.99")
+        ]
+        
+        var items: [CPListItem] = []
+        for (title, detail) in albums {
+            let item = CPListItem(text: title, detailText: detail)
+            item.handler = { [weak self] _, completion in
+                self?.logger.info("Item selected: \(title, privacy: .public)")
+                completion()
+            }
+            items.append(item)
         }
-        let section = CPListSection(items: [item])
+        
+        let section = CPListSection(items: items)
         return CPListTemplate(title: "Albums", sections: [section])
     }
     
