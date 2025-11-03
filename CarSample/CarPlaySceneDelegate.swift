@@ -11,6 +11,7 @@ import SwiftOBD2
 
 import CarPlay
 import os.log
+import Combine
 
 func drawGaugeImage(for value: Double, size: CGSize = CPListImageRowItemElement.maximumImageSize) -> UIImage {
     // Clamp value to 0...20, then normalize to 0...1
@@ -72,6 +73,11 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         host: "192.168.4.207",
         port: 35000
     )
+    
+    // Combine cancellables for OBD streaming
+    private var cancellables = Set<AnyCancellable>()
+    // Optional: hold last measurements if you want to use them to update UI
+    private var latestMeasurements: [OBDCommand: MeasurementResult] = [:]
     
     // MARK: - Album model and UI state
     struct Album {
@@ -157,10 +163,42 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
                 // Optionally log or use obd2Info here (e.g., VIN or protocol)
                 self.logger.info("OBD-II connected successfully.")
                 _ = obd2Info // prevent unused variable warning if not used yet
+
+                // After a successful connection, start continuous sensor updates
+                self.startContinuousOBDUpdates()
             } catch {
                 self.logger.error("OBD-II connection failed: \(error.localizedDescription)")
             }
         }
+    }
+
+    private func startContinuousOBDUpdates() {
+        // Build the list of PIDs from our OBDPIDLibrary
+        let pids: [OBDCommand] = OBDPIDLibrary.standard.map { pidDef in
+            OBDCommand.mode1(pidDef.pid)
+        }
+
+        obdService
+            .startContinuousUpdates(pids)
+            .receive(on: DispatchQueue.main)
+            .sink(
+                receiveCompletion: { [weak self] completion in
+                    if case .failure(let error) = completion {
+                        self?.logger.error("Continuous OBD updates failed: \(error.localizedDescription)")
+                    }
+                },
+                receiveValue: { [weak self] measurements in
+                    guard let self else { return }
+                    // Keep the latest measurements if needed
+                    self.latestMeasurements = measurements
+
+                    // Example: read vehicle speed
+                    let speed = measurements[.mode1(.speed)]?.value ?? 0
+                    self.logger.debug("Speed: \(speed)")
+                    // You could trigger UI updates here using the measurements
+                }
+            )
+            .store(in: &cancellables)
     }
 
     func symbolImage(named name: String) -> UIImage? {
@@ -236,6 +274,9 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         // Stop background updates when CarPlay disconnects
         priceUpdateTask?.cancel()
         priceUpdateTask = nil
+
+        // Cancel OBD streaming subscriptions on disconnect
+        cancellables.removeAll()
     }
     
     // MARK: - Background price updates
