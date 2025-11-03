@@ -73,22 +73,26 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         var title: String
         var artist: String
         var price: Double
+        var year: Int
+        var genre: String
+        var lengthInMinutes: Int
+        var songs: [String]
     }
     
     // Mutable data source
     private var albums: [Album] = [
-        Album(title: "Rubber Soul", artist: "The Beatles", price: 12.99),
-        Album(title: "Kind of Blue", artist: "Miles Davis", price: 10.99),
-        Album(title: "Rumours", artist: "Fleetwood Mac", price: 11.49),
-        Album(title: "The Dark Side of the Moon", artist: "Pink Floyd", price: 13.99),
-        Album(title: "Abbey Road", artist: "The Beatles", price: 14.49),
-        Album(title: "Back in Black", artist: "AC/DC", price: 12.29),
-        Album(title: "Thriller", artist: "Michael Jackson", price: 15.99),
-        Album(title: "Hotel California", artist: "Eagles", price: 11.99),
-        Album(title: "Led Zeppelin IV", artist: "Led Zeppelin", price: 13.49),
-        Album(title: "What's Going On", artist: "Marvin Gaye", price: 10.49),
-        Album(title: "Nevermind", artist: "Nirvana", price: 11.99),
-        Album(title: "Born to Run", artist: "Bruce Springsteen", price: 9.99)
+        Album(title: "Rubber Soul", artist: "The Beatles", price: 12.99, year: 1965, genre: "Folk Rock", lengthInMinutes: 35, songs: ["Drive My Car", "Norwegian Wood", "You Won't See Me", "Nowhere Man", "Think for Yourself", "The Word", "Michelle", "What Goes On", "Girl", "I'm Looking Through You", "In My Life", "Wait", "If I Needed Someone", "Run for Your Life"]),
+        Album(title: "Kind of Blue", artist: "Miles Davis", price: 10.99, year: 1959, genre: "Jazz", lengthInMinutes: 45, songs: ["So What", "Freddie Freeloader", "Blue in Green", "All Blues", "Flamenco Sketches"]),
+        Album(title: "Rumours", artist: "Fleetwood Mac", price: 11.49, year: 1977, genre: "Pop Rock", lengthInMinutes: 40, songs: ["Second Hand News", "Dreams", "Never Going Back Again", "Don't Stop", "Go Your Own Way", "Songbird", "The Chain", "You Make Loving Fun", "I Don't Want to Know", "Oh Daddy", "Gold Dust Woman"]),
+        Album(title: "The Dark Side of the Moon", artist: "Pink Floyd", price: 13.99, year: 1973, genre: "Progressive Rock", lengthInMinutes: 43, songs: ["Speak to Me", "Breathe", "On the Run", "Time", "The Great Gig in the Sky", "Money", "Us and Them", "Any Colour You Like", "Brain Damage", "Eclipse"]),
+        Album(title: "Abbey Road", artist: "The Beatles", price: 14.49, year: 1969, genre: "Rock", lengthInMinutes: 47, songs: ["Come Together", "Something", "Maxwell's Silver Hammer", "Oh! Darling", "Octopus's Garden", "I Want You (She's So Heavy)", "Here Comes the Sun", "Because", "You Never Give Me Your Money", "Sun King", "Mean Mr. Mustard", "Polythene Pam", "She Came in Through the Bathroom Window", "Golden Slumbers", "Carry That Weight", "The End", "Her Majesty"]),
+        Album(title: "Back in Black", artist: "AC/DC", price: 12.29, year: 1980, genre: "Hard Rock", lengthInMinutes: 42, songs: ["Hells Bells", "Shoot to Thrill", "What Do You Do for Money Honey", "Given the Dog a Bone", "Let Me Put My Love Into You", "Back in Black", "You Shook Me All Night Long", "Have a Drink on Me", "Shake a Leg", "Rock and Roll Ain't Noise Pollution"]),
+        Album(title: "Thriller", artist: "Michael Jackson", price: 15.99, year: 1982, genre: "Pop", lengthInMinutes: 42, songs: ["Wanna Be Startin' Somethin'", "Baby Be Mine", "The Girl Is Mine", "Thriller", "Beat It", "Billie Jean", "Human Nature", "P.Y.T. (Pretty Young Thing)", "Lady in My Life"]),
+        Album(title: "Hotel California", artist: "Eagles", price: 11.99, year: 1976, genre: "Rock", lengthInMinutes: 43, songs: ["Hotel California", "New Kid in Town", "Life in the Fast Lane", "Wasted Time", "Wasted Time (Reprise)", "Victim of Love", "Pretty Maids All in a Row", "Try and Love Again", "The Last Resort"]),
+        Album(title: "Led Zeppelin IV", artist: "Led Zeppelin", price: 13.49, year: 1971, genre: "Hard Rock", lengthInMinutes: 42, songs: ["Black Dog", "Rock and Roll", "The Battle of Evermore", "Stairway to Heaven", "Misty Mountain Hop", "Four Sticks", "Going to California", "When the Levee Breaks"]),
+        Album(title: "What's Going On", artist: "Marvin Gaye", price: 10.49, year: 1971, genre: "Soul", lengthInMinutes: 35, songs: ["What's Going On", "What's Happening Brother", "Flyin' High (In the Friendly Sky)", "Save the Children", "God Is Love", "Mercy Mercy Me (The Ecology)", "Right On", "Wholy Holy", "Inner City Blues (Make Me Wanna Holler)"]),
+        Album(title: "Nevermind", artist: "Nirvana", price: 11.99, year: 1991, genre: "Grunge", lengthInMinutes: 42, songs: ["Smells Like Teen Spirit", "In Bloom", "Come as You Are", "Breed", "Lithium", "Polly", "Territorial Pissings", "Drain You", "Lounge Act", "Stay Away", "On a Plain", "Something in the Way"]),
+        Album(title: "Born to Run", artist: "Bruce Springsteen", price: 9.99, year: 1975, genre: "Rock", lengthInMinutes: 39, songs: ["Thunder Road", "Tenth Avenue Freeze-Out", "Night", "Backstreets", "Born to Run", "She's the One", "Meeting Across the River", "Jungleland"])
     ]
     
     // Keep references to update UI efficiently
@@ -134,11 +138,38 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     private func presentInformationTemplate(for album: Album) {
         let artistItem = CPInformationItem(title: "Artist", detail: album.artist)
         let priceItem = CPInformationItem(title: "Price", detail: String(format: "$%.2f", album.price))
+        let yearItem = CPInformationItem(title: "Year", detail: "\(album.year)")
+        let genreItem = CPInformationItem(title: "Genre", detail: album.genre)
+        let lengthItem = CPInformationItem(title: "Length", detail: "\(album.lengthInMinutes) min")
+
+        let tracklistAction = CPTextButton(title: "View Tracklist", textStyle: .normal) { [weak self] _ in
+            self?.presentTracklistTemplate(for: album)
+        }
         
         let template = CPInformationTemplate(title: album.title,
                                              layout: .twoColumn,
-                                             items: [artistItem, priceItem],
-                                             actions: [])
+                                             items: [artistItem, priceItem, yearItem, genreItem, lengthItem],
+                                             actions: [tracklistAction])
+        
+        interfaceController?.pushTemplate(template, animated: true, completion: nil)
+    }
+    
+    @MainActor
+    private func presentTracklistTemplate(for album: Album) {
+        let items = album.songs.enumerated().map { (index, song) -> CPListItem in
+            let item = CPListItem(text: song, detailText: "\(index + 1)")
+            
+            // Add a handler that does nothing to prevent the spinner.
+            item.handler = { _, completion in
+                // By calling completion immediately, the tap is acknowledged
+                // but no further action is taken.
+                completion()
+            }
+            return item
+        }
+        
+        let section = CPListSection(items: items)
+        let template = CPListTemplate(title: "Tracklist: \(album.title)", sections: [section])
         
         interfaceController?.pushTemplate(template, animated: true, completion: nil)
     }
