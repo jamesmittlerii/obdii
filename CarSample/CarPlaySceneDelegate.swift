@@ -71,7 +71,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     let obdService = OBDService(
         connectionType: .wifi,
         host: ConfigData.shared.wifiHost,
-        port: ConfigData.shared.wifiPort
+        port: UInt16(ConfigData.shared.wifiPort)
     )
     
     // Combine cancellables for OBD streaming
