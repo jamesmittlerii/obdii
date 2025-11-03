@@ -11,7 +11,7 @@ import UIKit
 import CarPlay
 import os.log
 
-func drawGaugeImage(for value: Double, size: CGSize = CPGridTemplate.maximumGridButtonImageSize) -> UIImage {
+func drawGaugeImage(for value: Double, size: CGSize = CPListTemplate.maximumGridButtonImageSize) -> UIImage {
     // Clamp value to 0...20, then normalize to 0...1
     let clamped = max(0.0, min(20.0, value))
     let progress = CGFloat(clamped / 20.0)
@@ -89,11 +89,12 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         Album(title: "Led Zeppelin IV", artist: "Led Zeppelin", price: 13.49, year: 1971, genre: "Hard Rock", lengthInMinutes: 42, songs: ["Black Dog", "Rock and Roll", "The Battle of Evermore", "Stairway to Heaven", "Misty Mountain Hop", "Four Sticks", "Going to California", "When the Levee Breaks"]),
         Album(title: "What's Going On", artist: "Marvin Gaye", price: 10.49, year: 1971, genre: "Soul", lengthInMinutes: 35, songs: ["What's Going On", "What's Happening Brother", "Flyin' High (In the Friendly Sky)", "Save the Children", "God Is Love", "Mercy Mercy Me (The Ecology)", "Right On", "Wholy Holy", "Inner City Blues (Make Me Wanna Holler)"]),
         Album(title: "Nevermind", artist: "Nirvana", price: 11.99, year: 1991, genre: "Grunge", lengthInMinutes: 42, songs: ["Smells Like Teen Spirit", "In Bloom", "Come as You Are", "Breed", "Lithium", "Polly", "Territorial Pissings", "Drain You", "Lounge Act", "Stay Away", "On a Plain", "Something in the Way"]),
-        Album(title: "Born to Run", artist: "Bruce Springsteen", price: 9.99, year: 1975, genre: "Rock", lengthInMinutes: 39, songs: ["Thunder Road", "Tenth Avenue Freeze-Out", "Night", "Backstreets", "Born to Run", "She's the One", "Meeting Across the River", "Jungleland"])
+        Album(title: "Born to Run", artist: "Bruce Springsteen", price: 9.99, year: 1975, genre: "Rock", lengthInMinutes: 39, songs: ["Thunder Road", "Tenth Avenue Freeze-Out", "Night", "Backstreets", "Born to Run", "She's the one", "Meeting Across the River", "Jungleland"])
     ]
     
     // Keep references to update UI efficiently
     private var albumsGridTemplate: CPGridTemplate?
+    private var albumsListTemplate: CPListTemplate?
     
     // Background task to update prices
     private var priceUpdateTask: Task<Void, Never>?
@@ -101,11 +102,14 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
             didConnect interfaceController: CPInterfaceController) {
 
+        print("CPList maximumGridButtonImageSize: \(CPListTemplate.maximumGridButtonImageSize)")
+        print("CPGrid maximumGridButtonImageSize: \(CPGridTemplate.maximumGridButtonImageSize)")
+        
         self.interfaceController = interfaceController
         
-        let gridTemplate = self.makeAlbumsGridTemplate()
+        let myTemplate = self.makeAlbumsListTemplate()
         
-        interfaceController.setRootTemplate(gridTemplate,
+        interfaceController.setRootTemplate(myTemplate,
                                             animated: true,
                                             completion: nil)
         
@@ -113,7 +117,30 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         startPriceUpdates()
     }
 
-    // MARK: - Albums Grid
+     func makeAlbumsListTemplate() -> CPListTemplate {
+        let items = albums.map { album -> CPListItem in
+            let item = CPListItem(text: album.title,
+                                  detailText: album.artist,
+                                  image: drawGaugeImage(for: album.price),
+                                  accessoryImage: nil,
+                                  accessoryType: .disclosureIndicator)
+            
+            item.handler = { [weak self] _, completion in
+                guard let self else {
+                    completion()
+                    return
+                }
+                self.presentInformationTemplate(for: album)
+                completion()
+            }
+            return item
+        }
+        let section = CPListSection(items: items)
+        let template = CPListTemplate(title: "Albums", sections: [section])
+
+        self.albumsListTemplate = template
+        return template
+    }
 
     func makeAlbumsGridTemplate() -> CPGridTemplate {
         let buttons = albums.map { album -> CPGridButton in
@@ -190,6 +217,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
                 try? await Task.sleep(for: .seconds(1))
                 await self.randomlyAdjustPrices()
                 await self.refreshAlbumGridIfVisible()
+                await self.refreshAlbumListIfVisible()
             }
         }
     }
@@ -208,6 +236,27 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
             return button
         }
         currentTemplate.updateGridButtons(updatedButtons)
+    }
+
+    @MainActor
+    private func refreshAlbumListIfVisible() {
+        guard let currentTemplate = albumsListTemplate else { return }
+        // Rebuild items with updated dynamic images and details
+        let updatedItems = albums.map { album -> CPListItem in
+            let item = CPListItem(text: album.title,
+                                  detailText: album.artist,
+                                  image: drawGaugeImage(for: album.price),
+                                  accessoryImage: nil,
+                                  accessoryType: .disclosureIndicator)
+            item.handler = { [weak self] _, completion in
+                guard let self else { completion(); return }
+                self.presentInformationTemplate(for: album)
+                completion()
+            }
+            return item
+        }
+        let updatedSection = CPListSection(items: updatedItems)
+        currentTemplate.updateSections([updatedSection])
     }
     
     @MainActor
