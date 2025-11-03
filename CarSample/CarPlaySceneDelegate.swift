@@ -11,7 +11,7 @@ import UIKit
 import CarPlay
 import os.log
 
-func drawGaugeImage(for value: Double, size: CGSize = CPListTemplate.maximumGridButtonImageSize) -> UIImage {
+func drawGaugeImage(for value: Double, size: CGSize = CPListImageRowItemElement.maximumImageSize) -> UIImage {
     // Clamp value to 0...20, then normalize to 0...1
     let clamped = max(0.0, min(20.0, value))
     let progress = CGFloat(clamped / 20.0)
@@ -104,6 +104,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
         print("CPList maximumGridButtonImageSize: \(CPListTemplate.maximumGridButtonImageSize)")
         print("CPGrid maximumGridButtonImageSize: \(CPGridTemplate.maximumGridButtonImageSize)")
+        print("CPListImageRowItemElement maximumImageSize: \(CPListImageRowItemElement.maximumImageSize)")
         
         self.interfaceController = interfaceController
         
@@ -117,30 +118,46 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         startPriceUpdates()
     }
 
-     func makeAlbumsListTemplate() -> CPListTemplate {
-        let items = albums.map { album -> CPListItem in
-            let item = CPListItem(text: album.title,
-                                  detailText: album.artist,
-                                  image: drawGaugeImage(for: album.price),
-                                  accessoryImage: nil,
-                                  accessoryType: .disclosureIndicator)
-            
-            item.handler = { [weak self] _, completion in
-                guard let self else {
-                    completion()
-                    return
-                }
-                self.presentInformationTemplate(for: album)
-                completion()
-            }
-            return item
+    func makeAlbumsListTemplate() -> CPListTemplate {
+        // Create one row element per album
+        let rowElements = albums.map { album in
+            CPListImageRowItemRowElement(
+                image: drawGaugeImage(for: album.price),
+                title: album.title,
+                subtitle: album.artist
+            )
         }
-        let section = CPListSection(items: items)
+
+        // Create a single CPListImageRowItem containing all the row elements
+        let item = CPListImageRowItem(
+            text: "Albums",
+            elements: rowElements,
+            allowsMultipleLines: true
+        )
+
+        // Optional: choose what tapping this item does
+        item.handler = { [weak self] _, completion in
+            guard let self = self else {
+                completion()
+                return
+            }
+            // You could, for example, present a detailed list template
+            self.presentInformationTemplate(for: albums.first!) // or nil if you prefer no action
+            completion()
+        }
+
+        // Wrap that single item into a section
+        let section = CPListSection(items: [item])
         let template = CPListTemplate(title: "Albums", sections: [section])
 
         self.albumsListTemplate = template
         return template
     }
+
+
+
+
+
 
     func makeAlbumsGridTemplate() -> CPGridTemplate {
         let buttons = albums.map { album -> CPGridButton in
@@ -216,8 +233,8 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1))
                 await self.randomlyAdjustPrices()
-                await self.refreshAlbumGridIfVisible()
-                await self.refreshAlbumListIfVisible()
+                //await self.refreshAlbumGridIfVisible()
+               // await self.refreshAlbumListIfVisible()
             }
         }
     }
