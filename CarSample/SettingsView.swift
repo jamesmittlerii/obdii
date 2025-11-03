@@ -10,6 +10,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var configData = ConfigData.shared
+    @ObservedObject var connectionManager = OBDConnectionManager.shared
 
     // Formatter to ensure the port is entered as a number
     private let numberFormatter: NumberFormatter = {
@@ -23,7 +24,15 @@ struct SettingsView: View {
         NavigationView {
             Form {
                 Section(header: Text("Connection")) {
+                    HStack {
+                        Text("Status")
+                        Spacer()
+                        statusTextView()
+                    }
+                    
                     Toggle("Automatically Connect", isOn: $configData.autoConnectToOBD)
+                    
+                    connectDisconnectButton()
                 }
 
                 Section(header: Text("Wi-Fi Connection Details")) {
@@ -47,6 +56,65 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .onChange(of: configData.wifiHost) { _, _ in connectionManager.updateConnectionDetails() }
+            .onChange(of: configData.wifiPort) { _, _ in connectionManager.updateConnectionDetails() }
+        }
+    }
+    
+    @ViewBuilder
+    private func statusTextView() -> some View {
+        switch connectionManager.connectionState {
+        case .disconnected:
+            Text("Disconnected")
+                .foregroundColor(.gray)
+        case .connecting:
+            Text("Connecting...")
+                .foregroundColor(.orange)
+        case .connected:
+            Text("Connected")
+                .foregroundColor(.green)
+        case .failed(let error):
+            Text("Failed")
+                .foregroundColor(.red)
+                // In a real app, you might show the 'error' string in an alert here
+        }
+    }
+
+    @ViewBuilder
+    private func connectDisconnectButton() -> some View {
+        HStack {
+            Spacer()
+            Button(action: handleConnectionButtonTap) {
+                switch connectionManager.connectionState {
+                case .disconnected, .failed:
+                    Text("Connect")
+                case .connecting:
+                    HStack {
+                        Text("Connecting...")
+                        ProgressView().padding(.leading, 2)
+                    }
+                case .connected:
+                    Text("Disconnect")
+                }
+            }
+            .disabled(connectionManager.connectionState == .connecting)
+            Spacer()
+        }
+    }
+    
+    private func handleConnectionButtonTap() {
+        switch connectionManager.connectionState {
+        case .connected:
+            connectionManager.disconnect()
+        case .disconnected, .failed:
+            // Ensure connection details are up-to-date before connecting
+            connectionManager.updateConnectionDetails()
+            Task {
+                await connectionManager.connect()
+            }
+        case .connecting:
+            // Button is disabled, so this case shouldn't be reached
+            break
         }
     }
 }

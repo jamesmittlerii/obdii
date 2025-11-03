@@ -67,19 +67,9 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     var interfaceController: CPInterfaceController?
     let logger = Logger()
     
-    // Local OBD service instance
-    let obdService = OBDService(
-        connectionType: .wifi,
-        host: ConfigData.shared.wifiHost,
-        port: UInt16(ConfigData.shared.wifiPort)
-    )
-    
-    // Combine cancellables for OBD streaming
-    private var cancellables = Set<AnyCancellable>()
-    // Optional: hold last measurements if you want to use them to update UI
-    private var latestMeasurements: [OBDCommand: MeasurementResult] = [:]
-    
-    
+    // Use the shared connection manager
+    private let connectionManager = OBDConnectionManager.shared
+    private var measurementCancellable: AnyCancellable?
     
     // Keep references to update UI efficiently
     private var SensorsListTemplate: CPListTemplate?
@@ -114,50 +104,19 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
                                             completion: nil)
         
         
-        // Start OBD-II connection asynchronously if enabled
+        // Start OBD-II connection automatically if enabled
         if ConfigData.shared.autoConnectToOBD {
-            Task { [weak self] in
-                guard let self else { return }
-                do {
-                    let obd2Info = try await obdService.startConnection()
-                    // Optionally log or use obd2Info here (e.g., VIN or protocol)
-                    self.logger.info("OBD-II connected successfully.")
-                    _ = obd2Info // prevent unused variable warning if not used yet
-
-                    // After a successful connection, start continuous sensor updates
-                    self.startContinuousOBDUpdates()
-                } catch {
-                    self.logger.error("OBD-II connection failed: \(error.localizedDescription)")
-                }
+            Task {
+                await connectionManager.connect()
             }
         }
-    }
-
-    private func startContinuousOBDUpdates() {
-        // Create an individual subscription per PID (as required)
-        for pid in OBDPIDLibrary.standard {
-            let command = OBDCommand.mode1(pid.pid)
-            obdService
-                .startContinuousUpdates([command])
-                .receive(on: DispatchQueue.main)
-                .sink(
-                    receiveCompletion: { [weak self] completion in
-                        if case .failure(let error) = completion {
-                            self?.logger.error("Continuous OBD updates failed: \(error.localizedDescription)")
-                        }
-                    },
-                    receiveValue: { [weak self] measurements in
-                        guard let self else { return }
-                        // Merge the incoming measurement(s) into the dictionary so we keep the latest per sensor.
-                        for (cmd, result) in measurements {
-                            self.latestMeasurements[cmd] = result
-                        }
-                        // Trigger UI updates based on the combined latest values
-                        self.refreshSensorListIfVisible()
-                    }
-                )
-                .store(in: &cancellables)
-        }
+        
+        // Subscribe to measurement updates to refresh the UI
+        measurementCancellable = connectionManager.$latestMeasurements
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.refreshSensorListIfVisible()
+            }
     }
 
     func symbolImage(named name: String) -> UIImage? {
@@ -167,18 +126,15 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
             return nil
         }
     }
-
     
-    
-   
-    
-   
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene, didDisconnectInterfaceController interfaceController: CPInterfaceController) {
         self.interfaceController = nil
-        // Stop background updates when CarPlay disconnects
-       
-        // Cancel OBD streaming subscriptions on disconnect
-        cancellables.removeAll()
+        measurementCancellable?.cancel()
+        
+        // Optionally, you might want to disconnect the OBD service when CarPlay disconnects
+        // if connectionManager.connectionState == .connected {
+        //     connectionManager.disconnect()
+        // }
     }
     
     // MARK: - Gauges (sensors) section using OBDPIDLibrary
@@ -186,10 +142,10 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     private func makeGaugesSection() -> CPListSection {
         let sensors = OBDPIDLibrary.standard
 
-        // Helper to get current value for a PID
+        // Helper to get current value for a PID from the connection manager
         func currentValue(for pid: OBDPID) -> Double? {
             let command = OBDCommand.mode1(pid.pid)
-            return latestMeasurements[command]?.value
+            return connectionManager.latestMeasurements[command]?.value
         }
 
         // Build one row element per sensor
@@ -368,7 +324,7 @@ extension CarPlaySceneDelegate {
     @MainActor
     private func presentSensorTemplate(for pid: OBDPID) async {
         let command = OBDCommand.mode1(pid.pid)
-        let current = latestMeasurements[command]?.value
+        let current = connectionManager.latestMeasurements[command]?.value
 
         var items: [CPInformationItem] = []
         if let current = current {
