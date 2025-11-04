@@ -31,26 +31,39 @@ class OBDConnectionManager: ObservableObject {
     private let logger = Logger(subsystem: "com.CarSample", category: "OBDConnection")
 
     @Published var connectionState: ConnectionState = .disconnected
-    @Published private(set) var latestMeasurements: [OBDCommand.Mode1: MeasurementResult] = [:]
 
-    // Track running min/max per PID
+    // Track latest/min/max per PID
     struct PIDStats: Equatable {
+        // Separate logger for the nested type
+        private static let logger = Logger(subsystem: "com.CarSample", category: "OBDConnection.PIDStats")
+
+        var pid: OBDCommand.Mode1
+        var latest: MeasurementResult
         var min: Double
         var max: Double
         var sampleCount: Int
 
-        init(value: Double) {
-            self.min = value
-            self.max = value
+        init(pid: OBDCommand.Mode1, measurement: MeasurementResult) {
+            self.pid = pid
+            self.latest = measurement
+            self.min = measurement.value
+            self.max = measurement.value
             self.sampleCount = 1
         }
 
-        mutating func update(with value: Double) {
+        mutating func update(with measurement: MeasurementResult) {
+            // Capture values needed for logging without referencing `self` inside the autoclosure.
+            let pidDescription = String(describing: pid)
+            let value = measurement.value
+
+            PIDStats.logger.info("pid: \(pidDescription), value: \(value)")
+            latest = measurement
             if value < min { min = value }
             if value > max { max = value }
             sampleCount &+= 1
         }
     }
+
     @Published private(set) var pidStats: [OBDCommand.Mode1: PIDStats] = [:]
 
     private var obdService: OBDService
@@ -101,7 +114,6 @@ class OBDConnectionManager: ObservableObject {
     func disconnect() {
         obdService.stopConnection()
         cancellables.removeAll()
-        latestMeasurements.removeAll()
         pidStats.removeAll()
         connectionState = .disconnected
         logger.info("OBD-II disconnected.")
@@ -109,13 +121,24 @@ class OBDConnectionManager: ObservableObject {
 
     /// Reset min/max stats for all PIDs.
     func resetAllStats() {
-        pidStats.removeAll()
-        logger.info("All PID stats reset.")
+        // Keep latest values but reset min/max/sampleCount to start from latest
+        pidStats = pidStats.mapValues { existing in
+            var reset = existing
+            reset.min = existing.latest.value
+            reset.max = existing.latest.value
+            reset.sampleCount = 1
+            return reset
+        }
+        logger.info("All PID stats reset (min/max/sampleCount).")
     }
 
     /// Reset min/max stats for a specific PID.
     func resetStats(for pid: OBDCommand.Mode1) {
-        pidStats[pid] = nil
+        guard var existing = pidStats[pid] else { return }
+        existing.min = existing.latest.value
+        existing.max = existing.latest.value
+        existing.sampleCount = 1
+        pidStats[pid] = existing
         logger.info("PID stats reset for \(String(describing: pid)).")
     }
 
@@ -145,18 +168,9 @@ class OBDConnectionManager: ObservableObject {
                     },
                     receiveValue: { [weak self] measurements in
                         guard let self else { return }
-                        for (cmd, result) in measurements {
-                            // Update latest measurement
-                            self.latestMeasurements[pid.pid] = result
-
-                            // Update min/max stats
-                            let value = result.value
-                            if var existing = self.pidStats[pid.pid] {
-                                existing.update(with: value)
-                                self.pidStats[pid.pid] = existing
-                            } else {
-                                self.pidStats[pid.pid] = PIDStats(value: value)
-                            }
+                        for (_, result) in measurements {
+                            self.pidStats[pid.pid, default: PIDStats(pid: pid.pid, measurement: result)]
+                                .update(with: result)
                         }
                     }
                 )

@@ -93,10 +93,10 @@ struct OBDPID: Identifiable, Hashable, Codable {
 
     /// Returns a color representing the current value’s state
     func color(for value: Double) -> Color {
-        if let danger = dangerRange, !danger.contains(value) {
+        if let danger = dangerRange, danger.contains(value) {
             return .red
         }
-        if let warn = warningRange, !warn.contains(value) {
+        if let warn = warningRange, warn.contains(value) {
             return .yellow
         }
         if typicalRange.contains(value) {
@@ -134,7 +134,7 @@ struct OBDPIDLibrary {
             notes: "Battery/alternator voltage"
         ),
         OBDPID(
-            enabled: false,
+            enabled: true,
             name: "Engine Coolant Temp",
             pid: OBDCommand.Mode1.coolantTemp,
             formula: "A - 40",
@@ -145,7 +145,7 @@ struct OBDPIDLibrary {
             notes: "Subtract 40 offset"
         ),
         OBDPID(
-            enabled: false,
+            enabled: true,
             name: "Engine RPM",
             pid: OBDCommand.Mode1.rpm,
             formula: "((A*256)+B)/4",
@@ -156,7 +156,7 @@ struct OBDPIDLibrary {
             notes: "Main tachometer source"
         ),
         OBDPID(
-            enabled: false,
+            enabled: true,
             name: "Air-Fuel Ratio (λ)",
             pid: OBDCommand.Mode1.commandedEquivRatio,
             formula: "((A*256)+B)/32768",
@@ -167,7 +167,7 @@ struct OBDPIDLibrary {
             notes: "1.00 = stoich"
         ),
         OBDPID(
-            enabled: false,
+            enabled: true,
             name: "Vehicle Speed",
             pid: OBDCommand.Mode1.speed,
             formula: "A",
@@ -178,7 +178,7 @@ struct OBDPIDLibrary {
             notes: nil
         ),
         OBDPID(
-            enabled: false,
+            enabled: true,
             name: "Engine Oil Temp",
             pid: OBDCommand.Mode1.engineOilTemp,
             formula: "A - 40",
@@ -189,7 +189,7 @@ struct OBDPIDLibrary {
             notes: "Optional PID"
         ),
         OBDPID(
-            enabled: false,
+            enabled: true,
             name: "Fuel Pressure",
             pid: OBDCommand.Mode1.fuelPressure,
             formula: "A*3",
@@ -201,7 +201,7 @@ struct OBDPIDLibrary {
         ),
 
         OBDPID(
-            enabled: false,
+            enabled: true,
             name: "Catalyst Temp (Bank 1, Sensor 1)",
             pid: OBDCommand.Mode1.catalystTempB1S1,
             formula: "((A*256)+B)/10",
@@ -213,7 +213,7 @@ struct OBDPIDLibrary {
         ),
         
         OBDPID(
-            enabled: false,
+            enabled: true,
             name: "Throttle Position",
             pid: OBDCommand.Mode1.throttlePos,
             formula: "((A*256)+B)/10",
@@ -225,7 +225,7 @@ struct OBDPIDLibrary {
         ),
         
         OBDPID(
-            enabled: false,
+            enabled: true,
             name: "Ignition Timing",
             pid: OBDCommand.Mode1.timingAdvance,
             formula: "(A/2) – 64",

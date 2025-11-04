@@ -12,11 +12,17 @@ import SwiftOBD2
 import CarPlay
 import os.log
 import Combine
+import SwiftUI
 
-func drawGaugeImage(for value: Double, size: CGSize = CPListImageRowItemElement.maximumImageSize) -> UIImage {
-    // Clamp value to 0...20, then normalize to 0...1
-    let clamped = max(0.0, min(1.0, value))
-    let progress = CGFloat(clamped / 1.0)
+func drawGaugeImage(for pid: OBDPID, value: Double?, size: CGSize = CPListImageRowItemElement.maximumImageSize) -> UIImage {
+    // Use provided value or fall back to the minimum of the typical range
+    let actualValue = value ?? pid.typicalRange.min
+
+    // Normalize value to 0...1 within the typical range
+    let clampedNormalized = max(0.0, min(1.0, pid.typicalRange.normalizedPosition(for: actualValue)))
+
+    // Determine color for the current value and convert to UIColor
+    let uiColor = UIColor(pid.color(for: actualValue))
 
     let format = UIGraphicsImageRendererFormat.default()
     format.opaque = false
@@ -48,7 +54,7 @@ func drawGaugeImage(for value: Double, size: CGSize = CPListImageRowItemElement.
         trackPath.stroke()
 
         // Progress arc
-        let progressEndAngle = startAngle + (sweepAngle * progress)
+        let progressEndAngle = startAngle + (sweepAngle * CGFloat(clampedNormalized))
         let progressPath = UIBezierPath(arcCenter: center,
                                         radius: radius,
                                         startAngle: startAngle,
@@ -56,7 +62,7 @@ func drawGaugeImage(for value: Double, size: CGSize = CPListImageRowItemElement.
                                         clockwise: true)
         progressPath.lineCapStyle = .round
         progressPath.lineWidth = lineWidth
-        UIColor.systemBlue.setStroke()
+        uiColor.setStroke()
         progressPath.stroke()
     }
 }
@@ -111,8 +117,8 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
             }
         }
         
-        // Subscribe to measurement updates to refresh the UI
-        measurementCancellable = connectionManager.$latestMeasurements
+        // Subscribe to PID stats updates to refresh the UI
+        measurementCancellable = connectionManager.$pidStats
             .throttle(for: .seconds(1), scheduler: DispatchQueue.main, latest: true)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
@@ -143,17 +149,14 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     private func makeGaugesSection() -> CPListSection {
         let sensors = OBDPIDLibrary.standard
 
-        // Helper to get current value for a PID from the connection manager
+        // Helper to get current value for a PID from the connection manager (via pidStats.latest)
         func currentValue(for pid: OBDPID) -> Double? {
-            return connectionManager.latestMeasurements[pid.pid]?.value
+            return connectionManager.stats(for: pid.pid)?.latest.value
         }
 
         // Build one row element per sensor
         let rowElements: [CPListImageRowItemRowElement] = sensors.map { pid in
-            let value = currentValue(for: pid) ?? pid.typicalRange.min
-            // Normalize value to 0...1 within the typical range
-            let normalized = pid.typicalRange.normalizedPosition(for: value)
-            let image = drawGaugeImage(for: normalized)
+            let image = drawGaugeImage(for: pid, value: currentValue(for: pid))
 
             let subtitle: String = {
                 if let v = currentValue(for: pid) {
@@ -322,8 +325,8 @@ extension CarPlaySceneDelegate {
     // Sensor detail presenter
     @MainActor
     private func presentSensorTemplate(for pid: OBDPID) async {
-        let current = connectionManager.latestMeasurements[pid.pid]?.value
         let stats = connectionManager.stats(for: pid.pid)
+        let current = stats?.latest.value
 
         var items: [CPInformationItem] = []
         if let current = current {
