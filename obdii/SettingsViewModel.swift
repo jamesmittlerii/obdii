@@ -31,9 +31,10 @@ class SettingsViewModel: ObservableObject {
         connectionState == .connecting
     }
 
-    // MARK: - Initializer
+    // MARK: - Initializers
     
-    init(configData: ConfigData = .shared, connectionManager: OBDConnectionManager = .shared) {
+    // Designated initializer without default arguments (avoids nonisolated default evaluation)
+    init(configData: ConfigData, connectionManager: OBDConnectionManager) {
         self.configData = configData
         self.connectionManager = connectionManager
 
@@ -46,6 +47,11 @@ class SettingsViewModel: ObservableObject {
         // Set up subscriptions to propagate changes from models to ViewModel
         // and from ViewModel back to models.
         setupSubscriptions()
+    }
+
+    // Convenience initializer that safely accesses main-actor isolated singletons
+    convenience init() {
+        self.init(configData: .shared, connectionManager: .shared)
     }
 
     private func setupSubscriptions() {
