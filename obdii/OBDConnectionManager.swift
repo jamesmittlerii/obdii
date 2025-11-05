@@ -53,7 +53,7 @@ class OBDConnectionManager: ObservableObject {
 
         mutating func update(with measurement: MeasurementResult) {
             // Capture values needed for logging without referencing `self` inside the autoclosure.
-            let pidDescription = String(describing: pid)
+            //let pidDescription = String(describing: pid)
             let value = measurement.value
 
             //PIDStats.logger.info("pid: \(pidDescription), value: \(value)")
