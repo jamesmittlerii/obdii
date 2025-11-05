@@ -56,7 +56,7 @@ class OBDConnectionManager: ObservableObject {
             let pidDescription = String(describing: pid)
             let value = measurement.value
 
-            PIDStats.logger.info("pid: \(pidDescription), value: \(value)")
+            //PIDStats.logger.info("pid: \(pidDescription), value: \(value)")
             latest = measurement
             if value < min { min = value }
             if value > max { max = value }
@@ -150,32 +150,37 @@ class OBDConnectionManager: ObservableObject {
     private func startContinuousOBDUpdates() {
         cancellables.removeAll()
 
-        for pid in OBDPIDLibrary.standard {
-            if pid.enabled == false {
-                continue
-            }
-            let command = OBDCommand.mode1(pid.pid)
-            obdService
-                .startContinuousUpdates([command])
-                .receive(on: DispatchQueue.main)
-                .sink(
-                    receiveCompletion: { [weak self] completion in
-                        if case .failure(let error) = completion {
-                            self?.logger.error("Continuous OBD updates failed: \(error.localizedDescription)")
-                            // Optionally update state to failed
-                          //  self?.connectionState = .failed("Streaming failed: \(error.localizedDescription)")
-                        }
-                    },
-                    receiveValue: { [weak self] measurements in
-                        guard let self else { return }
-                        for (_, result) in measurements {
-                            self.pidStats[pid.pid, default: PIDStats(pid: pid.pid, measurement: result)]
+        let commands: [OBDCommand] = OBDPIDLibrary.standard
+            .filter { $0.enabled }
+            .map { .mode1($0.pid) }
+
+        guard !commands.isEmpty else {
+            logger.info("No enabled PIDs to monitor.")
+            return
+        }
+
+        obdService
+            .startContinuousUpdates(commands)
+            .receive(on: DispatchQueue.main)
+            .sink(
+                receiveCompletion: { [weak self] completion in
+                    if case .failure(let error) = completion {
+                        self?.logger.error("Continuous OBD updates failed: \(error.localizedDescription)")
+                        // Optionally update state to failed
+                        // self?.connectionState = .failed("Streaming failed: \(error.localizedDescription)")
+                    }
+                },
+                receiveValue: { [weak self] measurements in
+                    guard let self else { return }
+                    for (command, result) in measurements {
+                        if case let .mode1(pid) = command {
+                            self.pidStats[pid, default: PIDStats(pid: pid, measurement: result)]
                                 .update(with: result)
                         }
                     }
-                )
-                .store(in: &cancellables)
-        }
+                }
+            )
+            .store(in: &cancellables)
     }
 }
 
