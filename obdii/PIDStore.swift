@@ -7,8 +7,8 @@ final class PIDStore: ObservableObject {
 
     @Published var pids: [OBDPID]
 
-    // Persist only the enabled flags keyed by PID UUID
-    private let enabledKey = "PIDStore.enabledByID"
+    // Persist enabled flags keyed by the Mode1 command string (CommandProperties.command)
+    private let enabledKey = "PIDStore.enabledByCommand"
 
     private var cancellables = Set<AnyCancellable>()
 
@@ -16,11 +16,12 @@ final class PIDStore: ObservableObject {
         // Start from the library defaults
         var initial = OBDPIDLibrary.standard
 
-        // Restore saved enabled flags
+        // Restore saved enabled flags keyed by command string
         if let data = UserDefaults.standard.data(forKey: enabledKey),
-           let saved = try? JSONDecoder().decode([UUID: Bool].self, from: data) {
+           let saved = try? JSONDecoder().decode([String: Bool].self, from: data) {
             for i in initial.indices {
-                if let savedEnabled = saved[initial[i].id] {
+                let commandKey = initial[i].pid.properties.command
+                if let savedEnabled = saved[commandKey] {
                     initial[i].enabled = savedEnabled
                 }
             }
@@ -54,7 +55,10 @@ final class PIDStore: ObservableObject {
     // MARK: - Persistence
 
     private func persistEnabledFlags(_ pids: [OBDPID]) {
-        let map = Dictionary(uniqueKeysWithValues: pids.map { ($0.id, $0.enabled) })
+        // Key by the stable Mode1 command string
+        let map: [String: Bool] = Dictionary(
+            uniqueKeysWithValues: pids.map { ($0.pid.properties.command, $0.enabled) }
+        )
         if let data = try? JSONEncoder().encode(map) {
             UserDefaults.standard.set(data, forKey: enabledKey)
         }
