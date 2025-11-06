@@ -103,7 +103,7 @@ class OBDConnectionManager: ObservableObject {
         connectionState = .connecting
 
         do {
-            _ = try await obdService.startConnection(preferedProtocol: .protocol6)
+            _ = try await obdService.startConnection(preferedProtocol: .protocol6, querySupportedPIDs: false)
             let myTroubleCodes = try await obdService.scanForTroubleCodes()
             if (myTroubleCodes[SwiftOBD2.ECUID.engine] != nil) {
                 troubleCodes = myTroubleCodes[SwiftOBD2.ECUID.engine]!
@@ -167,7 +167,7 @@ class OBDConnectionManager: ObservableObject {
         }
 
         obdService
-            .startContinuousUpdates(commands)
+            .startContinuousUpdates(commands,interval: 0.3)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in

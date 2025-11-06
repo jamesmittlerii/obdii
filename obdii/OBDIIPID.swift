@@ -156,7 +156,7 @@ struct OBDPIDLibrary {
             notes: "Main tachometer source"
         ),
         OBDPID(
-            enabled: true,
+            enabled: false,
             name: "Air-Fuel Ratio (λ)",
             pid: OBDCommand.Mode1.commandedEquivRatio,
             formula: "((A*256)+B)/32768",
@@ -167,7 +167,7 @@ struct OBDPIDLibrary {
             notes: "1.00 = stoich"
         ),
         OBDPID(
-            enabled: true,
+            enabled: false,
             name: "Vehicle Speed",
             pid: OBDCommand.Mode1.speed,
             formula: "A",
@@ -189,7 +189,7 @@ struct OBDPIDLibrary {
             notes: "Optional PID"
         ),
         OBDPID(
-            enabled: true,
+            enabled: false,
             name: "Fuel Pressure",
             pid: OBDCommand.Mode1.fuelPressure,
             formula: "A*3",
@@ -201,7 +201,7 @@ struct OBDPIDLibrary {
         ),
 
         OBDPID(
-            enabled: true,
+            enabled: false,
             name: "Catalyst Temp (Bank 1, Sensor 1)",
             pid: OBDCommand.Mode1.catalystTempB1S1,
             formula: "((A*256)+B)/10",
@@ -213,7 +213,7 @@ struct OBDPIDLibrary {
         ),
         
         OBDPID(
-            enabled: true,
+            enabled: false,
             name: "Throttle Position",
             pid: OBDCommand.Mode1.throttlePos,
             formula: "((A*256)+B)/10",
@@ -225,7 +225,7 @@ struct OBDPIDLibrary {
         ),
         
         OBDPID(
-            enabled: true,
+            enabled: false,
             name: "Ignition Timing",
             pid: OBDCommand.Mode1.timingAdvance,
             formula: "(A/2) – 64",
