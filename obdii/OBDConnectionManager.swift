@@ -187,12 +187,15 @@ class OBDConnectionManager: ObservableObject {
                 },
                 receiveValue: { [weak self] measurements in
                     guard let self else { return }
-                    for (command, result) in measurements {
-                        if case let .mode1(pid) = command {
-                            var stats = self.pidStats[pid] ?? PIDStats(pid: pid, measurement: result)
-                            stats.update(with: result)
-                            self.pidStats[pid] = stats
-                        }
+                    for (command, decode) in measurements {
+                        // Only handle Mode 01 commands
+                        guard case let .mode1(pid) = command else { continue }
+                        // Only handle measurement results
+                        guard let measurement = decode.measurementResult else { continue }
+
+                        var stats = self.pidStats[pid] ?? PIDStats(pid: pid, measurement: measurement)
+                        stats.update(with: measurement)
+                        self.pidStats[pid] = stats
                     }
                 }
             )

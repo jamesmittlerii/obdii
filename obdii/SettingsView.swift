@@ -32,7 +32,7 @@ struct SettingsView: View {
                     connectDisconnectButton()
                 }
 
-                Section(header: Text("Wi-Fi Connection Details")) {
+                Section(header: Text("Connection Details")) {
                     HStack {
                         Text("Host")
                         Spacer()
