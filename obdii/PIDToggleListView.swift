@@ -5,14 +5,17 @@ struct PIDToggleListView: View {
 
     var body: some View {
         List {
-            if store.pids.contains(where: { $0.enabled }) {
+            // Enabled section
+            let enabledIndices = store.pids.indices.filter { store.pids[$0].enabled }
+            if !enabledIndices.isEmpty {
                 Section(header: Text("Enabled")) {
-                    ForEach(store.enabledPIDs) { pid in
+                    ForEach(enabledIndices, id: \.self) { index in
+                        let pid = store.pids[index]
                         PIDToggleRow(
                             pid: pid,
                             isOn: Binding(
-                                get: { pid.enabled },
-                                set: { store.setEnabled($0, for: pid) }
+                                get: { store.pids[index].enabled },
+                                set: { newValue in store.pids[index].enabled = newValue }
                             )
                         )
                     }
@@ -22,14 +25,17 @@ struct PIDToggleListView: View {
                 }
             }
 
-            if store.pids.contains(where: { !$0.enabled }) {
+            // Disabled section
+            let disabledIndices = store.pids.indices.filter { !store.pids[$0].enabled }
+            if !disabledIndices.isEmpty {
                 Section(header: Text("Disabled")) {
-                    ForEach(store.pids.filter { !$0.enabled }) { pid in
+                    ForEach(disabledIndices, id: \.self) { index in
+                        let pid = store.pids[index]
                         PIDToggleRow(
                             pid: pid,
                             isOn: Binding(
-                                get: { pid.enabled },
-                                set: { store.setEnabled($0, for: pid) }
+                                get: { store.pids[index].enabled },
+                                set: { newValue in store.pids[index].enabled = newValue }
                             )
                         )
                     }

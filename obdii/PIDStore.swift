@@ -76,9 +76,9 @@ final class PIDStore: ObservableObject {
         pids[idx].enabled = enabled
     }
 
-    var enabledPIDs: [OBDPID] {
+    var enabledGauges: [OBDPID] {
         // Enabled items are the prefix (by construction after applying saved order)
-        pids.filter { $0.enabled }
+        pids.filter { $0.enabled && $0.kind == OBDPID.Kind.gauge }
     }
 
     /// Reorder within the enabled subset based on the provided offsets.

@@ -43,29 +43,35 @@ struct ValueRange: Hashable, Codable {
 
 /// Represents a single OBD-II Parameter ID (PID) definition.
 struct OBDPID: Identifiable, Hashable, Codable {
+    enum Kind: String, Codable, Hashable {
+        case gauge
+        case status
+    }
+
     let id: UUID
     var enabled: Bool
     let name: String
     let pid: OBDCommand.Mode1
-    let formula: String
-    let units: String
-    let typicalRange: ValueRange
+    let formula: String?
+    let units: String?
+    let typicalRange: ValueRange?
     let warningRange: ValueRange?
     let dangerRange: ValueRange?
     let notes: String?
+    let kind: Kind
 
     init(
         id: UUID = UUID(),
         enabled: Bool = false,
         name: String,
         pid: OBDCommand.Mode1,
-        formula: String,
+        formula: String? = nil,
         units: String,
         typicalRange: ValueRange,
         warningRange: ValueRange? = nil,
         dangerRange: ValueRange? = nil,
-        notes: String? = nil
-       
+        notes: String? = nil,
+        kind: Kind = .gauge
     ) {
         self.id = id
         self.name = name
@@ -77,29 +83,30 @@ struct OBDPID: Identifiable, Hashable, Codable {
         self.dangerRange = dangerRange
         self.notes = notes
         self.enabled = enabled
+        self.kind = kind
     }
 
     // MARK: - Derived Behavior
 
     /// Returns a display string for UI, e.g. "600 – 7000 RPM"
     var displayRange: String {
-        String(
-            format: "%.0f – %.0f %@",
-            typicalRange.min,
-            typicalRange.max,
-            units
-        )
+        guard let range = typicalRange else { return "" }
+        let unitLabel = units ?? "unknown"
+        
+        return String(format: "%.0f – %.0f %@", range.min, range.max, unitLabel)
     }
 
     /// Returns a color representing the current value’s state
     func color(for value: Double) -> Color {
+        
+        guard typicalRange != nil else { return .gray }
         if let danger = dangerRange, danger.contains(value) {
             return .red
         }
         if let warn = warningRange, warn.contains(value) {
             return .yellow
         }
-        if typicalRange.contains(value) {
+        if typicalRange!.contains(value) {
             return .green
         }
         return .gray
@@ -111,6 +118,19 @@ struct OBDPID: Identifiable, Hashable, Codable {
 /// Groups a set of standard OBD-II PIDs.
 struct OBDPIDLibrary {
     static let standard: [OBDPID] = [
+        
+        OBDPID(
+            enabled: true,
+            name: "Fuel System Status",
+            pid: OBDCommand.Mode1.fuelStatus,
+            //formula: "A – 40",
+            units: "NA",
+            typicalRange: .init(min: 0, max: 100),
+            //warningRange: .init(min: 80, max: 100),
+            //dangerRange: .init(min: 100, max: 150),
+            notes: "Returns open/closed loop data.",
+            kind: .status
+        ),
         OBDPID(
             enabled: true,
             name: "Intake Air Temp (IAT)",

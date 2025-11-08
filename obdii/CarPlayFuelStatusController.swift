@@ -3,8 +3,53 @@ import UIKit
 import SwiftOBD2
 import Combine
 
+let bytes: [UInt8] = [0x41, 0x03, 0x02, 0x04]
+
+
+struct FuelSystemStatus {
+    let system1: Status
+    let system2: Status
+
+    enum Status: UInt8, CustomStringConvertible {
+        case openLoopCold = 0x01
+        case closedLoop = 0x02
+        case openLoopLoad = 0x04
+        case openLoopFailure = 0x08
+        case closedLoopAlt = 0x10
+        case unknown = 0x00
+
+        var description: String {
+            switch self {
+            case .openLoopCold:
+                return "Open Loop (cold engine)"
+            case .closedLoop:
+                return "Closed Loop (normal operation)"
+            case .openLoopLoad:
+                return "Open Loop (load/fuel cut)"
+            case .openLoopFailure:
+                return "Open Loop (system failure)"
+            case .closedLoopAlt:
+                return "Closed Loop (alternate feedback)"
+            case .unknown:
+                return "Unknown"
+            }
+        }
+    }
+
+    /// Decode from raw OBD-II response bytes like [0x41, 0x03, 0x02, 0x04]
+    init(from bytes: [UInt8]) {
+        guard bytes.count >= 4 else {
+            system1 = .unknown
+            system2 = .unknown
+            return
+        }
+        system1 = Status(rawValue: bytes[2]) ?? .unknown
+        system2 = Status(rawValue: bytes[3]) ?? .unknown
+    }
+}
+
 @MainActor
-class CarPlayDiagnosticsController {
+class CarPlayFuelStatusController {
     private weak var interfaceController: CPInterfaceController?
     private var currentTemplate: CPListTemplate?
     private let connectionManager: OBDConnectionManager
@@ -20,56 +65,43 @@ class CarPlayDiagnosticsController {
         self.interfaceController = interfaceController
         
         // Observe connection state changes to keep the UI in sync
-        OBDConnectionManager.shared.$troubleCodes
+        OBDConnectionManager.shared.$fuelStatus
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.refreshSection()
             }
             .store(in: &cancellables)
     }
-     
+    
+    private func makeItem(_ text: String, detailText: String) -> CPListItem {
+        let item = CPListItem(text: text, detailText: detailText)
+        item.handler = { _, completion in completion() }
+        return item
+    }
+    
     private func buildSections() -> [CPListSection] {
-        let codes = connectionManager.troubleCodes
-
-        // No DTCs → single info row
-        if codes.isEmpty {
-            let item = CPListItem(text: "No Diagnostic Trouble Codes", detailText: nil)
-            let section = CPListSection(items: [item])
-           return [section]
+        //let status = FuelSystemStatus(from: bytes)
+        
+        var items = [] as [CPListItem]
+        
+        if (OBDConnectionManager.shared.fuelStatus.count >= 1 && OBDConnectionManager.shared.fuelStatus[0] != nil)
+        {
+            items.append(makeItem("Fuel System 1" , detailText:  OBDConnectionManager.shared.fuelStatus[0]!.description))
+        }
+        if (OBDConnectionManager.shared.fuelStatus.count >= 2 && OBDConnectionManager.shared.fuelStatus[1] != nil)
+        {
+            items.append(makeItem("Fuel System 2" , detailText:  OBDConnectionManager.shared.fuelStatus[1]!.description))
+        }
+        if (OBDConnectionManager.shared.fuelStatus.count == 0)
+        {
+            items.append(makeItem("No Fuel System Status Codes" , detailText: ""))
         }
 
-        // Group codes by severity
-        let grouped = Dictionary(grouping: codes, by: { $0.severity })
+            
+        let section = CPListSection(items: items)
+       return [section]
+        
 
-        // Ordered severity buckets (Critical → Low)
-        let order: [CodeSeverity] = [.critical, .high, .moderate, .low]
-
-        let sections: [CPListSection] = order.compactMap { severity -> CPListSection? in
-            guard let list = grouped[severity] else { return nil }
-
-            let items: [CPListItem] = list.map { code in
-                let item = CPListItem(
-                    text: "\(code.code) • \(code.title)",
-                    detailText: code.severity.rawValue
-                )
-                item.setImage(
-                    tintedSymbol(
-                        named: imageName(for: code.severity),
-                        severity: code.severity
-                    )
-                )
-                item.handler = { [weak self] _, completion in
-                    self?.presentOBDDetail(for: code)
-                    completion()
-                }
-                return item
-            }
-
-            return CPListSection(items: items,
-                                 header: severitySectionTitle(severity),
-                                 sectionIndexTitle: nil)
-        }
-        return sections;
     }
 
     private func refreshSection() {
@@ -81,39 +113,14 @@ class CarPlayDiagnosticsController {
     /// Creates the root template for the Settings tab.
     func makeRootTemplate() -> CPListTemplate {
         let sections = buildSections()
-        let template = CPListTemplate(title: "Diagnostics", sections: sections)
-        template.tabTitle = "Diagnostics"
+        let template = CPListTemplate(title: "FuelStatus", sections: sections)
+        template.tabTitle = "FI"
         template.tabImage = symbolImage(named: "wrench.and.screwdriver")
         self.currentTemplate = template
         return template
     }
     
-    private func presentOBDDetail(for code: TroubleCodeMetadata) {
-        var items: [CPInformationItem] = [
-            CPInformationItem(title: "Code", detail: code.code),
-            CPInformationItem(title: "Title", detail: code.title),
-            CPInformationItem(title: "Severity", detail: code.severity.rawValue),
-            CPInformationItem(title: "Description", detail: code.description)
-        ]
-
-        if !code.causes.isEmpty {
-            let causesText = code.causes.map { "• \($0)" }.joined(separator: "\n")
-            items.append(CPInformationItem(title: "Potential Causes", detail: causesText))
-        }
-
-        if !code.remedies.isEmpty {
-            let remediesText = code.remedies.map { "• \($0)" }.joined(separator: "\n")
-            items.append(CPInformationItem(title: "Possible Remedies", detail: remediesText))
-        }
-
-        let template = CPInformationTemplate(
-            title: "DTC \(code.code)",
-            layout: .twoColumn,
-            items: items,
-            actions: []
-        )
-        interfaceController?.pushTemplate(template, animated: true, completion: nil)
-    }
+    
 
     // MARK: - Helpers
 

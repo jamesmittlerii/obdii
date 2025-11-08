@@ -36,6 +36,10 @@ class OBDConnectionManager: ObservableObject {
 
     @Published var connectionState: ConnectionState = .disconnected
     @Published var troubleCodes: [TroubleCodeMetadata]  = []
+    
+    @Published var fuelStatus: [StatusCodeMetadata?] = []
+
+    
     // New: publish the connected peripheral name (Bluetooth), or nil for Wi‑Fi/Demo/none
     @Published var connectedPeripheralName: String?
 
@@ -205,7 +209,8 @@ class OBDConnectionManager: ObservableObject {
             .store(in: &cancellables)
 
         // Build commands from the current enabled PIDs in the store.
-        let enabledNow = Set(PIDStore.shared.enabledPIDs.map { $0.pid })
+        // If you want only gauges, use enabledGauges; otherwise include all enabled items.
+        let enabledNow = Set(PIDStore.shared.pids.filter { $0.enabled }.map { $0.pid })
 
         startContinuousOBDUpdates(with: enabledNow)
     }
@@ -262,12 +267,20 @@ class OBDConnectionManager: ObservableObject {
                     for (command, decode) in measurements {
                         // Only handle Mode 01 commands
                         guard case let .mode1(pid) = command else { continue }
-                        // Only handle measurement results
-                        guard let measurement = decode.measurementResult else { continue }
+                        
+                        switch pid {
+                        case .fuelStatus:
+                            self.fuelStatus = decode.codeResult!
+                        default:
+                            guard let measurement = decode.measurementResult else { continue }
 
-                        var stats = self.pidStats[pid] ?? PIDStats(pid: pid, measurement: measurement)
-                        stats.update(with: measurement)
-                        self.pidStats[pid] = stats
+                            var stats = self.pidStats[pid] ?? PIDStats(pid: pid, measurement: measurement)
+                            stats.update(with: measurement)
+                            self.pidStats[pid] = stats
+                        }
+                        
+                        // Only handle measurement results
+                      
                     }
                 }
             )

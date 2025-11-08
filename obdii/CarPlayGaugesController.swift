@@ -9,8 +9,8 @@ import UIKit   // For UIImage
 fileprivate func drawGaugeImage(for pid: OBDPID, value: Double?, size: CGSize = CPListImageRowItemElement.maximumImageSize) -> UIImage {
     // Build a combined range so normalization (when needed) respects all defined ranges
     let ranges: [ValueRange] = [pid.typicalRange, pid.warningRange, pid.dangerRange].compactMap { $0 }
-    let globalMin = ranges.map(\.min).min() ?? pid.typicalRange.min
-    let globalMax = ranges.map(\.max).max() ?? pid.typicalRange.max
+    let globalMin = ranges.map(\.min).min() ?? pid.typicalRange!.min
+    let globalMax = ranges.map(\.max).max() ?? pid.typicalRange!.max
     let combinedRange = ValueRange(min: globalMin, max: globalMax)
 
     let format = UIGraphicsImageRendererFormat.default()
@@ -94,7 +94,7 @@ class CarPlayGaugesController {
 
     private func makeGaugesSection() -> CPListSection {
         // Use the live enabled PID list from the store so toggles reflect here
-        let sensors = PIDStore.shared.enabledPIDs
+        let sensors = PIDStore.shared.enabledGauges
 
         func currentValue(for pid: OBDPID) -> Double? {
             return connectionManager.stats(for: pid.pid)?.latest.value
@@ -103,7 +103,7 @@ class CarPlayGaugesController {
         let rowElements: [CPListImageRowItemRowElement] = sensors.map { pid in
             let value = currentValue(for: pid)
             let image = drawGaugeImage(for: pid, value: value)
-            let subtitle = (value.map { String(format: "%.1f %@", $0, pid.units) }) ?? "— \(pid.units)"
+            let subtitle = (value.map { String(format: "%.1f %@", $0, pid.units!) }) ?? "— \(pid.units!)"
             return CPListImageRowItemRowElement(image: image, title: pid.name, subtitle: subtitle)
         }
 
@@ -127,15 +127,15 @@ class CarPlayGaugesController {
         let stats = connectionManager.stats(for: pid.pid)
         var items: [CPInformationItem] = []
 
-        items.append(CPInformationItem(title: "Current", detail: (stats.map { String(format: "%.2f %@", $0.latest.value, pid.units) }) ?? "— \(pid.units)"))
+        items.append(CPInformationItem(title: "Current", detail: (stats.map { String(format: "%.2f %@", $0.latest.value, pid.units!) }) ?? "— \(pid.units!)"))
         if let stats = stats {
-            items.append(CPInformationItem(title: "Min", detail: String(format: "%.2f %@", stats.min, pid.units)))
-            items.append(CPInformationItem(title: "Max", detail: String(format: "%.2f %@", stats.max, pid.units)))
+            items.append(CPInformationItem(title: "Min", detail: String(format: "%.2f %@", stats.min, pid.units!)))
+            items.append(CPInformationItem(title: "Max", detail: String(format: "%.2f %@", stats.max, pid.units!)))
             items.append(CPInformationItem(title: "Samples", detail: "\(stats.sampleCount)"))
         }
 
-        items.append(CPInformationItem(title: "Units", detail: pid.units))
-        items.append(CPInformationItem(title: "Typical Range", detail: String(format: "%.1f – %.1f %@", pid.typicalRange.min, pid.typicalRange.max, pid.units)))
+        items.append(CPInformationItem(title: "Units", detail: pid.units!))
+        items.append(CPInformationItem(title: "Typical Range", detail: String(format: "%.1f – %.1f %@", pid.typicalRange!.min, pid.typicalRange!.max, pid.units!)))
 
         let template = CPInformationTemplate(title: pid.name, layout: .twoColumn, items: items, actions: [])
         interfaceController?.pushTemplate(template, animated: true, completion: nil)
