@@ -28,6 +28,9 @@ class OBDConnectionManager: ObservableObject {
         }
     }
 
+    let querySupportedPids = true
+    var supportedPids: [OBDCommand] = []
+    
     static let shared = OBDConnectionManager()
     private let logger = Logger(subsystem: "com.rheosoft.obdii", category: "OBDConnection")
 
@@ -133,7 +136,11 @@ class OBDConnectionManager: ObservableObject {
         connectionState = .connecting
 
         do {
-            _ = try await obdService.startConnection(preferedProtocol: .protocol6, timeout: 30, querySupportedPIDs: false)
+            _ = try await obdService.startConnection(preferedProtocol: .protocol6, timeout: 30, querySupportedPIDs: querySupportedPids)
+            
+            supportedPids = await obdService.getSupportedPIDs()
+            
+            
             let myTroubleCodes = try await obdService.scanForTroubleCodes()
             if (myTroubleCodes[SwiftOBD2.ECUID.engine] != nil) {
                 troubleCodes = myTroubleCodes[SwiftOBD2.ECUID.engine]!
@@ -199,11 +206,29 @@ class OBDConnectionManager: ObservableObject {
 
         // Build commands from the current enabled PIDs in the store.
         let enabledNow = Set(PIDStore.shared.enabledPIDs.map { $0.pid })
+
         startContinuousOBDUpdates(with: enabledNow)
     }
 
     private func startContinuousOBDUpdates(with enabledPIDs: Set<OBDCommand.Mode1>) {
         cancellables.removeAll()
+        
+        var enabledNow = enabledPIDs
+        if (querySupportedPids == true)
+        {
+            // Filter out any enabled PIDs that are not supported by the vehicle/adapter
+            let supportedMode1: Set<OBDCommand.Mode1> = Set(
+                supportedPids.compactMap { cmd in
+                    if case let .mode1(m) = cmd { return m }
+                    return nil
+                }
+            )
+            enabledNow = enabledPIDs.intersection(supportedMode1)
+            
+            let unsupported = enabledPIDs.subtracting(supportedMode1)
+            obdDebug("removing unsupported pids: \(unsupported)")
+            
+        }
 
         // Re-establish mirror subscription after clearing cancellables
         obdService.$connectedPeripheral
@@ -215,7 +240,7 @@ class OBDConnectionManager: ObservableObject {
             }
             .store(in: &cancellables)
 
-        let commands: [OBDCommand] = enabledPIDs.map { .mode1($0) }
+        let commands: [OBDCommand] = enabledNow.map { .mode1($0) }
 
         guard !commands.isEmpty else {
             logger.info("No enabled PIDs to monitor.")

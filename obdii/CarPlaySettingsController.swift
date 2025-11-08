@@ -71,14 +71,10 @@ class CarPlaySettingsController {
             // If you have a selected peripheral name/identifier, append it here
            
         }
+        
+        return makeItem("Connection", detailText: detail)
 
-        let item = CPListItem(text: "Connection", detailText: detail)
-        item.handler = { [weak self] _, completion in
-            // Nothing to push for now; simply complete.
-            self?.refreshSection()
-            completion()
-        }
-        return item
+        
     }
     func errorName(_ error: Error) -> String {
         return String(describing: type(of: error))
@@ -103,9 +99,8 @@ class CarPlaySettingsController {
         }
         return makeItem("Connection Status", detailText: detail)
     }
-
-    private func buildSection() -> CPListSection {
-        // Fetch app metadata
+    
+    private func makeAboutItem() -> CPListItem {
         let bundle = Bundle.main
         let displayName = bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
             ?? bundle.object(forInfoDictionaryKey: "CFBundleName") as? String
@@ -114,13 +109,16 @@ class CarPlaySettingsController {
         let build = bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"
         let aboutTitle = "About"
         let aboutDetail = "\(displayName) v\(version) build:\(build)"
+        
+        return makeItem(aboutTitle, detailText: aboutDetail)
+    }
 
-        // Items (Units has a custom handler; others are inert for now)
+    private func buildSection() -> CPListSection {
         let items: [CPListItem] = [
-            makeUnitsItem(),
             makeConnectionDetailsItem(),
             makeConnectionStatusItem(),
-            makeItem(aboutTitle, detailText: aboutDetail)
+            makeUnitsItem(),
+            makeAboutItem()
         ]
         return CPListSection(items: items)
     }

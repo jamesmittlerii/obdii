@@ -117,9 +117,9 @@ struct OBDPIDLibrary {
             pid: OBDCommand.Mode1.intakeTemp,
             formula: "A – 40",
             units: "°C",
-            typicalRange: .init(min: -40, max: 215),
-            warningRange: .init(min: 50, max: 60),
-            dangerRange: .init(min: 60, max: 130),
+            typicalRange: .init(min: -20, max: 80),
+            warningRange: .init(min: 80, max: 100),
+            dangerRange: .init(min: 100, max: 150),
             notes: "Correlates with ambient and heat-soak."
         ),
         OBDPID(
@@ -139,9 +139,9 @@ struct OBDPIDLibrary {
             pid: OBDCommand.Mode1.coolantTemp,
             formula: "A - 40",
             units: "°C",
-            typicalRange: .init(min: -40, max: 215),
-            warningRange: .init(min: 105, max: 115),
-            dangerRange: .init(min: 115, max: 130),
+            typicalRange: .init(min: -20, max: 80),
+            warningRange: .init(min: 80, max: 100),
+            dangerRange: .init(min: 100, max: 150),
             notes: "Subtract 40 offset"
         ),
         OBDPID(
@@ -183,9 +183,9 @@ struct OBDPIDLibrary {
             pid: OBDCommand.Mode1.engineOilTemp,
             formula: "A - 40",
             units: "°C",
-            typicalRange: .init(min: -40, max: 215),
-            warningRange: .init(min: 130, max: 140),
-            dangerRange: .init(min: 140, max: 160),
+            typicalRange: .init(min: -20, max: 80),
+            warningRange: .init(min: 80, max: 100),
+            dangerRange: .init(min: 100, max: 150),
             notes: "Optional PID"
         ),
         OBDPID(
@@ -241,7 +241,7 @@ struct OBDPIDLibrary {
             pid: OBDCommand.Mode1.ambientAirTemp,
             formula: "A – 40",
             units: "°C",
-            typicalRange: .init(min: -40, max: 215),
+            typicalRange: .init(min: -40, max: 50),
             warningRange: nil,
             dangerRange: nil,
             notes: "Outside/ambient temperature"
