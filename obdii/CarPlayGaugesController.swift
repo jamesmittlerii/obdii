@@ -92,9 +92,25 @@ class CarPlayGaugesController {
     
     // MARK: - Private Template Creation & Navigation
 
+    private func makeItem(_ text: String, detailText: String?) -> CPListItem {
+        let item = CPListItem(text: text, detailText: detailText)
+        item.handler = { _, completion in completion() }
+        return item
+    }
+    
+    
     private func makeGaugesSection() -> CPListSection {
         // Use the live enabled PID list from the store so toggles reflect here
         let sensors = PIDStore.shared.enabledGauges
+        
+        // No gauges → single info row
+        if sensors.isEmpty {
+            let item = makeItem("No Enabled Gauges", detailText: nil)
+            let section = CPListSection(items: [item])
+           return section
+        }
+        
+        
 
         func currentValue(for pid: OBDPID) -> Double? {
             return connectionManager.stats(for: pid.pid)?.latest.value

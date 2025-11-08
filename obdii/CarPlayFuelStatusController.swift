@@ -86,11 +86,11 @@ class CarPlayFuelStatusController {
         
         if (OBDConnectionManager.shared.fuelStatus.count >= 1 && OBDConnectionManager.shared.fuelStatus[0] != nil)
         {
-            items.append(makeItem("Fuel System 1" , detailText:  OBDConnectionManager.shared.fuelStatus[0]!.description))
+            items.append(makeItem("Bank 1" , detailText:  OBDConnectionManager.shared.fuelStatus[0]!.description))
         }
         if (OBDConnectionManager.shared.fuelStatus.count >= 2 && OBDConnectionManager.shared.fuelStatus[1] != nil)
         {
-            items.append(makeItem("Fuel System 2" , detailText:  OBDConnectionManager.shared.fuelStatus[1]!.description))
+            items.append(makeItem("Bank 2" , detailText:  OBDConnectionManager.shared.fuelStatus[1]!.description))
         }
         if (OBDConnectionManager.shared.fuelStatus.count == 0)
         {

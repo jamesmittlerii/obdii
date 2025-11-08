@@ -102,6 +102,17 @@ class OBDConnectionManager: ObservableObject {
             .removeDuplicates()
             .sink { [weak self] enabledSet in
                 guard let self else { return }
+
+                // Prune pidStats for any PIDs that are no longer enabled
+                if !self.pidStats.isEmpty {
+                    let before = self.pidStats.count
+                    self.pidStats = self.pidStats.filter { enabledSet.contains($0.key) }
+                    let after = self.pidStats.count
+                    if before != after {
+                        self.logger.info("Pruned disabled PIDs from pidStats: \(before - after) removed.")
+                    }
+                }
+
                 if self.connectionState == .connected {
                     self.logger.info("Enabled PID set changed (\(enabledSet.count)); restarting continuous updates.")
                     self.restartContinuousUpdates(with: enabledSet)
@@ -233,6 +244,16 @@ class OBDConnectionManager: ObservableObject {
             let unsupported = enabledPIDs.subtracting(supportedMode1)
             obdDebug("removing unsupported pids: \(unsupported)")
             
+        }
+
+        // Prune pidStats to only those still enabled (after support filtering)
+        if !pidStats.isEmpty {
+            let before = pidStats.count
+            pidStats = pidStats.filter { enabledNow.contains($0.key) }
+            let after = pidStats.count
+            if before != after {
+                logger.info("Pruned disabled/unsupported PIDs from pidStats: \(before - after) removed.")
+            }
         }
 
         // Re-establish mirror subscription after clearing cancellables

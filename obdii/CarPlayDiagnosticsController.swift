@@ -27,13 +27,19 @@ class CarPlayDiagnosticsController {
             }
             .store(in: &cancellables)
     }
+    
+    private func makeItem(_ text: String, detailText: String?) -> CPListItem {
+        let item = CPListItem(text: text, detailText: detailText)
+        item.handler = { _, completion in completion() }
+        return item
+    }
      
     private func buildSections() -> [CPListSection] {
         let codes = connectionManager.troubleCodes
 
         // No DTCs → single info row
         if codes.isEmpty {
-            let item = CPListItem(text: "No Diagnostic Trouble Codes", detailText: nil)
+            let item = makeItem("No Diagnostic Trouble Codes", detailText: nil)
             let section = CPListSection(items: [item])
            return [section]
         }
