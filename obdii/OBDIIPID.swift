@@ -446,5 +446,155 @@ struct OBDPIDLibrary {
             dangerRange: .init(min: 950, max: 1000),
             notes: "Post-cat temp; linear thermometer"
         ),
+
+        // MARK: - Bank 2 additions (gauges)
+
+        OBDPID(
+            enabled: false,
+            name: "Short Term Fuel Trim (Bank 2)",
+            pid: OBDCommand.Mode1.shortFuelTrim2,
+            formula: "(A - 128) * 100 / 128",
+            units: "%",
+            typicalRange: .init(min: -25, max: 25),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Real-time fuel correction; V engines use Bank 2"
+        ),
+        OBDPID(
+            enabled: false,
+            name: "Long Term Fuel Trim (Bank 2)",
+            pid: OBDCommand.Mode1.longFuelTrim2,
+            formula: "(A - 128) * 100 / 128",
+            units: "%",
+            typicalRange: .init(min: -25, max: 25),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Learned fuel correction; V engines use Bank 2"
+        ),
+        OBDPID(
+            enabled: false,
+            name: "O₂ Sensor Voltage (Bank 2, Sensor 1)",
+            pid: OBDCommand.Mode1.O2Bank2Sensor1,
+            formula: "A / 200",
+            units: "V",
+            typicalRange: .init(min: 0.0, max: 1.0),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Upstream O₂ sensor; narrowband typical 0–1 V"
+        ),
+        OBDPID(
+            enabled: false,
+            name: "O₂ Sensor Voltage (Bank 2, Sensor 2)",
+            pid: OBDCommand.Mode1.O2Bank2Sensor2,
+            formula: "A / 200",
+            units: "V",
+            typicalRange: .init(min: 0.0, max: 1.0),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Downstream O₂ sensor; narrowband typical 0–1 V"
+        ),
+
+        // MARK: - Newly added per user request (Bank 1 trims, O2, EVAP purge, WR currents, EVAP vapor pressure, O2 bitmap)
+
+        OBDPID(
+            enabled: false,
+            name: "Long Term Fuel Trim (Bank 1)",
+            pid: OBDCommand.Mode1.longFuelTrim1,
+            formula: "(A - 128) * 100 / 128",
+            units: "%",
+            typicalRange: .init(min: -25, max: 25),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Learned fuel correction; Bank 1"
+        ),
+        OBDPID(
+            enabled: false,
+            name: "Short Term Fuel Trim (Bank 1)",
+            pid: OBDCommand.Mode1.shortFuelTrim1,
+            formula: "(A - 128) * 100 / 128",
+            units: "%",
+            typicalRange: .init(min: -25, max: 25),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Real-time fuel correction; Bank 1"
+        ),
+        OBDPID(
+            enabled: false,
+            name: "O₂ Sensor Wideband Current (Sensor 7)",
+            pid: OBDCommand.Mode1.O2Sensor7WRCurrent,
+            formula: "((A*256)+B - 32768) / 256",
+            units: "mA",
+            typicalRange: .init(min: -10, max: 10),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Wideband current; verify scaling for your ECU"
+        ),
+        OBDPID(
+            enabled: false,
+            name: "O₂ Sensor Wideband Current (Sensor 2)",
+            pid: OBDCommand.Mode1.O2Sensor2WRCurrent,
+            formula: "((A*256)+B - 32768) / 256",
+            units: "mA",
+            typicalRange: .init(min: -10, max: 10),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Wideband current; verify scaling for your ECU"
+        ),
+        OBDPID(
+            enabled: false,
+            name: "EVAP Purge Command",
+            pid: OBDCommand.Mode1.evaporativePurge,
+            formula: "A * 100 / 255",
+            units: "%",
+            typicalRange: .init(min: 0, max: 100),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Purge valve duty cycle"
+        ),
+        OBDPID(
+            enabled: false,
+            name: "O₂ Sensor Voltage (Bank 1, Sensor 1)",
+            pid: OBDCommand.Mode1.O2Bank1Sensor1,
+            formula: "A / 200",
+            units: "V",
+            typicalRange: .init(min: 0.0, max: 1.0),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Upstream O₂ sensor; narrowband typical 0–1 V"
+        ),
+        OBDPID(
+            enabled: false,
+            name: "O₂ Sensor Voltage (Bank 1, Sensor 2)",
+            pid: OBDCommand.Mode1.O2Bank1Sensor2,
+            formula: "A / 200",
+            units: "V",
+            typicalRange: .init(min: 0.0, max: 1.0),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Downstream O₂ sensor; narrowband typical 0–1 V"
+        ),
+        OBDPID(
+            enabled: false,
+            name: "O₂ Sensors Present (Bitmap)",
+            pid: OBDCommand.Mode1.O2Sensor,
+            formula: "bitfield",
+            units: "NA",
+            typicalRange: .init(min: 0, max: 255),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Bitmask of O₂ sensors present; not a gauge",
+            kind: .status
+        ),
+        OBDPID(
+            enabled: false,
+            name: "EVAP System Vapor Pressure",
+            pid: OBDCommand.Mode1.evapVaporPressure,
+            formula: "((A*256)+B) - 32767",
+            units: "Pa",
+            typicalRange: .init(min: -2000, max: 2000),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Reported in Pa on some ECUs; verify units"
+        )
     ]
 }
