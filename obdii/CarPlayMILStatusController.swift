@@ -4,56 +4,13 @@ import SwiftOBD2
 import Combine
 
 
-
-struct FuelSystemStatus {
-    let system1: Status
-    let system2: Status
-
-    enum Status: UInt8, CustomStringConvertible {
-        case openLoopCold = 0x01
-        case closedLoop = 0x02
-        case openLoopLoad = 0x04
-        case openLoopFailure = 0x08
-        case closedLoopAlt = 0x10
-        case unknown = 0x00
-
-        var description: String {
-            switch self {
-            case .openLoopCold:
-                return "Open Loop (cold engine)"
-            case .closedLoop:
-                return "Closed Loop (normal operation)"
-            case .openLoopLoad:
-                return "Open Loop (load/fuel cut)"
-            case .openLoopFailure:
-                return "Open Loop (system failure)"
-            case .closedLoopAlt:
-                return "Closed Loop (alternate feedback)"
-            case .unknown:
-                return "Unknown"
-            }
-        }
-    }
-
-    /// Decode from raw OBD-II response bytes like [0x41, 0x03, 0x02, 0x04]
-    init(from bytes: [UInt8]) {
-        guard bytes.count >= 4 else {
-            system1 = .unknown
-            system2 = .unknown
-            return
-        }
-        system1 = Status(rawValue: bytes[2]) ?? .unknown
-        system2 = Status(rawValue: bytes[3]) ?? .unknown
-    }
-}
-
 @MainActor
-class CarPlayFuelStatusController {
+class CarPlayMILStatusController {
     private weak var interfaceController: CPInterfaceController?
     private var currentTemplate: CPListTemplate?
     private let connectionManager: OBDConnectionManager
     private var cancellables = Set<AnyCancellable>()
-    private var previousFuelStatus: [StatusCodeMetadata?]?
+    private var previousMILStatus: Status?
     
     init(connectionManager: OBDConnectionManager) {
         self.connectionManager = connectionManager
@@ -65,7 +22,7 @@ class CarPlayFuelStatusController {
         self.interfaceController = interfaceController
         
         // Observe connection state changes to keep the UI in sync
-        OBDConnectionManager.shared.$fuelStatus
+        OBDConnectionManager.shared.$MILStatus
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.refreshSection()
@@ -80,23 +37,46 @@ class CarPlayFuelStatusController {
     }
     
     private func buildSections() -> [CPListSection] {
-        //let status = FuelSystemStatus(from: bytes)
-        
-        // Build items from the current fuelStatus
-        let current = OBDConnectionManager.shared.fuelStatus
-        var items = [] as [CPListItem]
-        
-        if (current.count >= 1 && current[0] != nil)
-        {
-            items.append(makeItem("Bank 1" , detailText:  current[0]!.description))
+        let current = OBDConnectionManager.shared.MILStatus
+        var items: [CPListItem] = []
+
+        guard let status = current else {
+            items.append(makeItem("No MIL Status", detailText: ""))
+            let section = CPListSection(items: items)
+            return [section]
         }
-        if (current.count >= 2 && current[1] != nil)
-        {
-            items.append(makeItem("Bank 2" , detailText:  current[1]!.description))
+
+        // Top-level flags/values
+        let dtcLabel = "\(status.dtcCount) DTC" + (status.dtcCount == 1 ? "" : "s")
+        let milLabel = status.milOn ? "On" : "Off"
+        items.append(makeItem("MIL", detailText: "\(milLabel) (\(dtcLabel))"))
+        
+        // Readiness monitors: filter to supported, then sort so Not Ready first, Ready next, unknown last
+        let supported = status.monitors.filter { $0.supported }
+        let sorted = supported.sorted { lhs, rhs in
+            // Map ready state to priority: Not Ready (false) = 0, Ready (true) = 1, Unknown (nil) = 2
+            func priority(for ready: Bool?) -> Int {
+                switch ready {
+                case .some(false): return 0
+                case .some(true):  return 1
+                case .none:        return 2
+                }
+            }
+            let lp = priority(for: lhs.ready)
+            let rp = priority(for: rhs.ready)
+            if lp != rp { return lp < rp }
+            // Stable fallback by name to keep order deterministic
+            return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
         }
-        if (current.count == 0)
-        {
-            items.append(makeItem("No Fuel System Status Codes" , detailText: ""))
+        
+        for monitor in sorted {
+            let detail: String
+            if let ready = monitor.ready {
+                detail = ready ? "Ready" : "Not Ready"
+            } else {
+                detail = "—"
+            }
+            items.append(makeItem(monitor.name, detailText: detail))
         }
 
         let section = CPListSection(items: items)
@@ -106,29 +86,29 @@ class CarPlayFuelStatusController {
     private func refreshSection() {
         guard let template = currentTemplate else { return }
         
-        let current = OBDConnectionManager.shared.fuelStatus
+        let current = OBDConnectionManager.shared.MILStatus
         
         // Early exit if nothing changed
-        if let previous = previousFuelStatus, previous == current {
+        if let previous = previousMILStatus, previous == current {
             return
         }
         
         // Update UI and remember last shown state
         let sections = buildSections()
-        previousFuelStatus = current
+        previousMILStatus = current
         template.updateSections(sections)
     }
 
     /// Creates the root template for the Settings tab.
     func makeRootTemplate() -> CPListTemplate {
         let sections = buildSections()
-        let template = CPListTemplate(title: "FuelStatus", sections: sections)
-        template.tabTitle = "FI"
+        let template = CPListTemplate(title: "MILStatus", sections: sections)
+        template.tabTitle = "MIL"
         template.tabImage = symbolImage(named: "wrench.and.screwdriver")
         self.currentTemplate = template
         
         // Initialize previous snapshot to match what we just rendered
-        previousFuelStatus = OBDConnectionManager.shared.fuelStatus
+        previousMILStatus = OBDConnectionManager.shared.MILStatus
         
         return template
     }
@@ -185,3 +165,4 @@ class CarPlayFuelStatusController {
         }
     }
 }
+

@@ -133,6 +133,18 @@ struct OBDPIDLibrary {
         ),
         OBDPID(
             enabled: true,
+            name: "MIL Status",
+            pid: OBDCommand.Mode1.status,
+            //formula: "A – 40",
+            units: "NA",
+            typicalRange: .init(min: 0, max: 100),
+            //warningRange: .init(min: 80, max: 100),
+            //dangerRange: .init(min: 100, max: 150),
+            notes: "Returns MIL status",
+            kind: .status
+        ),
+        OBDPID(
+            enabled: true,
             name: "Intake Air Temp (IAT)",
             pid: OBDCommand.Mode1.intakeTemp,
             formula: "A – 40",

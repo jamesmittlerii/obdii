@@ -28,6 +28,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     private lazy var diagnosticsController = CarPlayDiagnosticsController(connectionManager: self.connectionManager)
     private lazy var settingsController = CarPlaySettingsController()
     private lazy var fuelStatusController = CarPlayFuelStatusController(connectionManager: self.connectionManager)
+    private lazy var milStatusController = CarPlayMILStatusController(connectionManager: self.connectionManager)
     
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
             didConnect interfaceController: CPInterfaceController) {
@@ -39,14 +40,16 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         diagnosticsController.setInterfaceController(interfaceController)
         settingsController.setInterfaceController(interfaceController)
         fuelStatusController.setInterfaceController(interfaceController)
+        milStatusController.setInterfaceController(interfaceController)
 
         // Build the three tabs by requesting the root template from each controller
         let gaugesTemplate = gaugesController.makeRootTemplate()
+        let milTemplate = milStatusController.makeRootTemplate()
         let diagnosticsTemplate = diagnosticsController.makeRootTemplate()
         let settingsTemplate = settingsController.makeRootTemplate()
         let fuelStatusTemplate = fuelStatusController.makeRootTemplate( )
 
-        let tabBar = CPTabBarTemplate(templates: [gaugesTemplate, fuelStatusTemplate, diagnosticsTemplate, settingsTemplate])
+        let tabBar = CPTabBarTemplate(templates: [gaugesTemplate, fuelStatusTemplate, milTemplate, diagnosticsTemplate, settingsTemplate])
         
         interfaceController.setRootTemplate(tabBar,
                                             animated: true,

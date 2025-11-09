@@ -38,6 +38,7 @@ class OBDConnectionManager: ObservableObject {
     @Published var troubleCodes: [TroubleCodeMetadata]  = []
     
     @Published var fuelStatus: [StatusCodeMetadata?] = []
+    @Published var MILStatus: Status?
 
     
     // New: publish the connected peripheral name (Bluetooth), or nil for Wi‑Fi/Demo/none
@@ -292,6 +293,8 @@ class OBDConnectionManager: ObservableObject {
                         switch pid {
                         case .fuelStatus:
                             self.fuelStatus = decode.codeResult!
+                        case .status:
+                            self.MILStatus = decode.statusResult!
                         default:
                             guard let measurement = decode.measurementResult else { continue }
 
