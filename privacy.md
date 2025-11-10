@@ -20,9 +20,9 @@ For the purposes of this Privacy Policy:
     
 *   **Affiliate** means an entity that controls, is controlled by, or is under common control with a party, where "control" means ownership of 50% or more of the shares, equity interest or other securities entitled to vote for election of directors or other managing authority.
     
-*   **Application** refers to Mahjong Memory Concentration, the software program provided by the Company.
+*   **Application** refers to Rheosoft OBD2, the software program provided by the Company.
     
-*   **Company** (referred to as either "the Company", "We", "Us" or "Our" in this Agreement) refers to Mahjong Memory Concentration.
+*   **Company** (referred to as either "the Company", "We", "Us" or "Our" in this Agreement) refers to the publisher of Rheosoft OBD2.
     
 *   **Country** refers to: California, United States
     
