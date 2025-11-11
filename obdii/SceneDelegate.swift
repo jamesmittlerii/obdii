@@ -32,7 +32,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         let window = UIWindow(windowScene: windowScene)
 
-#if RELEASE
+#if !DEBUG
         if UIDevice.current.userInterfaceIdiom == .pad || isRunningOniPadHardware() {
             window.rootViewController = UnsupportedDeviceViewController()
             self.window = window
