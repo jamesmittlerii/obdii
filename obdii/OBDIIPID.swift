@@ -37,6 +37,70 @@ struct ValueRange: Hashable, Codable {
         guard max != min else { return 0.0 }
         return (value - min) / (max - min)
     }
+
+    /// Convert a metric range to the requested MeasurementUnit for a given unit label.
+    /// Only the following conversions are applied:
+    /// - Temperature: "°C" <-> "°F"
+    /// - Speed: "km/h" <-> "mph"
+    /// - Pressure: "kPa" <-> "psi"
+    /// - Length: "km" <-> "mi"
+    /// All others are returned unchanged.
+    func converted(from unitLabel: String, to measurementUnit: MeasurementUnit) -> ValueRange {
+        guard let conversion = UnitConversion.fromMetricUnitLabel(unitLabel, to: measurementUnit) else {
+            return self
+        }
+        let newMin = conversion.convert(self.min)
+        let newMax = conversion.convert(self.max)
+        return ValueRange(min: newMin, max: newMax)
+    }
+}
+
+// MARK: - UnitConversion helper
+
+/// Encapsulates a label mapping and a numeric conversion closure for supported units.
+/// We treat stored OBDPID units/ranges as METRIC canonical and convert for presentation.
+private struct UnitConversion {
+    let displayLabel: String
+    let convert: (Double) -> Double
+
+    /// Produce a conversion based on a stored metric label and the requested MeasurementUnit.
+    /// Returns nil if no conversion is needed/supported.
+    static func fromMetricUnitLabel(_ label: String, to unit: MeasurementUnit) -> UnitConversion? {
+        switch label {
+        case "°C":
+            if unit == .imperial {
+                return UnitConversion(displayLabel: "°F") { c in (c * 9.0 / 5.0) + 32.0 }
+            } else {
+                return UnitConversion(displayLabel: "°C") { $0 }
+            }
+        case "km/h":
+            if unit == .imperial {
+                return UnitConversion(displayLabel: "mph") { kmh in kmh * 0.621371 }
+            } else {
+                return UnitConversion(displayLabel: "km/h") { $0 }
+            }
+        case "kPa":
+            if unit == .imperial {
+                return UnitConversion(displayLabel: "psi") { kpa in kpa * 0.145038 }
+            } else {
+                return UnitConversion(displayLabel: "kPa") { $0 }
+            }
+        case "km":
+            if unit == .imperial {
+                return UnitConversion(displayLabel: "mi") { km in km * 0.621371 }
+            } else {
+                return UnitConversion(displayLabel: "km") { $0 }
+            }
+
+        // Units we do not convert here (leave as-is)
+        case "RPM", "%", "V", "g/s", "λ", "NA", "Pa", "mA", "° BTDC", "L/h":
+            return UnitConversion(displayLabel: label) { $0 }
+
+        default:
+            // Unknown label → no conversion
+            return nil
+        }
+    }
 }
 
 // MARK: - OBDPID
@@ -89,12 +153,47 @@ struct OBDPID: Identifiable, Hashable, Codable {
         self.kind = kind
     }
 
-    // MARK: - Derived Behavior
+    // MARK: - Unit-aware presentation helpers (based on MeasurementUnit)
 
-    /// Returns a display string for UI, e.g. "600 – 7000 RPM"
-    var displayRange: String {
-        guard let range = typicalRange else { return "" }
-        let unitLabel = units ?? "unknown"
+    /// Unit label adjusted for the requested measurement system.
+    func unitLabel(for measurementUnit: MeasurementUnit) -> String {
+        let base = units ?? ""
+        guard let conversion = UnitConversion.fromMetricUnitLabel(base, to: measurementUnit) else {
+            return base
+        }
+        return conversion.displayLabel
+    }
+
+    /// Convert any stored range (metric canonical) to the requested system using the PID's units label.
+    private func converted(range: ValueRange?, for measurementUnit: MeasurementUnit) -> ValueRange? {
+        guard let range, let base = units else { return range }
+        return range.converted(from: base, to: measurementUnit)
+    }
+
+    /// Typical range converted to the requested measurement system.
+    func typicalRange(for measurementUnit: MeasurementUnit) -> ValueRange? {
+        converted(range: typicalRange, for: measurementUnit)
+    }
+
+    /// Warning range converted to the requested measurement system.
+    func warningRange(for measurementUnit: MeasurementUnit) -> ValueRange? {
+        converted(range: warningRange, for: measurementUnit)
+    }
+
+    /// Danger range converted to the requested measurement system.
+    func dangerRange(for measurementUnit: MeasurementUnit) -> ValueRange? {
+        converted(range: dangerRange, for: measurementUnit)
+    }
+
+    /// Returns a display string for UI, e.g. "600 – 7000 RPM", converted for the requested unit.
+    func displayRange(for measurementUnit: MeasurementUnit) -> String {
+        guard let baseUnits = units,
+              let metricTypical = typicalRange
+        else { return "" }
+
+        // Convert the typical range and label
+        let convertedTypical = metricTypical.converted(from: baseUnits, to: measurementUnit)
+        let unitLabel = unitLabel(for: measurementUnit)
 
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
@@ -102,19 +201,16 @@ struct OBDPID: Identifiable, Hashable, Codable {
         formatter.minimumFractionDigits = digits
         formatter.maximumFractionDigits = digits
 
-        let minStr = formatter.string(from: NSNumber(value: range.min)) ?? String(format: "%.\(digits)f", range.min)
-        let maxStr = formatter.string(from: NSNumber(value: range.max)) ?? String(format: "%.\(digits)f", range.max)
+        let minStr = formatter.string(from: NSNumber(value: convertedTypical.min)) ?? String(format: "%.\(digits)f", convertedTypical.min)
+        let maxStr = formatter.string(from: NSNumber(value: convertedTypical.max)) ?? String(format: "%.\(digits)f", convertedTypical.max)
 
         return "\(minStr) – \(maxStr) \(unitLabel)"
     }
 
-    /// Formats a single value using the same units-aware fraction digit policy as displayRange.
-    /// - Parameters:
-    ///   - value: The numeric value to format.
-    ///   - includeUnits: Whether to append the units suffix.
-    /// - Returns: A formatted string like "725 RPM" or "13.80 V".
-    func formattedValue(_ value: Double, includeUnits: Bool = true) -> String {
-        let unitLabel = units ?? ""
+    /// Formats a single value using the same units-aware fraction digit policy as displayRange,
+    /// honoring the requested measurement system's unit label.
+    func formattedValue(_ value: Double, unit measurementUnit: MeasurementUnit, includeUnits: Bool = true) -> String {
+        let unitLabel = unitLabel(for: measurementUnit)
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         let digits = preferredFractionDigits(forUnits: unitLabel)
@@ -129,17 +225,116 @@ struct OBDPID: Identifiable, Hashable, Codable {
         }
     }
 
+    // MARK: - MeasurementResult-aware presentation helpers (use actual Unit)
+
+    /// Map Foundation.Unit to a concise display label.
+    func unitLabel(for foundationUnit: Unit) -> String {
+        switch foundationUnit {
+        case is UnitTemperature:
+            if foundationUnit == UnitTemperature.celsius { return "°C" }
+            if foundationUnit == UnitTemperature.fahrenheit { return "°F" }
+            return "°"
+        case is UnitSpeed:
+            if foundationUnit == UnitSpeed.kilometersPerHour { return "km/h" }
+            if foundationUnit == UnitSpeed.milesPerHour { return "mph" }
+            return ""
+        case is UnitPressure:
+            if foundationUnit == UnitPressure.kilopascals { return "kPa" }
+            if foundationUnit == UnitPressure.poundsForcePerSquareInch { return "psi" }
+            if foundationUnit == UnitPressure.hectopascals { return "hPa" }
+            if foundationUnit == UnitPressure.bars { return "bar" }
+            return ""
+        case is UnitLength:
+            if foundationUnit == UnitLength.kilometers { return "km" }
+            if foundationUnit == UnitLength.miles { return "mi" }
+            return ""
+        case is UnitElectricPotentialDifference:
+            return "V"
+        case is UnitElectricCurrent:
+            if foundationUnit == UnitElectricCurrent.milliamperes { return "mA" }
+            if foundationUnit == UnitElectricCurrent.amperes { return "A" }
+            return "A"
+        case is UnitAngle:
+            return "° BTDC"
+        case is UnitDuration:
+            // Not typically used for gauge values; leave blank
+            return ""
+        case is UnitFrequency:
+            return "Hz"
+        default:
+            // Handle custom Units you defined in decoders.swift
+            let symbol = foundationUnit.symbol
+            switch symbol {
+            case "%": return "%"
+            case "g/s": return "g/s"
+            case "rpm", "RPM": return "RPM"
+            case "Pa": return "Pa"
+            case "L/h": return "L/h"
+            case "λ": return "λ"
+            default: return symbol // fallback to whatever Unit.symbol was provided
+            }
+        }
+    }
+
+    /// Formats a MeasurementResult using its own Unit, not the app's MeasurementUnit.
+    func formatted(measurement: MeasurementResult, includeUnits: Bool = true) -> String {
+        let label = unitLabel(for: measurement.unit)
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        let digits = preferredFractionDigits(forUnits: label)
+        formatter.minimumFractionDigits = digits
+        formatter.maximumFractionDigits = digits
+
+        let numberString = formatter.string(from: NSNumber(value: measurement.value)) ?? String(format: "%.\(digits)f", measurement.value)
+        if includeUnits, !label.isEmpty {
+            return "\(numberString) \(label)"
+        } else {
+            return numberString
+        }
+    }
+
+    // Backward-compatible versions that default to the app's configured units
+
+    /// Returns a display string for UI, e.g. "600 – 7000 RPM"
+    var displayRange: String {
+        displayRange(for: ConfigData.shared.units)
+    }
+
+    /// Formats a single value using the app's configured units.
+    func formattedValue(_ value: Double, includeUnits: Bool = true) -> String {
+        formattedValue(value, unit: ConfigData.shared.units, includeUnits: includeUnits)
+    }
+
+    /// Unit-aware color evaluation: uses converted ranges for the provided measurement system.
+    func color(for value: Double, unit measurementUnit: MeasurementUnit) -> Color {
+        if let danger = dangerRange(for: measurementUnit), danger.contains(value) {
+            return .red
+        }
+        if let warn = warningRange(for: measurementUnit), warn.contains(value) {
+            return .yellow
+        }
+        if let typical = typicalRange(for: measurementUnit), typical.contains(value) {
+            return .green
+        }
+        return .gray
+    }
+
+    /// Backward-compatible color evaluation using the app's configured units.
+    func color(for value: Double) -> Color {
+        color(for: value, unit: ConfigData.shared.units)
+    }
+
     /// Pick conventional fraction digits for the given units.
     /// Adjust this mapping as needed for your domain.
     private func preferredFractionDigits(forUnits units: String) -> Int {
         switch units {
         case "RPM":
             return 0
-        case "°C":
+        case "°C", "°F":
             return 0
         case "%":
             return 0
-        case "kPa":
+        case "kPa", "psi":
             return 0
         case "V":
             return 2
@@ -147,25 +342,15 @@ struct OBDPID: Identifiable, Hashable, Codable {
             return 2
         case "λ":
             return 2
+        case "km/h", "mph":
+            return 0
+        case "km", "mi":
+            return 1
+        case "L/h":
+            return 1
         default:
             return 0
         }
-    }
-
-    /// Returns a color representing the current value’s state
-    func color(for value: Double) -> Color {
-        
-        guard typicalRange != nil else { return .gray }
-        if let danger = dangerRange, danger.contains(value) {
-            return .red
-        }
-        if let warn = warningRange, warn.contains(value) {
-            return .yellow
-        }
-        if typicalRange!.contains(value) {
-            return .green
-        }
-        return .gray
     }
 }
 

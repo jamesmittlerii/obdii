@@ -134,14 +134,14 @@ class CarPlayGaugesController {
             return [section]
         }
 
-        func currentValue(for pid: OBDPID) -> Double? {
-            return connectionManager.stats(for: pid.pid)?.latest.value
+        func currentMeasurement(for pid: OBDPID) -> MeasurementResult? {
+            return connectionManager.stats(for: pid.pid)?.latest
         }
 
         let rowElements: [CPListImageRowItemRowElement] = sensors.map { pid in
-            let value = currentValue(for: pid)
-            let image = drawGaugeImage(for: pid, value: value)
-            let subtitle = value.map { pid.formattedValue($0, includeUnits: true) } ?? "— \(pid.units!)"
+            let measurement = currentMeasurement(for: pid)
+            let image = drawGaugeImage(for: pid, value: measurement?.value)
+            let subtitle = measurement.map { pid.formatted(measurement: $0, includeUnits: true) } ?? "— \(pid.units!)"
             return CPListImageRowItemRowElement(image: image, title: pid.label, subtitle: subtitle)
         }
 
@@ -167,7 +167,7 @@ class CarPlayGaugesController {
 
         // Current
         if let s = stats {
-            let currentStr = pid.formattedValue(s.latest.value, includeUnits: true)
+            let currentStr = pid.formatted(measurement: s.latest, includeUnits: true)
             items.append(CPInformationItem(title: "Current", detail: currentStr))
         } else {
             items.append(CPInformationItem(title: "Current", detail: "— \(pid.units!)"))
@@ -175,8 +175,8 @@ class CarPlayGaugesController {
 
         // Min/Max/Samples when stats are available
         if let s = stats {
-            let minStr = pid.formattedValue(s.min, includeUnits: true)
-            let maxStr = pid.formattedValue(s.max, includeUnits: true)
+            let minStr = pid.formatted(measurement: MeasurementResult(value: s.min, unit: s.latest.unit), includeUnits: true)
+            let maxStr = pid.formatted(measurement: MeasurementResult(value: s.max, unit: s.latest.unit), includeUnits: true)
             items.append(CPInformationItem(title: "Min", detail: minStr))
             items.append(CPInformationItem(title: "Max", detail: maxStr))
             items.append(CPInformationItem(title: "Samples", detail: "\(s.sampleCount)"))
