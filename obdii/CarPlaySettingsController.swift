@@ -30,6 +30,15 @@ class CarPlaySettingsController {
                 self?.refreshSection()
             }
             .store(in: &cancellables)
+
+        // Also observe units changes so the list reflects the new value immediately
+        ConfigData.shared.$unitsPublished
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.refreshSection()
+            }
+            .store(in: &cancellables)
     }
     
     private func makeItem(_ text: String, detailText: String) -> CPListItem {
@@ -41,8 +50,9 @@ class CarPlaySettingsController {
     private func makeUnitsItem() -> CPListItem {
         let item = CPListItem(text: "Units", detailText: ConfigData.shared.units.rawValue)
         item.handler = { [weak self] _, completion in
-            // Toggle units
-            ConfigData.shared.units = ConfigData.shared.units.next
+            // Toggle units using the setter so unitsPublished emits
+            let next = ConfigData.shared.units.next
+            ConfigData.shared.setUnits(next)
 
             // Update the UI: rebuild the section and update the template
             self?.refreshSection()

@@ -124,6 +124,25 @@ class OBDConnectionManager: ObservableObject {
                     self.restartContinuousUpdates(with: enabledSet)
                 }
             }
+
+        // NEW: Observe units changes and restart stream in the new unit, resetting stats to avoid mixed units
+        ConfigData.shared.$unitsPublished
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                // Compute current enabled set (after any support filtering will happen in startContinuousOBDUpdates)
+                let enabledSet = Set(PIDStore.shared.pids.filter { $0.enabled }.map { $0.pid })
+                if self.connectionState == .connected {
+                    self.logger.info("Units changed to \(ConfigData.shared.units.rawValue); restarting continuous updates and resetting stats.")
+                    self.resetAllStats()
+                    self.restartContinuousUpdates(with: enabledSet)
+                } else {
+                    // If not connected, just clear stats so next connection starts fresh
+                    self.resetAllStats()
+                }
+            }
+            .store(in: &cancellables)
     }
 
     func updateConnectionDetails() {
@@ -283,13 +302,6 @@ class OBDConnectionManager: ObservableObject {
             }
         }
 
-        // Re-establish mirror subscription in general cancellables if missing
-        // (Do not clear general cancellables here.)
-        // Ensure we still mirror connectedPeripheral name:
-        if !cancellables.contains(where: { _ in false }) {
-            // no-op placeholder; the mirror is set in init and persists
-        }
-
         // Replace only the stream subscription
         streamCancellables.removeAll()
 
@@ -346,9 +358,15 @@ class OBDConnectionManager: ObservableObject {
     private func restartContinuousUpdates(with enabledPIDs: Set<OBDCommand>) {
         // Skip if no change vs current stream
         if enabledPIDs == lastStreamingPIDs {
+            // Even if the set is the same, we still want to rebuild the stream if units changed,
+            // but this function is only called when we know we need to (e.g., units change handler).
+            // So force rebuild by clearing lastStreamingPIDs here if needed by caller.
             logger.info("Enabled PIDs unchanged; not restarting continuous updates.")
-            return
+            // To force a rebuild, call startContinuousOBDUpdates(with:) directly after clearing lastStreamingPIDs.
         }
+        // Force a rebuild by clearing and then starting fresh
+        streamCancellables.removeAll()
+        lastStreamingPIDs = []
         startContinuousOBDUpdates(with: enabledPIDs)
     }
 }
