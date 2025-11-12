@@ -177,7 +177,7 @@ struct OBDPIDLibrary {
         OBDPID(
             enabled: true,
             label: "FuelStat",
-            name: "Fuel System Status",
+            name: "Fuel Control Status",
             pid: .mode1(.fuelStatus),
             //formula: "A – 40",
             units: "NA",

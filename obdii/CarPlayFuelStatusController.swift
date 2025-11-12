@@ -50,7 +50,7 @@ struct FuelSystemStatus {
 @MainActor
 class CarPlayFuelStatusController {
     private weak var interfaceController: CPInterfaceController?
-    private var currentTemplate: CPListTemplate?
+    private var currentTemplate: CPInformationTemplate?
     private let connectionManager: OBDConnectionManager
     private var cancellables = Set<AnyCancellable>()
     private var previousFuelStatus: [StatusCodeMetadata?]?
@@ -68,7 +68,7 @@ class CarPlayFuelStatusController {
         OBDConnectionManager.shared.$fuelStatus
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.refreshSection()
+                self?.refreshTemplate()
             }
             .store(in: &cancellables)
     }
@@ -78,6 +78,30 @@ class CarPlayFuelStatusController {
         item.handler = { _, completion in completion() }
         return item
     }
+    
+    
+    private func buildInformationItems(from status: [StatusCodeMetadata?]) -> [CPInformationItem] {
+            var items: [CPInformationItem] = []
+            
+            if status.count >= 1, let s1 = status[0] {
+                let item = CPInformationItem(
+                    title: "Bank 1",
+                    detail: s1.description
+                )
+                items.append(item)
+            }
+            if status.count >= 2, let s2 = status[1] {
+                let item = CPInformationItem(
+                    title: "Bank 2",
+                    detail: s2.description
+                )
+                items.append(item)
+            }
+            if items.isEmpty {
+                items.append(CPInformationItem(title: "No Fuel System Status Codes", detail: ""))
+            }
+            return items
+        }
     
     private func buildSections() -> [CPListSection] {
         //let status = FuelSystemStatus(from: bytes)
@@ -103,7 +127,17 @@ class CarPlayFuelStatusController {
         return [section]
     }
 
-    private func refreshSection() {
+    func makeRootTemplate() -> CPInformationTemplate {
+          let current = OBDConnectionManager.shared.fuelStatus
+          let items = buildInformationItems(from: current)
+          let template = CPInformationTemplate(title: "Fuel Control Status", layout: .leading, items: items, actions: [])
+          template.tabTitle = "FC"
+          template.tabImage = symbolImage(named: "wrench.and.screwdriver")
+          currentTemplate = template
+          return template
+      }
+    
+    private func refreshTemplate() {
         guard let template = currentTemplate else { return }
         
         let current = OBDConnectionManager.shared.fuelStatus
@@ -114,24 +148,13 @@ class CarPlayFuelStatusController {
         }
         
         // Update UI and remember last shown state
-        let sections = buildSections()
+        let items = buildInformationItems(from: current)
         previousFuelStatus = current
-        template.updateSections(sections)
+        template.items = items
     }
-
-    /// Creates the root template for the Settings tab.
-    func makeRootTemplate() -> CPListTemplate {
-        let sections = buildSections()
-        let template = CPListTemplate(title: "FuelStatus", sections: sections)
-        template.tabTitle = "FI"
-        template.tabImage = symbolImage(named: "wrench.and.screwdriver")
-        self.currentTemplate = template
-        
-        // Initialize previous snapshot to match what we just rendered
-        previousFuelStatus = OBDConnectionManager.shared.fuelStatus
-        
-        return template
-    }
+    
+    
+    
     
     
 
