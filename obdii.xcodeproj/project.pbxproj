@@ -37,6 +37,7 @@
 		D4F91FCB2EC53A5F00443347 /* GaugeDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4F91FCA2EC53A5F00443347 /* GaugeDetailView.swift */; };
 		D4F91FCD2EC53B2000443347 /* DiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4F91FCC2EC53B2000443347 /* DiagnosticsView.swift */; };
 		D4F91FCF2EC53B2300443347 /* DTCDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4F91FCE2EC53B2300443347 /* DTCDetailView.swift */; };
+		D4FE92BD2EC53E8000C061D7 /* FuelStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4FE92BC2EC53E8000C061D7 /* FuelStatusView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -93,6 +94,7 @@
 		D4F91FCA2EC53A5F00443347 /* GaugeDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GaugeDetailView.swift; sourceTree = "<group>"; };
 		D4F91FCC2EC53B2000443347 /* DiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsView.swift; sourceTree = "<group>"; };
 		D4F91FCE2EC53B2300443347 /* DTCDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DTCDetailView.swift; sourceTree = "<group>"; };
+		D4FE92BC2EC53E8000C061D7 /* FuelStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FuelStatusView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -174,6 +176,7 @@
 				D4F91FCA2EC53A5F00443347 /* GaugeDetailView.swift */,
 				D4F91FCC2EC53B2000443347 /* DiagnosticsView.swift */,
 				D4F91FCE2EC53B2300443347 /* DTCDetailView.swift */,
+				D4FE92BC2EC53E8000C061D7 /* FuelStatusView.swift */,
 			);
 			path = obdii;
 			sourceTree = "<group>";
@@ -348,6 +351,7 @@
 				D4C95C2C2EB904A300364CB6 /* OBDII.swift in Sources */,
 				D4D0451E2EBAA13B00F80BCF /* CarPlayGaugesController.swift in Sources */,
 				D4F91FCD2EC53B2000443347 /* DiagnosticsView.swift in Sources */,
+				D4FE92BD2EC53E8000C061D7 /* FuelStatusView.swift in Sources */,
 				D43E332A2EB9568F00752784 /* ConfigData.swift in Sources */,
 				D4D7C4952EBF9F9300393ADF /* CarPlayFuelStatusController.swift in Sources */,
 				CBAD9E9724A3E3DD00989CA4 /* AppDelegate.swift in Sources */,

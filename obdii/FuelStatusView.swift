@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import SwiftOBD2
 
 @MainActor
 final class FuelStatusViewModel: ObservableObject {
@@ -7,8 +8,9 @@ final class FuelStatusViewModel: ObservableObject {
     private var cancellable: AnyCancellable?
     private var lastEmitted: [StatusCodeMetadata?] = []
 
-    init(connectionManager: OBDConnectionManager = .shared) {
-        cancellable = connectionManager.$fuelStatus
+    init(connectionManager: OBDConnectionManager? = nil) {
+        let manager = connectionManager ?? OBDConnectionManager.shared
+        cancellable = manager.$fuelStatus
             .receive(on: RunLoop.main)
             .sink { [weak self] newValue in
                 guard let self else { return }
