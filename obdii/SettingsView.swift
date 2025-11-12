@@ -35,6 +35,28 @@ struct SettingsView: View {
         #endif
     }
 
+    // Binding that maps MeasurementUnit <-> Bool for a Toggle:
+    // true = Metric, false = Imperial
+    private var metricUnitsBinding: Binding<Bool> {
+        Binding<Bool>(
+            get: { ConfigData.shared.unitsPublished == .metric },
+            set: { isMetric in
+                let newUnit: MeasurementUnit = isMetric ? .metric : .imperial
+                ConfigData.shared.setUnits(newUnit)
+            }
+        )
+    }
+
+    // Binding that maps directly MeasurementUnit <-> Picker
+    private var unitsBinding: Binding<MeasurementUnit> {
+        Binding<MeasurementUnit>(
+            get: { ConfigData.shared.unitsPublished },
+            set: { newUnit in
+                ConfigData.shared.setUnits(newUnit)
+            }
+        )
+    }
+
     var body: some View {
         NavigationView {
             Form {
@@ -42,6 +64,15 @@ struct SettingsView: View {
                     NavigationLink("Gauges") {
                         PIDToggleListView()
                     }
+                }
+
+                // Single Units control (segmented)
+                Section(header: Text("Units")) {
+                    Picker("Units", selection: unitsBinding) {
+                        Text("Metric").tag(MeasurementUnit.metric)
+                        Text("Imperial").tag(MeasurementUnit.imperial)
+                    }
+                    .pickerStyle(.segmented)
                 }
 
                 Section(header: Text("Connection")) {
