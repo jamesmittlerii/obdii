@@ -5,34 +5,31 @@ struct RootTabView: View {
         TabView {
             SettingsView()
                 .tabItem {
-                    Image(systemName: "gear")
-                    Text("Settings")
+                    Label("Settings", systemImage: "gear")
                 }
 
             GaugesView()
                 .tabItem {
-                    Image(systemName: "gauge")
-                    Text("Gauges")
+                    Label("Gauges", systemImage: "gauge")
                 }
 
             FuelStatusView()
                 .tabItem {
-                    Image(systemName: "fuelpump.fill")
-                    Text("Fuel")
+                    Label("Fuel", systemImage: "fuelpump.fill")
                 }
 
             MILStatusView()
                 .tabItem {
-                    Image(systemName: "engine.combustion.fill")
-                    Text("MIL")
+                    Label("MIL", systemImage: "engine.combustion.fill")
                 }
 
             DiagnosticsView()
                 .tabItem {
-                    Image(systemName: "wrench.and.screwdriver")
-                    Text("DTCs")
+                    Label("DTCs", systemImage: "wrench.and.screwdriver")
                 }
         }
+        // Force the standard tab bar style on all devices to ensure icons are visible.
+        .tabViewStyle(.automatic)
     }
 }
 

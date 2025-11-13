@@ -28,7 +28,7 @@ struct GaugesView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Gauges")
+            // .navigationTitle("Gauges")
         }
     }
 }

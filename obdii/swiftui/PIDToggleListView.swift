@@ -43,7 +43,7 @@ struct PIDToggleListView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle("Gauges")
+        //.navigationTitle("Gauges")
     }
 }
 
