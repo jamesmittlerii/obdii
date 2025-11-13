@@ -136,6 +136,8 @@ class OBDConnectionManager: ObservableObject {
                 if self.connectionState == .connected {
                     self.logger.info("Units changed to \(ConfigData.shared.units.rawValue); restarting continuous updates and resetting stats.")
                     self.resetAllStats()
+                    // clear this so we reset the units
+                    lastStreamingPIDs = []
                     self.restartContinuousUpdates(with: enabledSet)
                 } else {
                     // If not connected, just clear stats so next connection starts fresh

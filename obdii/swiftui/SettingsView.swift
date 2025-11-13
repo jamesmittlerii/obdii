@@ -13,6 +13,8 @@ import UIKit
 
 struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
+    // Observe ConfigData so SwiftUI refreshes when unitsPublished changes
+    @StateObject private var config = ConfigData.shared
 
     // Share sheet state (iOS only)
     #if canImport(UIKit)
@@ -33,18 +35,6 @@ struct SettingsView: View {
             return false
         }
         #endif
-    }
-
-    // Binding that maps MeasurementUnit <-> Bool for a Toggle:
-    // true = Metric, false = Imperial
-    private var metricUnitsBinding: Binding<Bool> {
-        Binding<Bool>(
-            get: { ConfigData.shared.unitsPublished == .metric },
-            set: { isMetric in
-                let newUnit: MeasurementUnit = isMetric ? .metric : .imperial
-                ConfigData.shared.setUnits(newUnit)
-            }
-        )
     }
 
     // Binding that maps directly MeasurementUnit <-> Picker
@@ -68,7 +58,7 @@ struct SettingsView: View {
 
                 // Single Units control (segmented)
                 Section(header: Text("Units")) {
-                    Picker("Units", selection: unitsBinding) {
+                    Picker("Units", selection: $config.unitsPublished) {
                         Text("Metric").tag(MeasurementUnit.metric)
                         Text("Imperial").tag(MeasurementUnit.imperial)
                     }
@@ -217,7 +207,7 @@ struct SettingsView: View {
         let interim = String(replaced)
             .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
             .replacingOccurrences(of: "-{2,}", with: "-", options: .regularExpression)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        .trimmingCharacters(in: .whitespacesAndNewlines)
         // Avoid empty names
         return interim.isEmpty ? "App" : interim
     }

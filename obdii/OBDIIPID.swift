@@ -91,9 +91,21 @@ private struct UnitConversion {
             } else {
                 return UnitConversion(displayLabel: "km") { $0 }
             }
+        case "g/s":
+            if unit == .imperial {
+                return UnitConversion(displayLabel: "lb/min") { gs in gs * 0.132277}
+            } else {
+                return UnitConversion(displayLabel: "g/s") { $0 }
+            }
+        case "L/h":
+            if unit == .imperial {
+                return UnitConversion(displayLabel: "gal/h") { l in l * 0.264172}
+            } else {
+                return UnitConversion(displayLabel: "L/h") { $0 }
+            }
 
         // Units we do not convert here (leave as-is)
-        case "RPM", "%", "V", "g/s", "λ", "NA", "Pa", "mA", "° BTDC", "L/h":
+        case "RPM", "%", "V", "λ", "NA", "Pa", "mA", "° BTDC":
             return UnitConversion(displayLabel: label) { $0 }
 
         default:
