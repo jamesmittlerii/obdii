@@ -4,8 +4,8 @@ import SwiftOBD2
 import UIKit
 
 struct GaugesView: View {
-    @StateObject private var connectionManager = OBDConnectionManager.shared
-    @StateObject private var pidStore = PIDStore.shared
+    @ObservedObject var connectionManager: OBDConnectionManager
+    @ObservedObject var pidStore: PIDStore = PIDStore.shared
 
     // Adaptive grid: 2–4 columns depending on width
     private let columns = [
@@ -13,22 +13,19 @@ struct GaugesView: View {
     ]
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: 16) {
-                    ForEach(pidStore.enabledGauges, id: \.id) { pid in
-                        NavigationLink {
-                            GaugeDetailView(pid: pid, connectionManager: connectionManager)
-                        } label: {
-                            GaugeTile(pid: pid, manager: connectionManager)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("GaugeTile_\(pid.id.uuidString)")
+        ScrollView {
+            LazyVGrid(columns: columns, spacing: 16) {
+                ForEach(pidStore.enabledGauges, id: \.id) { pid in
+                    NavigationLink {
+                        GaugeDetailView(pid: pid, connectionManager: connectionManager)
+                    } label: {
+                        GaugeTile(pid: pid, manager: connectionManager)
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("GaugeTile_\(pid.id.uuidString)")
                 }
-                .padding()
             }
-            // .navigationTitle("Gauges")
+            .padding()
         }
     }
 }
@@ -52,7 +49,6 @@ private struct GaugeTile: View {
                 .font(.headline)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
-
         }
         .padding(12)
         .background(
@@ -71,5 +67,7 @@ private struct GaugeTile: View {
 }
 
 #Preview {
-    GaugesView()
+    NavigationStack {
+        GaugesView(connectionManager: .shared, pidStore: .shared)
+    }
 }

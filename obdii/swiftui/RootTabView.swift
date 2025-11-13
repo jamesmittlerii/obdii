@@ -8,10 +8,12 @@ struct RootTabView: View {
                     Label("Settings", systemImage: "gear")
                 }
 
-            GaugesView()
-                .tabItem {
-                    Label("Gauges", systemImage: "gauge")
-                }
+            NavigationStack {
+                GaugesContainerView(connectionManager: .shared)
+            }
+            .tabItem {
+                Label("Gauges", systemImage: "gauge")
+            }
 
             FuelStatusView()
                 .tabItem {

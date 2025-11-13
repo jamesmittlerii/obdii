@@ -105,7 +105,7 @@ private struct UnitConversion {
             }
 
         // Units we do not convert here (leave as-is)
-        case "RPM", "%", "V", "λ", "NA", "Pa", "mA", "° BTDC":
+        case "RPM", "%", "V", "λ", "NA", "Pa", "mA", "° BTDC", "s", "count":
             return UnitConversion(displayLabel: label) { $0 }
 
         default:
@@ -246,6 +246,8 @@ struct OBDPID: Identifiable, Hashable, Codable {
     /// Map Foundation.Unit to a concise display label.
     func unitLabel(for foundationUnit: Unit) -> String {
         switch foundationUnit {
+        case is UnitDuration:
+            return ""
         case is UnitTemperature:
             if foundationUnit == UnitTemperature.celsius { return "°C" }
             if foundationUnit == UnitTemperature.fahrenheit { return "°F" }
@@ -287,6 +289,8 @@ struct OBDPID: Identifiable, Hashable, Codable {
             case "Pa": return "Pa"
             case "L/h": return "L/h"
             case "λ": return "λ"
+            case "count": return "count"
+            case "s": return "s"
             default: return symbol // fallback to whatever Unit.symbol was provided
             }
         }
@@ -295,6 +299,16 @@ struct OBDPID: Identifiable, Hashable, Codable {
     /// Formats a MeasurementResult using its own Unit, not the app's MeasurementUnit.
     func formatted(measurement: MeasurementResult, includeUnits: Bool = true) -> String {
         let label = unitLabel(for: measurement.unit)
+        
+        // do a special case for time based values
+        if measurement.unit is UnitDuration {
+            let formatter = DateComponentsFormatter()
+            formatter.allowedUnits = [.hour, .minute, .second]
+            formatter.unitsStyle = .positional
+            formatter.zeroFormattingBehavior = [.pad]
+            return formatter.string(from: measurement.value) ?? "--:--:--"
+        }
+        
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         let digits = preferredFractionDigits(forUnits: label)
@@ -367,6 +381,8 @@ struct OBDPID: Identifiable, Hashable, Codable {
             return 1
         case "L/h":
             return 1
+        case "s", "count":
+            return 0
         default:
             return 0
         }
@@ -1081,16 +1097,40 @@ struct OBDPIDLibrary {
             label: "EVAP VP",
             name: "EVAP Vapor Pressure",
             pid: .mode1(.evapVaporPressure),
+            formula: "((A*256)+B)/4 (kPa)",
+            units: "kPa",
+            typicalRange: .init(min: -20, max: 20),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Reported in kPa via PID 0132"
+        ),
+        OBDPID(
+            enabled: false,
+            label: "EVAP VP Alt",
+            name: "EVAP Vapor Pressure (Alt/Pa)",
+            pid: .mode1(.evapVaporPressureAlt),
             formula: "((A*256)+B) - 32767",
             units: "Pa",
             typicalRange: .init(min: -2000, max: 2000),
             warningRange: nil,
             dangerRange: nil,
-            notes: "Reported in Pa on some ECUs; verify units"
-        )
-        
+            notes: "Alternate scaling (Pa) via PID 0154"
+        ),
+        OBDPID(
+            enabled: false,
+            label: "EVAP VP Abs",
+            name: "EVAP Vapor Pressure (Absolute)",
+            pid: .mode1(.evapVaporPressureAbs),
+            formula: "((A*256)+B)/200",
+            units: "kPa",
+            typicalRange: .init(min: 0, max: 100),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Absolute EVAP pressure via PID 0153"
+        ),
+
         // GM extended commands
-        ,
+        
 
         OBDPID(
             enabled: false,
@@ -1135,6 +1175,293 @@ struct OBDPIDLibrary {
             typicalRange: .init(min: -20, max: 98),
             warningRange: .init(min: 98, max: 108),
             dangerRange: .init(min: 108, max: 150),
+        ),
+
+        // MARK: - Newly added numeric Mode 1 PIDs (previously missing)
+
+        OBDPID(
+            enabled: false,
+            label: "Run Time",
+            name: "Engine Run Time",
+            pid: .mode1(.runTime),
+            formula: "((A*256)+B) s",
+            units: "s",
+            typicalRange: .init(min: 0, max: 65535),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Seconds since engine start"
+        ),
+        OBDPID(
+            enabled: false,
+            label: "Dist MIL",
+            name: "Distance with MIL On",
+            pid: .mode1(.distanceWMIL),
+            formula: "((A*256)+B) km",
+            units: "km",
+            typicalRange: .init(min: 0, max: 100000),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Distance travelled while MIL was on"
+        ),
+        OBDPID(
+            enabled: false,
+            label: "WR V S1",
+            name: "Wideband O2 Lambda Voltage Sensor 1",
+            pid: .mode1(.O2Sensor1WRVolatage),
+            formula: "((A*256)+B) * 8 / 65535",
+            units: "V",
+            typicalRange: .init(min: 0, max: 5),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Wideband controller voltage"
+        ),
+        OBDPID(
+            enabled: false,
+            label: "WR V S2",
+            name: "Wideband O2 Lambda Voltage Sensor 2",
+            pid: .mode1(.O2Sensor2WRVolatage),
+            formula: "((A*256)+B) * 8 / 65535",
+            units: "V",
+            typicalRange: .init(min: 0, max: 5),
+            warningRange: nil,
+            dangerRange: nil
+        ),
+        OBDPID(
+            enabled: false,
+            label: "WR V S3",
+            name: "Wideband O2 Lambda Voltage Sensor 3",
+            pid: .mode1(.O2Sensor3WRVolatage),
+            formula: "((A*256)+B) * 8 / 65535",
+            units: "V",
+            typicalRange: .init(min: 0, max: 5),
+            warningRange: nil,
+            dangerRange: nil
+        ),
+        OBDPID(
+            enabled: false,
+            label: "WR V S4",
+            name: "Wideband O2 Lambda Voltage Sensor 4",
+            pid: .mode1(.O2Sensor4WRVolatage),
+            formula: "((A*256)+B) * 8 / 65535",
+            units: "V",
+            typicalRange: .init(min: 0, max: 5),
+            warningRange: nil,
+            dangerRange: nil
+        ),
+        OBDPID(
+            enabled: false,
+            label: "WR V S5",
+            name: "Wideband O2 Lambda Voltage Sensor 5",
+            pid: .mode1(.O2Sensor5WRVolatage),
+            formula: "((A*256)+B) * 8 / 65535",
+            units: "V",
+            typicalRange: .init(min: 0, max: 5),
+            warningRange: nil,
+            dangerRange: nil
+        ),
+        OBDPID(
+            enabled: false,
+            label: "WR V S6",
+            name: "Wideband O2 Lambda Voltage Sensor 6",
+            pid: .mode1(.O2Sensor6WRVolatage),
+            formula: "((A*256)+B) * 8 / 65535",
+            units: "V",
+            typicalRange: .init(min: 0, max: 5),
+            warningRange: nil,
+            dangerRange: nil
+        ),
+        OBDPID(
+            enabled: false,
+            label: "WR V S7",
+            name: "Wideband O2 Lambda Voltage Sensor 7",
+            pid: .mode1(.O2Sensor7WRVolatage),
+            formula: "((A*256)+B) * 8 / 65535",
+            units: "V",
+            typicalRange: .init(min: 0, max: 5),
+            warningRange: nil,
+            dangerRange: nil
+        ),
+        OBDPID(
+            enabled: false,
+            label: "WR V S8",
+            name: "Wideband O2 Lambda Voltage Sensor 8",
+            pid: .mode1(.O2Sensor8WRVolatage),
+            formula: "((A*256)+B) * 8 / 65535",
+            units: "V",
+            typicalRange: .init(min: 0, max: 5),
+            warningRange: nil,
+            dangerRange: nil
+        ),
+        OBDPID(
+            enabled: false,
+            label: "Cmd EGR",
+            name: "Commanded EGR",
+            pid: .mode1(.commandedEGR),
+            formula: "A * 100 / 255",
+            units: "%",
+            typicalRange: .init(min: 0, max: 100),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "EGR duty command"
+        ),
+        OBDPID(
+            enabled: false,
+            label: "EGR Err",
+            name: "EGR Error",
+            pid: .mode1(.EGRError),
+            formula: "(A - 128) * 100 / 128",
+            units: "%",
+            typicalRange: .init(min: -100, max: 100),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Centered percent error"
+        ),
+        OBDPID(
+            enabled: false,
+            label: "Warm-ups",
+            name: "Warm-ups Since DTC Cleared",
+            pid: .mode1(.warmUpsSinceDTCCleared),
+            formula: "A",
+            units: "count",
+            typicalRange: .init(min: 0, max: 255),
+            warningRange: nil,
+            dangerRange: nil
+        ),
+        OBDPID(
+            enabled: false,
+            label: "Dist Since",
+            name: "Distance Since DTC Cleared",
+            pid: .mode1(.distanceSinceDTCCleared),
+            formula: "((A*256)+B) km",
+            units: "km",
+            typicalRange: .init(min: 0, max: 100000),
+            warningRange: nil,
+            dangerRange: nil
+        ),
+        OBDPID(
+            enabled: false,
+            label: "WR I S3",
+            name: "Wideband O2 Sensor Current Sensor 3",
+            pid: .mode1(.O2Sensor3WRCurrent),
+            formula: "(A-128)*(2/128)",
+            units: "mA",
+            typicalRange: .init(min: -10, max: 10),
+            warningRange: nil,
+            dangerRange: nil
+        ),
+        OBDPID(
+            enabled: false,
+            label: "WR I S4",
+            name: "Wideband O2 Sensor Current Sensor 4",
+            pid: .mode1(.O2Sensor4WRCurrent),
+            formula: "(A-128)*(2/128)",
+            units: "mA",
+            typicalRange: .init(min: -10, max: 10),
+            warningRange: nil,
+            dangerRange: nil
+        ),
+        OBDPID(
+            enabled: false,
+            label: "WR I S5",
+            name: "Wideband O2 Sensor Current Sensor 5",
+            pid: .mode1(.O2Sensor5WRCurrent),
+            formula: "(A-128)*(2/128)",
+            units: "mA",
+            typicalRange: .init(min: -10, max: 10),
+            warningRange: nil,
+            dangerRange: nil
+        ),
+        OBDPID(
+            enabled: false,
+            label: "WR I S6",
+            name: "Wideband O2 Sensor Current Sensor 6",
+            pid: .mode1(.O2Sensor6WRCurrent),
+            formula: "(A-128)*(2/128)",
+            units: "mA",
+            typicalRange: .init(min: -10, max: 10),
+            warningRange: nil,
+            dangerRange: nil
+        ),
+        OBDPID(
+            enabled: false,
+            label: "WR I S8",
+            name: "Wideband O2 Sensor Current Sensor 8",
+            pid: .mode1(.O2Sensor8WRCurrent),
+            formula: "(A-128)*(2/128)",
+            units: "mA",
+            typicalRange: .init(min: -10, max: 10),
+            warningRange: nil,
+            dangerRange: nil
+        ),
+        OBDPID(
+            enabled: false,
+            label: "MIL Time",
+            name: "Run Time with MIL On",
+            pid: .mode1(.runTimeMIL),
+            formula: "((A*256)+B) s",
+            units: "s",
+            typicalRange: .init(min: 0, max: 65535),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Seconds with MIL illuminated"
+        ),
+        OBDPID(
+            enabled: false,
+            label: "DTC Clear",
+            name: "Time Since DTC Cleared",
+            pid: .mode1(.timeSinceDTCCleared),
+            formula: "((A*256)+B) s",
+            units: "s",
+            typicalRange: .init(min: 0, max: 65535),
+            warningRange: nil,
+            dangerRange: nil
+        ),
+        OBDPID(
+            enabled: false,
+            label: "Max MAF",
+            name: "Maximum MAF Since Clear",
+            pid: .mode1(.maxMAF),
+            formula: "A * 10",
+            units: "g/s",
+            typicalRange: .init(min: 0, max: 655),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Max airflow since DTC clear"
+        ),
+        OBDPID(
+            enabled: false,
+            label: "Ethanol %",
+            name: "Ethanol Fuel Percentage",
+            pid: .mode1(.ethanoPercent),
+            formula: "A * 100/255",
+            units: "%",
+            typicalRange: .init(min: 0, max: 100),
+            warningRange: nil,
+            dangerRange: nil
+        ),
+        OBDPID(
+            enabled: false,
+            label: "Hybrid SOC",
+            name: "Hybrid Battery Remaining Life",
+            pid: .mode1(.hybridBatteryLife),
+            formula: "A * 100/255",
+            units: "%",
+            typicalRange: .init(min: 0, max: 100),
+            warningRange: .init(min: 0, max: 10),
+            dangerRange: .init(min: 0, max: 5),
+            notes: "State of charge estimate"
+        ),
+        OBDPID(
+            enabled: false,
+            label: "Inj Time",
+            name: "Fuel Injection Timing",
+            pid: .mode1(.fuelInjectionTiming),
+            formula: "((A*256)+B - 26880)/128",
+            units: "° BTDC",
+            typicalRange: .init(min: -50, max: 50),
+            warningRange: nil,
+            dangerRange: nil,
+            notes: "Degrees BTDC/ATDC"
         )
         
     ]
