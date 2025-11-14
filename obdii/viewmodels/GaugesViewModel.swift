@@ -1,4 +1,18 @@
-// GaugesViewModel.swift
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+View Model for showing the a collection of enabled/selected Gauges. Used by CarPlay and SwiftUI
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
+
 import Foundation
 import Combine
 import SwiftOBD2

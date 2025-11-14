@@ -1,8 +1,21 @@
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+Swift UI view for the FI/O2 sensor detail
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
+
 import SwiftUI
 import Combine
 import SwiftOBD2
-
-
 
 struct FuelStatusView: View {
     @StateObject private var viewModel = FuelStatusViewModel()

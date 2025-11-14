@@ -1,3 +1,18 @@
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+View Model for showing/setting various settings. Used by CarPlay and SwiftUI
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
+
 import Foundation
 import Combine
 import SwiftUI
@@ -5,7 +20,7 @@ import SwiftOBD2
 
 @MainActor
 class SettingsViewModel: ObservableObject {
-    // MARK: - Published Properties for the View
+    //  Published Properties for the View
     
     @Published var wifiHost: String
     @Published var wifiPort: Int
@@ -14,13 +29,13 @@ class SettingsViewModel: ObservableObject {
     @Published private(set) var connectionState: OBDConnectionManager.ConnectionState
     @Published var units: MeasurementUnit   // NEW: expose units to the View
 
-    // MARK: - Private Model References
+    //  Private Model References
     
     private let configData: ConfigData
     private let connectionManager: OBDConnectionManager
     private var cancellables = Set<AnyCancellable>()
 
-    // MARK: - UI Helpers
+    //  UI Helpers
     
     /// Formatter to ensure the port is entered as a number
     let numberFormatter: NumberFormatter = {
@@ -34,7 +49,7 @@ class SettingsViewModel: ObservableObject {
         connectionState == .connecting
     }
 
-    // MARK: - Initializers
+    //  Initializers
     
     // Designated initializer without default arguments (avoids nonisolated default evaluation)
     init(configData: ConfigData, connectionManager: OBDConnectionManager) {
@@ -126,7 +141,7 @@ class SettingsViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
-    // MARK: - User Actions
+    //  User Actions
     
     /// Handles the primary connect/disconnect button tap.
     func handleConnectionButtonTap() {

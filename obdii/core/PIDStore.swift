@@ -1,3 +1,18 @@
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+These are the pids we are publishing
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
+
 import Foundation
 import Combine
 
@@ -64,7 +79,7 @@ final class PIDStore: ObservableObject {
             .store(in: &cancellables)
     }
 
-    // MARK: - Public API
+    //  Public API
 
     func toggle(_ pid: OBDPID) {
         guard let idx = pids.firstIndex(where: { $0.id == pid.id }) else { return }
@@ -100,7 +115,7 @@ final class PIDStore: ObservableObject {
         // Persistence will be triggered by the @Published sink
     }
 
-    // MARK: - Persistence
+    //  Persistence
 
     private func persistEnabledFlags(_ pids: [OBDPID]) {
         // Key by the stable Mode1 command string

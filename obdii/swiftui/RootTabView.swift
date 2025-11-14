@@ -1,3 +1,18 @@
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+Swift UI view the root tabs - select any of the available main views
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
+
 import SwiftUI
 
 struct RootTabView: View {

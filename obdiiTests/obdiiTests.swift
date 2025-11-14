@@ -1,12 +1,20 @@
-//
-//  CarSampleTests.swift
-//  CarSampleTests
-//
-//  Created by Alexander v. Below on 24.06.20.
-//
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+unused test cases (FUTURE)
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
 
 import XCTest
-@testable import CarSample
+//@testable import CarSample
 
 class CarSampleTests: XCTestCase {
 

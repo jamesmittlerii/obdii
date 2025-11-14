@@ -1,3 +1,17 @@
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+Swift UI view for the MIL status
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
 import SwiftUI
 import Combine
 import SwiftOBD2

@@ -1,9 +1,17 @@
-//
-//  FuelStatusViewModel.swift
-//  obdii
-//
-//  Created by cisstudent on 11/14/25.
-//
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+View Model for showing the Fuel/O2 sensor statuses. Used by CarPlay and SwiftUI
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
 
 import Combine
 import SwiftOBD2

@@ -1,21 +1,36 @@
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+Our library of available PIDs
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
+
+
 import Foundation
 import SwiftOBD2
 import SwiftUI
 
-// MARK: - ValueRange
 
-/// Represents a numeric range for a PID value (for scaling, warnings, etc.)
+
+// Represents a numeric range for a PID value (for scaling, warnings, etc.)
 struct ValueRange: Hashable, Codable {
     let min: Double
     let max: Double
 
-    // MARK: - Initializer
     init(min: Double, max: Double) {
         self.min = min
         self.max = max
     }
 
-    // MARK: - Helpers
+    
 
     /// Checks if a value is within the range (inclusive)
     func contains(_ value: Double) -> Bool {
@@ -55,7 +70,7 @@ struct ValueRange: Hashable, Codable {
     }
 }
 
-// MARK: - UnitConversion helper
+//  UnitConversion helper
 
 /// Encapsulates a label mapping and a numeric conversion closure for supported units.
 /// We treat stored OBDPID units/ranges as METRIC canonical and convert for presentation.
@@ -115,7 +130,7 @@ private struct UnitConversion {
     }
 }
 
-// MARK: - OBDPID
+//  OBDPID
 
 /// Represents a single OBD-II Parameter ID (PID) definition.
 struct OBDPID: Identifiable, Hashable, Codable {
@@ -165,7 +180,7 @@ struct OBDPID: Identifiable, Hashable, Codable {
         self.kind = kind
     }
 
-    // MARK: - Unit-aware presentation helpers (based on MeasurementUnit)
+    //  Unit-aware presentation helpers (based on MeasurementUnit)
 
     /// Unit label adjusted for the requested measurement system.
     func unitLabel(for measurementUnit: MeasurementUnit) -> String {
@@ -250,7 +265,7 @@ struct OBDPID: Identifiable, Hashable, Codable {
         }
     }
 
-    // MARK: - MeasurementResult-aware presentation helpers (use actual Unit)
+    //  MeasurementResult-aware presentation helpers (use actual Unit)
 
     /// Map Foundation.Unit to a concise display label.
     func unitLabel(for foundationUnit: Unit) -> String {
@@ -398,7 +413,7 @@ struct OBDPID: Identifiable, Hashable, Codable {
     }
 }
 
-// MARK: - Library
+//  Library
 
 /// Groups a set of standard OBD-II PIDs.
 struct OBDPIDLibrary {
@@ -636,7 +651,7 @@ struct OBDPIDLibrary {
             notes: "Center gauge at 0°, bipolar −10° to +60°"
         ),
 
-        // MARK: - Added per earlier request
+        //  Added per earlier request
 
         OBDPID(
             enabled: false,
@@ -759,7 +774,7 @@ struct OBDPIDLibrary {
             notes: "Relative to manifold vacuum"
         ),
 
-        // MARK: - Newly added per latest request
+        //  Newly added per latest request
 
         OBDPID(
             enabled: false,
@@ -834,7 +849,7 @@ struct OBDPIDLibrary {
             notes: "Post-cat temp; linear thermometer"
         ),
 
-        // MARK: - Bank 2 additions (gauges)
+        //  Bank 2 additions (gauges)
 
         OBDPID(
             enabled: false,
@@ -885,7 +900,7 @@ struct OBDPIDLibrary {
             notes: "Downstream O₂ sensor; narrowband typical 0–1 V"
         ),
 
-        // MARK: - Newly added per user request (Bank 1 trims, O2, EVAP purge, WR currents, EVAP vapor pressure, O2 bitmap)
+        //  Newly added per user request (Bank 1 trims, O2, EVAP purge, WR currents, EVAP vapor pressure, O2 bitmap)
 
         OBDPID(
             enabled: false,
@@ -1033,7 +1048,7 @@ struct OBDPIDLibrary {
             kind: .status
         ),
 
-        // MARK: - Newly added status entries
+        //  Newly added status entries
 
         OBDPID(
             enabled: false,
@@ -1186,7 +1201,7 @@ struct OBDPIDLibrary {
             dangerRange: .init(min: 108, max: 150),
         ),
 
-        // MARK: - Newly added numeric Mode 1 PIDs (previously missing)
+        //  Newly added numeric Mode 1 PIDs (previously missing)
 
         OBDPID(
             enabled: false,

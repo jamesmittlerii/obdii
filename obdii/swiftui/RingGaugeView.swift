@@ -1,3 +1,19 @@
+
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+Swift UI view for drawing a single gauge
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
+
 import SwiftUI
 import SwiftOBD2
 
@@ -156,7 +172,7 @@ struct RingGaugeView: View {
         .accessibilityValue(displayText)
     }
 
-    // MARK: - Helpers
+    //  Helpers
 
     private func measurementUnit(from unit: Unit) -> MeasurementUnit {
         switch unit {
@@ -208,7 +224,7 @@ struct RingGaugeView: View {
     }
 }
 
-// MARK: - Shapes
+//  Shapes
 
 private struct ArcShape: InsettableShape {
     var start: Angle
@@ -256,7 +272,7 @@ private struct TickShape: Shape {
     }
 }
 
-// MARK: - Utilities
+//  Utilities
 
 private extension Double {
     var clamped01: Double { max(0.0, min(1.0, self)) }

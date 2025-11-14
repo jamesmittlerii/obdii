@@ -1,3 +1,18 @@
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+CarPlay template for Fuel/O2 sensor data
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
+
 import CarPlay
 import UIKit
 import SwiftOBD2
@@ -84,5 +99,5 @@ class CarPlayFuelStatusController {
         template.items = items
     }
 
-    // MARK: - Helpers
+    //  Helpers
 }

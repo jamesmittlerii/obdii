@@ -1,10 +1,17 @@
-//
-//  MILStatusViewModel.swift
-//  obdii
-//
-//  Created by cisstudent on 11/14/25.
-//
-
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+View Model for showing the Malfunction Indicator Light (CEL) status and detail. Used by CarPlay and SwiftUI
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
 import Foundation
 import SwiftOBD2
 import Combine

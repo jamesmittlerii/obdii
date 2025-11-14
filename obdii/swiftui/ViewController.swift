@@ -1,9 +1,17 @@
-//
-//  ViewController.swift
-//  CarSample
-//
-//  Created by Alexander v. Below on 24.06.20.
-//
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+Swift UI view for a one time popup - telling folks not to use the SwiftUI tabs while driving
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
 
 import UIKit
 import SwiftUI

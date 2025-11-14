@@ -1,11 +1,27 @@
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+Main class for managing our OBD2 comms through the SwiftOBD2 library
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
+
 import Foundation
 import SwiftOBD2
 import Combine
-import os.log
 import CoreBluetooth
 
 @MainActor
 class OBDConnectionManager: ObservableObject {
+    
+    // keep track of our connection state
     enum ConnectionState: Equatable {
         case disconnected
         case connecting
@@ -28,30 +44,40 @@ class OBDConnectionManager: ObservableObject {
         }
     }
 
+    // we want to ask OBD2 which pids are supported by the vehicle
     private let querySupportedPids = true
+    
+    // keep the list here
     private var supportedPids: [OBDCommand] = []
     
+    // a static we can use for convenience
     static let shared = OBDConnectionManager()
-    //private let logger = Logger(subsystem: "com.rheosoft.obdii", category: "OBDConnection")
-
+    
+    // our connection status
     @Published var connectionState: ConnectionState = .disconnected
+    
+    // current DTCs
     @Published var troubleCodes: [TroubleCodeMetadata]  = []
     
+    // the FI/O2 sensor status
+    
     @Published var fuelStatus: [StatusCodeMetadata?] = []
+    
+    // our MIL status
     @Published var MILStatus: Status?
 
     
-    // New: publish the connected peripheral name (Bluetooth), or nil for Wi‑Fi/Demo/none
+    // publish the connected peripheral name (Bluetooth), or nil for Wi‑Fi/Demo/none
     @Published var connectedPeripheralName: String?
 
+    // pid stats contains the data we've collected for a given PID
     struct PIDStats: Equatable {
-        private static let logger = Logger(subsystem: "com.rheosoft.obdii", category: "OBDConnection.PIDStats")
-
-        var pid: OBDCommand
-        var latest: MeasurementResult
-        var min: Double
-        var max: Double
-        var sampleCount: Int
+        
+        var pid: OBDCommand // the command
+        var latest: MeasurementResult // our result
+        var min: Double // smallest we've seen
+        var max: Double // biggest
+        var sampleCount: Int // number of samples we've seen
 
         init(pid: OBDCommand, measurement: MeasurementResult) {
             self.pid = pid
@@ -70,6 +96,7 @@ class OBDConnectionManager: ObservableObject {
         }
     }
 
+    // our collection of pids with stats
     @Published private(set) var pidStats: [OBDCommand: PIDStats] = [:]
 
     private var obdService: OBDService
@@ -156,7 +183,7 @@ class OBDConnectionManager: ObservableObject {
             .store(in: &cancellables)
     }
 
-    // MARK: - State mapping helpers
+    //  State mapping helpers
 
     private func clearForTerminalState() {
         streamCancellables.removeAll()

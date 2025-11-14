@@ -1,28 +1,48 @@
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+Swift UI view for showing a textual list of gauges
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
+
 import SwiftUI
 import SwiftOBD2
 
 struct GaugeListView: View {
     @ObservedObject var connectionManager: OBDConnectionManager
-    @ObservedObject private var pidStore = PIDStore.shared
+    @StateObject private var viewModel: GaugesViewModel
+
+    init(connectionManager: OBDConnectionManager) {
+        self.connectionManager = connectionManager
+        _viewModel = StateObject(wrappedValue: GaugesViewModel(connectionManager: connectionManager, pidStore: .shared))
+    }
 
     var body: some View {
         List {
             Section(header: Text("Gauges")) {
-                ForEach(pidStore.enabledGauges) { pid in
-                    NavigationLink(destination: GaugeDetailView(pid: pid, connectionManager: connectionManager)) {
+                ForEach(viewModel.tiles) { tile in
+                    NavigationLink(destination: GaugeDetailView(pid: tile.pid, connectionManager: connectionManager)) {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(pid.name)
+                                Text(tile.pid.name)
                                     .font(.headline)
-                                Text(pid.displayRange)
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
+                                Text(tile.pid.displayRange)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
                             }
                             Spacer()
-                            Text(currentValueText(for: pid))
+                            Text(currentValueText(for: tile))
                                 .font(.title3.monospacedDigit())
-                                .foregroundColor(currentValueColor(for: pid))
-                                .accessibilityLabel("\(pid.name) value")
+                                .foregroundColor(currentValueColor(for: tile))
+                                .accessibilityLabel("\(tile.pid.name) value")
                         }
                         .contentShape(Rectangle())
                     }
@@ -32,17 +52,17 @@ struct GaugeListView: View {
         .navigationTitle("Live Gauges")
     }
 
-    private func currentValueText(for pid: OBDPID) -> String {
-        if let stats = connectionManager.stats(for: pid.pid) {
-            return pid.formatted(measurement: stats.latest, includeUnits: true)
+    private func currentValueText(for tile: GaugesViewModel.Tile) -> String {
+        if let m = tile.measurement {
+            return tile.pid.formatted(measurement: m, includeUnits: true)
         } else {
-            return "— \(pid.displayUnits)"
+            return "— \(tile.pid.displayUnits)"
         }
     }
 
-    private func currentValueColor(for pid: OBDPID) -> Color {
-        if let stats = connectionManager.stats(for: pid.pid) {
-            return pid.color(for: stats.latest.value)
+    private func currentValueColor(for tile: GaugesViewModel.Tile) -> Color {
+        if let m = tile.measurement {
+            return tile.pid.color(for: m.value)
         } else {
             return .secondary
         }

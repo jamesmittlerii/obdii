@@ -1,9 +1,18 @@
-//
-//  Helpers.swift
-//  obdii
-//
-//  Created by cisstudent on 11/9/25.
-//
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+Assorted Helper functions and our Logging structure
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
+
 import OSLog
 import Foundation
 import SwiftOBD2

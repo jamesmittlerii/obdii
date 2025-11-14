@@ -1,3 +1,18 @@
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+CarPlay template for DTCs
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
+
 import CarPlay
 import UIKit
 import SwiftOBD2
@@ -111,5 +126,5 @@ class CarPlayDiagnosticsController {
         interfaceController?.pushTemplate(template, animated: false, completion: nil)
     }
 
-    // MARK: - Helpers
+    //  Helpers
 }

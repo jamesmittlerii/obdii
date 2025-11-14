@@ -1,9 +1,17 @@
-//
-//  SettingsView.swift
-//  CarSample
-//
-//  Created by cisstudent on 11/3/25.
-//
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+Swift UI view managing the settings. Default tab when starting the app.
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
 
 import SwiftUI
 import SwiftOBD2
@@ -183,7 +191,7 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Share Logs (UIKit)
+    //  Share Logs (UIKit)
 
     #if canImport(UIKit)
     private func sanitizedFilename(from raw: String) -> String {
@@ -217,7 +225,7 @@ struct SettingsView: View {
     }
     #endif
 
-    // MARK: - Common helper
+    //  Common helper
 
     private func writeToTemporaryFile(data: Data, suggestedName: String) throws -> URL {
         let tempDir = FileManager.default.temporaryDirectory
@@ -228,7 +236,7 @@ struct SettingsView: View {
 }
 
 #if canImport(UIKit)
-// MARK: - UIKit Share Sheet Wrapper
+//  UIKit Share Sheet Wrapper
 
 struct ShareSheet: UIViewControllerRepresentable {
     let activityItems: [Any]

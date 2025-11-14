@@ -1,3 +1,18 @@
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+CarPlay template for Gauges
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
+
 import CarPlay
 import Combine
 import SwiftOBD2
@@ -13,10 +28,8 @@ class CarPlayGaugesController {
     private var sensorItems: [CPInformationItem] = []
     private var cancellables = Set<AnyCancellable>()
     
-    // Detail screen live update state
-    private var currentDetailPID: OBDPID?
-    private var currentInfoTemplate: CPInformationTemplate?
-    private var currentDetailCancellable: AnyCancellable?
+    // Detail screen controller (manages template and live updates)
+    private var detailController: CarPlayGaugeDetailController?
     
     init(connectionManager: OBDConnectionManager) {
         self.connectionManager = connectionManager
@@ -54,7 +67,7 @@ class CarPlayGaugesController {
         template.updateSections(sections)
     }
 
-    // MARK: - Private Template Creation & Navigation
+    //  Private Template Creation & Navigation
 
     private func makeItem(_ text: String, detailText: String?) -> CPListItem {
         let item = CPListItem(text: text, detailText: detailText)
@@ -101,63 +114,17 @@ class CarPlayGaugesController {
         return [CPListSection(items: [item])]
     }
 
-    private func updateSensorItems(for pid: OBDPID)  {
-        var items: [CPInformationItem] = []
-        let stats = connectionManager.stats(for: pid.pid)
-
-        // Current
-        if let s = stats {
-            let currentStr = pid.formatted(measurement: s.latest, includeUnits: true)
-            items.append(CPInformationItem(title: "Current", detail: currentStr))
-        } else {
-            items.append(CPInformationItem(title: "Current", detail: "— \(pid.displayUnits)"))
-        }
-
-        // Min/Max/Samples when stats are available
-        if let s = stats {
-            let minStr = pid.formatted(measurement: MeasurementResult(value: s.min, unit: s.latest.unit), includeUnits: true)
-            let maxStr = pid.formatted(measurement: MeasurementResult(value: s.max, unit: s.latest.unit), includeUnits: true)
-            items.append(CPInformationItem(title: "Min", detail: minStr))
-            items.append(CPInformationItem(title: "Max", detail: maxStr))
-            items.append(CPInformationItem(title: "Samples", detail: "\(s.sampleCount)"))
-        }
-
-        // Typical Range using the unit-aware helper
-        items.append(CPInformationItem(title: "Typical Range", detail: pid.displayRange))
-
-        sensorItems = items
-    }
-    
     private func presentSensorTemplate(for pid: OBDPID) {
-        // Cancel any previous detail subscription
-        currentDetailCancellable?.cancel()
-        currentDetailCancellable = nil
-        currentDetailPID = pid
-        currentInfoTemplate = nil
-        
-        updateSensorItems(for: pid)
-        let template = CPInformationTemplate(title: pid.name  , layout: .twoColumn, items: sensorItems, actions: [])
-        currentInfoTemplate = template
+        // Releasing the old controller cancels its subscriptions automatically
+        detailController = nil
 
-        interfaceController?.pushTemplate(template, animated: false, completion: nil)
-        
-        // Live updates for this PID: update items in place (use connectionManager for min/max/sampleCount)
-        currentDetailCancellable = connectionManager.$pidStats
-            .compactMap { statsDict -> OBDConnectionManager.PIDStats? in
-                statsDict[pid.pid]
-            }
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                guard let self,
-                      let infoTemplate = self.currentInfoTemplate,
-                      let currentPID = self.currentDetailPID
-                else { return }
-                
-                // Rebuild items and assign to the template
-                self.updateSensorItems(for: currentPID)
-                infoTemplate.items = self.sensorItems
-            }
+        // Create a new self-contained detail controller (auto-subscribes in init)
+        let controller = CarPlayGaugeDetailController(pid: pid, connectionManager: connectionManager)
+        detailController = controller
+
+        // Push its template
+        interfaceController?.pushTemplate(controller.template, animated: false, completion: nil)
     }
 
-    // MARK: - Helpers
+    //  Helpers
 }
