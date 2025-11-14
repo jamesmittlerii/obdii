@@ -97,6 +97,54 @@ class OBDConnectionManager: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // Mirror OBDService connection state to local state, mapping .error -> .failed
+        obdService.$connectionState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] serviceState in
+                guard let self else { return }
+                switch serviceState {
+                case .disconnected:
+                    // Cleanup similar to disconnect flow
+                    self.streamCancellables.removeAll()
+                    self.lastStreamingPIDs = []
+                    self.pidStats.removeAll()
+                    self.fuelStatus = []
+                    self.MILStatus = nil
+                    self.troubleCodes = []
+                    self.connectedPeripheralName = nil
+                    self.connectionState = .disconnected
+                    self.logger.info("Mirrored service disconnect to manager state and cleared data.")
+                case .error:
+                    // Cleanup and surface failure
+                    self.streamCancellables.removeAll()
+                    self.lastStreamingPIDs = []
+                    self.pidStats.removeAll()
+                    self.fuelStatus = []
+                    self.MILStatus = nil
+                    self.troubleCodes = []
+                    self.connectedPeripheralName = nil
+                    let err = OBDServiceError.notConnectedToVehicle
+                    self.connectionState = .failed(err)
+                    self.logger.error("Service reported error; mapped to .failed and cleared data.")
+                case .connecting:
+                    if case .connecting = self.connectionState { /* no-op */ }
+                    else {
+                        self.connectionState = .connecting
+                    }
+                case .connectedToAdapter:
+                    if case .connected = self.connectionState { /* no-op */ }
+                    else {
+                        self.connectionState = .connected
+                    }
+                case .connectedToVehicle:
+                    if case .connected = self.connectionState { /* no-op */ }
+                    else {
+                        self.connectionState = .connected
+                    }
+                }
+            }
+            .store(in: &cancellables)
+
         // Observe changes to enabled PIDs and restart streaming if connected.
         // Debounce to avoid flapping on view renders; use Set to ignore order changes.
         pidStoreCancellable = PIDStore.shared.$pids
@@ -163,6 +211,46 @@ class OBDConnectionManager: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] name in
                 self?.connectedPeripheralName = name
+            }
+            .store(in: &cancellables)
+
+        // Re-bind to the new service’s connectionState
+        obdService.$connectionState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] serviceState in
+                guard let self else { return }
+                switch serviceState {
+                case .disconnected:
+                    self.streamCancellables.removeAll()
+                    self.lastStreamingPIDs = []
+                    self.pidStats.removeAll()
+                    self.fuelStatus = []
+                    self.MILStatus = nil
+                    self.troubleCodes = []
+                    self.connectedPeripheralName = nil
+                    self.connectionState = .disconnected
+                    self.logger.info("Mirrored service disconnect to manager state (rebound) and cleared data.")
+                case .error:
+                    self.streamCancellables.removeAll()
+                    self.lastStreamingPIDs = []
+                    self.pidStats.removeAll()
+                    self.fuelStatus = []
+                    self.MILStatus = nil
+                    self.troubleCodes = []
+                    self.connectedPeripheralName = nil
+                    let err = OBDServiceError.notConnectedToVehicle
+                    self.connectionState = .failed(err)
+                    self.logger.error("Service reported error (rebound); mapped to .failed and cleared data.")
+                case .connecting:
+                    if case .connecting = self.connectionState { /* no-op */ }
+                    else { self.connectionState = .connecting }
+                case .connectedToAdapter:
+                    if case .connected = self.connectionState { /* no-op */ }
+                    else { self.connectionState = .connected }
+                case .connectedToVehicle:
+                    if case .connected = self.connectionState { /* no-op */ }
+                    else { self.connectionState = .connected }
+                }
             }
             .store(in: &cancellables)
 
@@ -362,7 +450,7 @@ class OBDConnectionManager: ObservableObject {
         if enabledPIDs == lastStreamingPIDs {
             // Even if the set is the same, we still want to rebuild the stream if units changed,
             // but this function is only called when we know we need to (e.g., units change handler).
-            // So force rebuild by clearing lastStreamingPIDs here if needed by caller.
+            // So force a rebuild by clearing lastStreamingPIDs here if needed by caller.
             logger.info("Enabled PIDs unchanged; not restarting continuous updates.")
             // To force a rebuild, call startContinuousOBDUpdates(with:) directly after clearing lastStreamingPIDs.
         }
