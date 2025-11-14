@@ -8,22 +8,21 @@ import Network
 class CarPlaySettingsController {
     private weak var interfaceController: CPInterfaceController?
     private var currentTemplate: CPListTemplate?
-    //private var cancellable: AnyCancellable?
+    private let viewModel = SettingsViewModel()
     private var cancellables = Set<AnyCancellable>()
 
     func setInterfaceController(_ interfaceController: CPInterfaceController) {
         self.interfaceController = interfaceController
 
-        // Observe connection state changes to keep the UI in sync
-        OBDConnectionManager.shared.$connectionState
+        // Observe SettingsViewModel state so the UI stays in sync
+        viewModel.$connectionState
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.refreshSection()
             }
             .store(in: &cancellables)
 
-        // Observe connection type changes to keep the UI in sync
-        ConfigData.shared.$publishedConnectionType
+        viewModel.$connectionType
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
@@ -61,9 +60,9 @@ class CarPlaySettingsController {
         return item
     }
 
-    // New: Connection details item
+    // Connection details item built from SettingsViewModel + manager for BT name
     private func makeConnectionDetailsItem() -> CPListItem {
-        let type = ConfigData.shared.connectionType
+        let type = viewModel.connectionType
         let typeText = type.rawValue
 
         // Build a concise detail string depending on connection type
@@ -72,27 +71,20 @@ class CarPlaySettingsController {
         case .demo:
             detail = "\(typeText) • no actual connection"
         case .wifi:
-            let host = ConfigData.shared.wifiHost
-            let port = ConfigData.shared.wifiPort
+            let host = viewModel.wifiHost
+            let port = viewModel.wifiPort
             detail = "\(typeText) • \(host):\(port)"
         case .bluetooth:
             let name = OBDConnectionManager.shared.connectedPeripheralName ?? "unknown"
             detail = "\(typeText) • \(name)"
-            // If you have a selected peripheral name/identifier, append it here
-           
         }
         
         return makeItem("Connection", detailText: detail)
-
-        
-    }
-    func errorName(_ error: Error) -> String {
-        return String(describing: type(of: error))
     }
 
-    // New: Connection status item
+    // Connection status item from SettingsViewModel
     private func makeConnectionStatusItem() -> CPListItem {
-        let state = OBDConnectionManager.shared.connectionState
+        let state = viewModel.connectionState
         let detail: String
         switch state {
         case .disconnected:
@@ -102,10 +94,7 @@ class CarPlaySettingsController {
         case .connected:
             detail = "Connected"
         case .failed(let error):
-            // Keep it concise for CarPlay
-            
             detail = "Failed: \(error.localizedDescription)"
-            
         }
         return makeItem("Connection Status", detailText: detail)
     }
