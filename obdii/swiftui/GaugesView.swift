@@ -3,9 +3,15 @@ import Combine
 import SwiftOBD2
 import UIKit
 
+@MainActor
 struct GaugesView: View {
-    @ObservedObject var connectionManager: OBDConnectionManager
-    @ObservedObject var pidStore: PIDStore = PIDStore.shared
+    @StateObject private var viewModel: GaugesViewModel
+
+    // Keep the initializer signature compatible with existing call sites
+    init(connectionManager: OBDConnectionManager, pidStore: PIDStore? = nil) {
+        let resolvedStore = pidStore ?? PIDStore.shared
+        _viewModel = StateObject(wrappedValue: GaugesViewModel(connectionManager: connectionManager, pidStore: resolvedStore))
+    }
 
     // Adaptive grid: 2–4 columns depending on width
     private let columns = [
@@ -15,14 +21,14 @@ struct GaugesView: View {
     var body: some View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 16) {
-                ForEach(pidStore.enabledGauges, id: \.id) { pid in
+                ForEach(viewModel.tiles) { tile in
                     NavigationLink {
-                        GaugeDetailView(pid: pid, connectionManager: connectionManager)
+                        GaugeDetailView(pid: tile.pid, connectionManager: .shared)
                     } label: {
-                        GaugeTile(pid: pid, manager: connectionManager)
+                        GaugeTile(pid: tile.pid, measurement: tile.measurement)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityIdentifier("GaugeTile_\(pid.id.uuidString)")
+                    .accessibilityIdentifier("GaugeTile_\(tile.pid.id.uuidString)")
                 }
             }
             .padding()
@@ -32,11 +38,7 @@ struct GaugesView: View {
 
 private struct GaugeTile: View {
     let pid: OBDPID
-    @ObservedObject var manager: OBDConnectionManager
-
-    private var measurement: MeasurementResult? {
-        manager.stats(for: pid.pid)?.latest
-    }
+    let measurement: MeasurementResult?
 
     var body: some View {
         VStack(spacing: 0) {
