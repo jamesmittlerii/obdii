@@ -22,10 +22,12 @@ struct PIDToggleListView: View {
         List {
             // Enabled section
             let enabled = viewModel.enabledIndices
+            
             if !enabled.isEmpty {
                 Section(header: Text("Enabled")) {
                     ForEach(enabled, id: \.self) { index in
                         let pid = viewModel.pids[index]
+                        
                         PIDToggleRow(
                             pid: pid,
                             isOn: Binding(

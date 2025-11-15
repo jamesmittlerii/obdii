@@ -31,6 +31,7 @@ final class PIDToggleListViewModel: ObservableObject {
 
         // Keep local pids in sync with the store
         store.$pids
+            .removeDuplicates()
             .receive(on: RunLoop.main)
             .assign(to: &$pids)
     }
@@ -51,8 +52,10 @@ final class PIDToggleListViewModel: ObservableObject {
 
     // Intents
     func toggle(at index: Int, to isOn: Bool) {
-        guard pids.indices.contains(index) else { return }
-        store.pids[index].enabled = isOn
+       // guard pids.indices.contains(index) else { return }
+        
+        store.toggle(pids[index])
+        //store.pids[index].enabled = isOn
     }
 
     func moveEnabled(fromOffsets indices: IndexSet, toOffset newOffset: Int) {
