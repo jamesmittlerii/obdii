@@ -102,7 +102,7 @@ class CarPlayGaugesController: CarPlayBaseTemplateController {
             let tappedPID = tiles[index].pid
 
             // Before pushing detail, clear root interest and rely on detail controller to own interest for single PID
-            PIDInterestRegistry.shared.clear(token: self.controllerToken)
+            //PIDInterestRegistry.shared.clear(token: self.controllerToken)
 
             self.presentSensorTemplate(for: tappedPID)
             completion()
