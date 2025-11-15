@@ -1,3 +1,18 @@
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+Main carplay entrypoint. Do initialization.
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
+
 import UIKit
 import SwiftOBD2
 import CarPlay
@@ -5,6 +20,7 @@ import os.log
 import Combine
 import SwiftUI
 
+// need a definition so we can iterate over our tabs for repetitive actions
 protocol CarPlayTabControlling: AnyObject {
     /// Return the root CPTemplate for this tab.
     func makeRootTemplate() -> CPTemplate
