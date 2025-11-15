@@ -1,3 +1,23 @@
+/**
+ 
+ * __Final Project__
+ * Jim Mittler
+ * 14 November 2025
+ 
+ 
+base class for our tab templates
+ 
+ We were having issues with the templates refreshing from the subscriptions even when not selected.
+ 
+ CarPlay is not as easy as SwiftUI - we have to manually determine if our tab is highlighted and disable refresh otherwise.
+ 
+ _Italic text__
+ __Bold text__
+ ~~Strikethrough text~~
+ 
+ */
+
+
 import CarPlay
 import Combine
 
@@ -10,12 +30,14 @@ class CarPlayBaseTemplateController: NSObject {
     private var tabIndex: Int = 0
     private var isTabSelected = false
     private var tabCancellable: AnyCancellable?
+    private var cancellables = Set<AnyCancellable>()
 
     func setInterfaceController(_ interfaceController: CPInterfaceController) {
         self.interfaceController = interfaceController
     }
 
     // Injected from Scene
+    // keep track of which tab got selected
     func setTabSelectionPublisher(_ publisher: AnyPublisher<Int, Never>, tabIndex: Int) {
         self.tabIndex = tabIndex
         tabCancellable = publisher
@@ -53,6 +75,19 @@ class CarPlayBaseTemplateController: NSObject {
             self?.performRefresh()
         }
     }
+    
+    func subscribeAndRefresh<T: Equatable>(_ publisher: Published<T>.Publisher) {
+        publisher
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.refreshIfVisible {
+                    self?.performRefresh()
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
 
     // Subclasses should override this to perform their own refresh (e.g., refreshSection/refreshTemplate).
     func performRefresh() {

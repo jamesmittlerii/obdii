@@ -39,6 +39,7 @@ class CarPlayGaugesController: CarPlayBaseTemplateController {
         super.setInterfaceController(interfaceController)
         
         // Subscribe to tiles updates (enabled PIDs + latest measurements) and refresh the list
+        // only refresh if visible
         viewModel.$tiles
             .throttle(for: .seconds(1), scheduler: DispatchQueue.main, latest: true)
             .receive(on: DispatchQueue.main)

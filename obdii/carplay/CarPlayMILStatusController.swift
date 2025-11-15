@@ -33,14 +33,10 @@ class CarPlayMILStatusController: CarPlayBaseTemplateController {
         super.setInterfaceController(interfaceController)
         
         // Observe ViewModel changes to keep the UI in sync
-        viewModel.$status
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.refreshIfVisible {
-                    self?.refreshSection()
-                }
-            }
-            .store(in: &cancellables)
+        // only refresh if visible
+        
+        subscribeAndRefresh(viewModel.$status)
+       
     }
     
     private func makeItem(_ text: String, detailText: String) -> CPListItem {

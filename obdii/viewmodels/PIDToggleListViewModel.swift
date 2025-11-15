@@ -56,6 +56,7 @@ final class PIDToggleListViewModel: ObservableObject {
         store.toggle(pids[index])
     }
 
+    // we allow reordering so send that back to the store to handle
     func moveEnabled(fromOffsets indices: IndexSet, toOffset newOffset: Int) {
         
         store.moveEnabled(fromOffsets: indices, toOffset: newOffset)

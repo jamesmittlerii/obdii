@@ -23,41 +23,19 @@ import Network
 class CarPlaySettingsController: CarPlayBaseTemplateController {
     private var currentListTemplate: CPListTemplate?
     private let viewModel = SettingsViewModel()
-    private var cancellables = Set<AnyCancellable>()
+   
+    
+    
 
     override func setInterfaceController(_ interfaceController: CPInterfaceController) {
         super.setInterfaceController(interfaceController)
 
         // Observe SettingsViewModel state so the UI stays in sync
-        viewModel.$connectionState
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.refreshIfVisible {
-                    self?.refreshSection()
-                }
-            }
-            .store(in: &cancellables)
+        
+        subscribeAndRefresh(viewModel.$connectionState)
+        subscribeAndRefresh(viewModel.$connectionType)
+        subscribeAndRefresh(viewModel.$units)
 
-        viewModel.$connectionType
-            .removeDuplicates()
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.refreshIfVisible {
-                    self?.refreshSection()
-                }
-            }
-            .store(in: &cancellables)
-
-        // Observe units via the ViewModel instead of ConfigData directly
-        viewModel.$units
-            .removeDuplicates()
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.refreshIfVisible {
-                    self?.refreshSection()
-                }
-            }
-            .store(in: &cancellables)
     }
     
     private func makeItem(_ text: String, detailText: String) -> CPListItem {

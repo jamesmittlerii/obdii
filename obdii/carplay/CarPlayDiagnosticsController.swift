@@ -31,15 +31,8 @@ class CarPlayDiagnosticsController: CarPlayBaseTemplateController {
     override func setInterfaceController(_ interfaceController: CPInterfaceController) {
         super.setInterfaceController(interfaceController)
         
-        // Observe ViewModel changes to keep the UI in sync
-        viewModel.$sections
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.refreshIfVisible {
-                    self?.refreshSection()
-                }
-            }
-            .store(in: &cancellables)
+        subscribeAndRefresh(viewModel.$sections)
+        
     }
     
     private func makeItem(_ text: String, detailText: String?) -> CPListItem {

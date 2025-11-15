@@ -34,6 +34,7 @@ final class CarPlayGaugeDetailController {
         self.template = CPInformationTemplate(title: viewModel.pid.name, layout: .twoColumn, items: items, actions: [])
 
         // Subscribe to live updates from the view model
+        
         viewModel.$stats
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in

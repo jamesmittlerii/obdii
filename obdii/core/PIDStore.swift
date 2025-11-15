@@ -105,6 +105,7 @@ final class PIDStore: ObservableObject {
 
     //  Public API
 
+    // handle toggling a pid. We want the order to always be enabled, disabled then non gauges
     func toggle(_ pid: OBDPID) {
         // 1. Ensure the PID exists in the array and get its index
         guard let index = pids.firstIndex(where: { $0.id == pid.id }) else {
@@ -130,6 +131,8 @@ final class PIDStore: ObservableObject {
     }
 
     /// Reorder within the enabled gauges subset (matches UI section).
+    ///
+    /// we are allowing reorder of the enabled pids
     func moveEnabled(fromOffsets source: IndexSet, toOffset destination: Int) {
         // Extract master indices of enabled gauges
         let enabledGaugeIndicesInMaster: [Int] = pids.indices.filter { pids[$0].enabled && pids[$0].kind == .gauge }
