@@ -19,9 +19,7 @@ import SwiftOBD2
 import Combine
 
 @MainActor
-class CarPlayFuelStatusController {
-    private weak var interfaceController: CPInterfaceController?
-    private var currentTemplate: CPInformationTemplate?
+class CarPlayFuelStatusController: CarPlayBaseTemplateController {
     private let viewModel: FuelStatusViewModel
     private var cancellables = Set<AnyCancellable>()
     private var previousFuelStatus: [StatusCodeMetadata?]?
@@ -31,8 +29,8 @@ class CarPlayFuelStatusController {
         self.viewModel = FuelStatusViewModel(connectionManager: connectionManager)
     }
 
-    func setInterfaceController(_ interfaceController: CPInterfaceController) {
-        self.interfaceController = interfaceController
+    override func setInterfaceController(_ interfaceController: CPInterfaceController) {
+        super.setInterfaceController(interfaceController)
         
         // Observe ViewModel changes to keep the UI in sync
         viewModel.$status
@@ -84,7 +82,7 @@ class CarPlayFuelStatusController {
     }
     
     private func refreshTemplate() {
-        guard let template = currentTemplate else { return }
+        guard let template = currentTemplate as? CPInformationTemplate else { return }
         
         let current = viewModel.status
         

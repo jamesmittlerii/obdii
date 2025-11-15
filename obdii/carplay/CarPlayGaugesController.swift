@@ -20,11 +20,9 @@ import SwiftUI // For Color
 import UIKit   // For UIImage
 
 @MainActor
-class CarPlayGaugesController {
-    private weak var interfaceController: CPInterfaceController?
+class CarPlayGaugesController: CarPlayBaseTemplateController {
     private let connectionManager: OBDConnectionManager
     private let viewModel: GaugesViewModel
-    private var currentTemplate: CPListTemplate?
     private var sensorItems: [CPInformationItem] = []
     private var cancellables = Set<AnyCancellable>()
     
@@ -37,8 +35,8 @@ class CarPlayGaugesController {
         self.viewModel = GaugesViewModel(connectionManager: connectionManager, pidStore: PIDStore.shared)
     }
 
-    func setInterfaceController(_ interfaceController: CPInterfaceController) {
-        self.interfaceController = interfaceController
+    override func setInterfaceController(_ interfaceController: CPInterfaceController) {
+        super.setInterfaceController(interfaceController)
         
         // Subscribe to tiles updates (enabled PIDs + latest measurements) and refresh the list
         viewModel.$tiles
@@ -62,7 +60,7 @@ class CarPlayGaugesController {
     }
 
     private func refreshSection() {
-        guard let template = currentTemplate else { return }
+        guard let template = currentTemplate as? CPListTemplate else { return }
         let sections = buildSections()
         template.updateSections(sections)
     }

@@ -20,9 +20,7 @@ import SwiftOBD2
 import Combine
 
 @MainActor
-class CarPlayMILStatusController {
-    private weak var interfaceController: CPInterfaceController?
-    private var currentTemplate: CPListTemplate?
+class CarPlayMILStatusController: CarPlayBaseTemplateController {
     private let viewModel: MILStatusViewModel
     private var cancellables = Set<AnyCancellable>()
     
@@ -31,8 +29,8 @@ class CarPlayMILStatusController {
         self.viewModel = MILStatusViewModel(connectionManager: connectionManager)
     }
 
-    func setInterfaceController(_ interfaceController: CPInterfaceController) {
-        self.interfaceController = interfaceController
+    override func setInterfaceController(_ interfaceController: CPInterfaceController) {
+        super.setInterfaceController(interfaceController)
         
         // Observe ViewModel changes to keep the UI in sync
         viewModel.$status
@@ -79,7 +77,7 @@ class CarPlayMILStatusController {
     }
 
     private func refreshSection() {
-        guard let template = currentTemplate else { return }
+        guard let template = currentTemplate as? CPListTemplate else { return }
         let sections = buildSections()
         template.updateSections(sections)
     }

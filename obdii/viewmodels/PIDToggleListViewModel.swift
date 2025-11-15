@@ -29,7 +29,7 @@ final class PIDToggleListViewModel: ObservableObject {
     init(store: PIDStore) {
         self.store = store
 
-        // Keep local pids in sync with the store
+        // Keep local pids in sync with the store, and log enabled names
         store.$pids
             .removeDuplicates()
             .receive(on: RunLoop.main)
@@ -43,7 +43,8 @@ final class PIDToggleListViewModel: ObservableObject {
 
     // Computed helpers for sections
     var enabledIndices: [Int] {
-        pids.indices.filter { pids[$0].enabled && pids[$0].kind == .gauge }
+        return pids.indices.filter { pids[$0].enabled && pids[$0].kind == .gauge }
+        
     }
 
     var disabledIndices: [Int] {
@@ -52,13 +53,11 @@ final class PIDToggleListViewModel: ObservableObject {
 
     // Intents
     func toggle(at index: Int, to isOn: Bool) {
-       // guard pids.indices.contains(index) else { return }
-        
         store.toggle(pids[index])
-        //store.pids[index].enabled = isOn
     }
 
     func moveEnabled(fromOffsets indices: IndexSet, toOffset newOffset: Int) {
+        
         store.moveEnabled(fromOffsets: indices, toOffset: newOffset)
     }
 }

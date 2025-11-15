@@ -21,38 +21,44 @@ struct PIDToggleListView: View {
     var body: some View {
         List {
             // Enabled section
-            let enabled = viewModel.enabledIndices
-            
-            if !enabled.isEmpty {
+            let enabledItems: [OBDPID] = viewModel.pids.filter { $0.enabled && $0.kind == .gauge }
+            if !enabledItems.isEmpty {
                 Section(header: Text("Enabled")) {
-                    ForEach(enabled, id: \.self) { index in
-                        let pid = viewModel.pids[index]
-                        
+                    ForEach(enabledItems, id: \.id) { pid in
                         PIDToggleRow(
                             pid: pid,
                             isOn: Binding(
-                                get: { viewModel.pids[index].enabled },
-                                set: { newValue in viewModel.toggle(at: index, to: newValue) }
+                                get: { pid.enabled },
+                                set: { newValue in
+                                    // Find the current index in the master array to toggle
+                                    if let idx = viewModel.pids.firstIndex(where: { $0.id == pid.id }) {
+                                        viewModel.toggle(at: idx, to: newValue)
+                                    }
+                                }
                             )
                         )
                     }
-                    .onMove { indices, newOffset in
-                        viewModel.moveEnabled(fromOffsets: indices, toOffset: newOffset)
+                    .onMove { source, destination in
+                        // Map source/destination within the enabled subset to the view model’s move API
+                        viewModel.moveEnabled(fromOffsets: source, toOffset: destination)
                     }
                 }
             }
 
             // Disabled section
-            let disabled = viewModel.disabledIndices
-            if !disabled.isEmpty {
+            let disabledItems: [OBDPID] = viewModel.pids.filter { !$0.enabled && $0.kind == .gauge }
+            if !disabledItems.isEmpty {
                 Section(header: Text("Disabled")) {
-                    ForEach(disabled, id: \.self) { index in
-                        let pid = viewModel.pids[index]
+                    ForEach(disabledItems, id: \.id) { pid in
                         PIDToggleRow(
                             pid: pid,
                             isOn: Binding(
-                                get: { viewModel.pids[index].enabled },
-                                set: { newValue in viewModel.toggle(at: index, to: newValue) }
+                                get: { pid.enabled },
+                                set: { newValue in
+                                    if let idx = viewModel.pids.firstIndex(where: { $0.id == pid.id }) {
+                                        viewModel.toggle(at: idx, to: newValue)
+                                    }
+                                }
                             )
                         )
                     }

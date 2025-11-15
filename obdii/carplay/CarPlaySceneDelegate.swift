@@ -50,15 +50,40 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         fuelStatusController.setInterfaceController(interfaceController)
         milStatusController.setInterfaceController(interfaceController)
 
-        // Build the three tabs by requesting the root template from each controller
+        // Build the tabs by requesting the root template from each controller
         let gaugesTemplate = gaugesController.makeRootTemplate()
+        let fuelStatusTemplate = fuelStatusController.makeRootTemplate()
         let milTemplate = milStatusController.makeRootTemplate()
         let diagnosticsTemplate = diagnosticsController.makeRootTemplate()
         let settingsTemplate = settingsController.makeRootTemplate()
-        let fuelStatusTemplate = fuelStatusController.makeRootTemplate( )
 
-        let tabBar = CPTabBarTemplate(templates: [gaugesTemplate, fuelStatusTemplate, milTemplate, diagnosticsTemplate, settingsTemplate])
-        
+        // Create the tab bar in the same order you will wire tab indices
+        let tabBar = CPTabBarTemplate(templates: [
+            gaugesTemplate,           // index 0
+            fuelStatusTemplate,       // index 1
+            milTemplate,              // index 2
+            diagnosticsTemplate,      // index 3
+            settingsTemplate          // index 4
+        ])
+
+        // Coordinator publishes selection and persists last tab
+        let coordinator = CarPlayTabCoordinator()
+        tabBar.delegate = coordinator
+
+        // Inject selection publisher and tab indices (order must match the templates array above)
+        gaugesController.setTabSelectionPublisher(coordinator.selectedIndexPublisher, tabIndex: 0)
+        fuelStatusController.setTabSelectionPublisher(coordinator.selectedIndexPublisher, tabIndex: 1)
+        milStatusController.setTabSelectionPublisher(coordinator.selectedIndexPublisher, tabIndex: 2)
+        diagnosticsController.setTabSelectionPublisher(coordinator.selectedIndexPublisher, tabIndex: 3)
+        settingsController.setTabSelectionPublisher(coordinator.selectedIndexPublisher, tabIndex: 4)
+
+        // Optionally select the persisted tab initially if in range
+        let initialIndex = UserDefaults.standard.integer(forKey: "selectedCarPlayTab")
+        if (0..<tabBar.templates.count).contains(initialIndex) {
+            // Many SDKs don’t support the selectedTemplate: overload; just update templates.
+            tabBar.updateTemplates(tabBar.templates)
+        }
+
         interfaceController.setRootTemplate(tabBar,
                                             animated: true,
                                             completion: nil)
@@ -69,8 +94,6 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
                 await connectionManager.connect()
             }
         }
-        
-       
     }
 
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene, didDisconnectInterfaceController interfaceController: CPInterfaceController) {
@@ -79,3 +102,4 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         pidEnabledCancellable?.cancel() // NEW: cancel the PID enabled subscription
     }
 }
+

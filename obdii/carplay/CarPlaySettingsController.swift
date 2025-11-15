@@ -20,14 +20,13 @@ import Combine
 import Network
 
 @MainActor
-class CarPlaySettingsController {
-    private weak var interfaceController: CPInterfaceController?
-    private var currentTemplate: CPListTemplate?
+class CarPlaySettingsController: CarPlayBaseTemplateController {
+    private var currentListTemplate: CPListTemplate?
     private let viewModel = SettingsViewModel()
     private var cancellables = Set<AnyCancellable>()
 
-    func setInterfaceController(_ interfaceController: CPInterfaceController) {
-        self.interfaceController = interfaceController
+    override func setInterfaceController(_ interfaceController: CPInterfaceController) {
+        super.setInterfaceController(interfaceController)
 
         // Observe SettingsViewModel state so the UI stays in sync
         viewModel.$connectionState
@@ -64,16 +63,12 @@ class CarPlaySettingsController {
     private func makeUnitsItem() -> CPListItem {
         let item = CPListItem(text: "Units", detailText: viewModel.units.rawValue)
         item.handler = { [weak self] _, completion in
-            // Toggle units via the ViewModel (which persists to ConfigData)
             guard let self else {
                 completion()
                 return
             }
             let next = self.viewModel.units.next
             self.viewModel.units = next
-
-            // Update the UI
-            //self.refreshSection()
             completion()
         }
         return item
@@ -135,7 +130,7 @@ class CarPlaySettingsController {
     }
 
     private func refreshSection() {
-        guard let template = currentTemplate else { return }
+        guard let template = currentListTemplate else { return }
         let section = buildSection()
         template.updateSections([section])
     }
@@ -147,6 +142,8 @@ class CarPlaySettingsController {
         template.tabTitle = "Settings"
         template.tabImage = UIImage(systemName: "gear")
         self.currentTemplate = template
+        self.currentListTemplate = template
         return template
     }
 }
+
