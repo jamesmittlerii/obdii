@@ -35,7 +35,9 @@ class CarPlayDiagnosticsController: CarPlayBaseTemplateController {
         viewModel.$sections
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.refreshSection()
+                self?.refreshIfVisible {
+                    self?.refreshSection()
+                }
             }
             .store(in: &cancellables)
     }
@@ -124,5 +126,11 @@ class CarPlayDiagnosticsController: CarPlayBaseTemplateController {
         interfaceController?.pushTemplate(template, animated: false, completion: nil)
     }
 
+    // Hook for base class visibility refresh
+    override func performRefresh() {
+        refreshSection()
+    }
+
     //  Helpers
 }
+

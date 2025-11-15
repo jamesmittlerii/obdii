@@ -13,7 +13,6 @@ class CarPlayBaseTemplateController: NSObject {
 
     func setInterfaceController(_ interfaceController: CPInterfaceController) {
         self.interfaceController = interfaceController
-        log("setInterfaceController: \(id(interfaceController))")
     }
 
     // Injected from Scene
@@ -23,8 +22,13 @@ class CarPlayBaseTemplateController: NSObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] selected in
                 guard let self else { return }
+                let wasSelected = self.isTabSelected
                 self.isTabSelected = (selected == tabIndex)
-                self.log("tab selection updated: selected=\(selected) mine=\(tabIndex) active=\(self.isTabSelected)")
+         
+                // If this tab just became selected, force a refresh now.
+                if self.isTabSelected && !wasSelected {
+                    self.didBecomeVisible()
+                }
             }
     }
 
@@ -37,10 +41,22 @@ class CarPlayBaseTemplateController: NSObject {
 
     // Gate UI updates by tab selection (and optionally visibility)
     func refreshIfVisible(_ action: () -> Void) {
-        let allow = isTabSelected && isTemplateVisible
-        log("refreshIfVisible? selected=\(isTabSelected) visible=\(isTemplateVisible) -> \(allow)")
+        let allow = isTabSelected
+      //  log("refreshIfVisible? selected=\(isTabSelected) visible=\(isTemplateVisible) -> \(allow)")
         guard allow else { return }
         action()
+    }
+
+    // Called when the tab becomes selected. Subclasses can override, but default forces a guarded refresh.
+    func didBecomeVisible() {
+        refreshIfVisible { [weak self] in
+            self?.performRefresh()
+        }
+    }
+
+    // Subclasses should override this to perform their own refresh (e.g., refreshSection/refreshTemplate).
+    func performRefresh() {
+        // Default does nothing. subclass should override it.
     }
 
     // Debug helpers
@@ -48,5 +64,5 @@ class CarPlayBaseTemplateController: NSObject {
         guard let obj else { return "nil" }
         return String(describing: Unmanaged.passUnretained(obj).toOpaque())
     }
-    private func log(_ message: String) { print("[CarPlayBase] \(message)") }
+   
 }

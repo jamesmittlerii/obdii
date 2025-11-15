@@ -36,7 +36,10 @@ class CarPlayFuelStatusController: CarPlayBaseTemplateController {
         viewModel.$status
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.refreshTemplate()
+                // Only refresh when the tab is selected/visible
+                self?.refreshIfVisible {
+                    self?.refreshSection()
+                }
             }
             .store(in: &cancellables)
     }
@@ -81,7 +84,8 @@ class CarPlayFuelStatusController: CarPlayBaseTemplateController {
         return template
     }
     
-    private func refreshTemplate() {
+    // Unified refresh method name
+    private func refreshSection() {
         guard let template = currentTemplate as? CPInformationTemplate else { return }
         
         let current = viewModel.status
@@ -97,5 +101,11 @@ class CarPlayFuelStatusController: CarPlayBaseTemplateController {
         template.items = items
     }
 
+    // Hook for base class visibility refresh
+    override func performRefresh() {
+        refreshSection()
+    }
+
     //  Helpers
 }
+

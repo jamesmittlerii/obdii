@@ -36,7 +36,9 @@ class CarPlayMILStatusController: CarPlayBaseTemplateController {
         viewModel.$status
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.refreshSection()
+                self?.refreshIfVisible {
+                    self?.refreshSection()
+                }
             }
             .store(in: &cancellables)
     }
@@ -92,5 +94,11 @@ class CarPlayMILStatusController: CarPlayBaseTemplateController {
         return template
     }
     
+    // Hook for base class visibility refresh
+    override func performRefresh() {
+        refreshSection()
+    }
+
     //  Helpers
 }
+

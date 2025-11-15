@@ -31,6 +31,8 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     private var measurementCancellable: AnyCancellable?
     private var pidEnabledCancellable: AnyCancellable?   // NEW: observe enabled PID changes
     
+    let tabCoordinator = CarPlayTabCoordinator()
+    
     // Tab Controllers
     private lazy var gaugesController = CarPlayGaugesController(connectionManager: self.connectionManager)
     private lazy var diagnosticsController = CarPlayDiagnosticsController(connectionManager: self.connectionManager)
@@ -67,15 +69,14 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         ])
 
         // Coordinator publishes selection and persists last tab
-        let coordinator = CarPlayTabCoordinator()
-        tabBar.delegate = coordinator
+        tabBar.delegate = tabCoordinator
 
         // Inject selection publisher and tab indices (order must match the templates array above)
-        gaugesController.setTabSelectionPublisher(coordinator.selectedIndexPublisher, tabIndex: 0)
-        fuelStatusController.setTabSelectionPublisher(coordinator.selectedIndexPublisher, tabIndex: 1)
-        milStatusController.setTabSelectionPublisher(coordinator.selectedIndexPublisher, tabIndex: 2)
-        diagnosticsController.setTabSelectionPublisher(coordinator.selectedIndexPublisher, tabIndex: 3)
-        settingsController.setTabSelectionPublisher(coordinator.selectedIndexPublisher, tabIndex: 4)
+        gaugesController.setTabSelectionPublisher(tabCoordinator.selectedIndexPublisher, tabIndex: 0)
+        fuelStatusController.setTabSelectionPublisher(tabCoordinator.selectedIndexPublisher, tabIndex: 1)
+        milStatusController.setTabSelectionPublisher(tabCoordinator.selectedIndexPublisher, tabIndex: 2)
+        diagnosticsController.setTabSelectionPublisher(tabCoordinator.selectedIndexPublisher, tabIndex: 3)
+        settingsController.setTabSelectionPublisher(tabCoordinator.selectedIndexPublisher, tabIndex: 4)
 
         // Optionally select the persisted tab initially if in range
         let initialIndex = UserDefaults.standard.integer(forKey: "selectedCarPlayTab")

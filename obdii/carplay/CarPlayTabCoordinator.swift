@@ -30,6 +30,6 @@ final class CarPlayTabCoordinator: NSObject, CPTabBarTemplateDelegate {
         if let index = tabBarTemplate.templates.firstIndex(of: template) {
             selectedIndex = index
             selectedIndexSubject.send(index)
-        }
+        } 
     }
 }

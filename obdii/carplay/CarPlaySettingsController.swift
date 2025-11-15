@@ -32,7 +32,9 @@ class CarPlaySettingsController: CarPlayBaseTemplateController {
         viewModel.$connectionState
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.refreshSection()
+                self?.refreshIfVisible {
+                    self?.refreshSection()
+                }
             }
             .store(in: &cancellables)
 
@@ -40,7 +42,9 @@ class CarPlaySettingsController: CarPlayBaseTemplateController {
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.refreshSection()
+                self?.refreshIfVisible {
+                    self?.refreshSection()
+                }
             }
             .store(in: &cancellables)
 
@@ -49,7 +53,9 @@ class CarPlaySettingsController: CarPlayBaseTemplateController {
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.refreshSection()
+                self?.refreshIfVisible {
+                    self?.refreshSection()
+                }
             }
             .store(in: &cancellables)
     }
@@ -63,6 +69,7 @@ class CarPlaySettingsController: CarPlayBaseTemplateController {
     private func makeUnitsItem() -> CPListItem {
         let item = CPListItem(text: "Units", detailText: viewModel.units.rawValue)
         item.handler = { [weak self] _, completion in
+            // Toggle units via the ViewModel (which persists to ConfigData)
             guard let self else {
                 completion()
                 return
@@ -144,6 +151,11 @@ class CarPlaySettingsController: CarPlayBaseTemplateController {
         self.currentTemplate = template
         self.currentListTemplate = template
         return template
+    }
+
+    // Hook for base class visibility refresh
+    override func performRefresh() {
+        refreshSection()
     }
 }
 

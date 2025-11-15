@@ -43,7 +43,9 @@ class CarPlayGaugesController: CarPlayBaseTemplateController {
             .throttle(for: .seconds(1), scheduler: DispatchQueue.main, latest: true)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.refreshSection()
+                self?.refreshIfVisible { [weak self] in
+                    self?.refreshSection()
+                }
             }
             .store(in: &cancellables)
     }
@@ -122,6 +124,11 @@ class CarPlayGaugesController: CarPlayBaseTemplateController {
 
         // Push its template
         interfaceController?.pushTemplate(controller.template, animated: false, completion: nil)
+    }
+
+    // Hook for base class visibility refresh
+    override func performRefresh() {
+        refreshSection()
     }
 
     //  Helpers
