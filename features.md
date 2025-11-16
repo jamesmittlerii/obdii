@@ -14,7 +14,7 @@ The SwiftOBD2 library was a good start for abstracting OBD2 communications but n
 
 The demo mode was extended to provide more lifelike values for the sensors that change over time.
 
-The app makes heavily used of the [@Published/Subscription](https://www.hackingwithswift.com/quick-start/swiftui/what-is-the-published-property-wrapper) semantics to update the screens in real-time in response to changing data.
+The app makes heavy use of [@Published/Subscription](https://www.hackingwithswift.com/quick-start/swiftui/what-is-the-published-property-wrapper) semantics to update the screens in real-time in response to changing data.
 
 The app supports a full list of [OBD2 mode1](https://www.dashlogic.com/docs/technical/obdii_pids) sensors with expected ranges and data types.
 
