@@ -16,6 +16,6 @@ The demo mode was extended to provide more lifelike values for the sensors that 
 
 The app makes heavily used of the @Published/Subscription semantics to update the screens in real-time in response to changing data.
 
-The app supports a full list of (OBD2 mode1)[https://www.dashlogic.com/docs/technical/obdii_pids] sensors with expected ranges and data types.
+The app supports a full list of [OBD2 mode1](https://www.dashlogic.com/docs/technical/obdii_pids) sensors with expected ranges and data types.
 
 The app includes a full list of DTCs with explanation, cause and corrections.
