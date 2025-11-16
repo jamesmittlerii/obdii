@@ -6,6 +6,12 @@ The OBD2 interface uses a [forked](https://github.com/jamesmittlerii/SwiftOBD2) 
 
 The user interface builds on Apple’s CarSample from the WWDC20 session “[Accelerate your app with CarPlay](https://github.com/below/CarSample),” extended with SwiftUI to support both CarPlay templates and SwiftUI views.
 
+**Explore**
+
+- [Features](./features.md)
+- [Architecture](./architecture.md)
+- [Optimizations](./optimization.md)
+
 **Demo Video**
 
 https://github.com/user-attachments/assets/c0161120-6394-471f-b81d-d7e4da525f36
