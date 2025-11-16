@@ -19,7 +19,8 @@ import SwiftOBD2
 
 
 struct MILStatusView: View {
-    @StateObject private var viewModel = MILStatusViewModel()
+    // Use @State to keep a stable reference; matches the pattern used by FuelStatusView
+    @State private var viewModel = MILStatusViewModel()
     // Demand-driven interest token for this view
     @State private var interestToken: UUID = PIDInterestRegistry.shared.makeToken()
 

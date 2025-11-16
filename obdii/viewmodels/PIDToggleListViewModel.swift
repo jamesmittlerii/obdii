@@ -14,29 +14,26 @@ View Model for showing and updating the selected PIDs. Used by SwiftUI
  */
 
 import Foundation
-import Combine
+import Observation
 import SwiftOBD2
 
 @MainActor
-final class PIDToggleListViewModel: ObservableObject {
-    // Mirror of the store PIDs for simple view binding
-    @Published private(set) var pids: [OBDPID] = []
+@Observable
+final class PIDToggleListViewModel {
+    // Mirror of the store PIDs for simple view binding (derived from store)
+    // Keep a local cache if you want to avoid recomputing filters frequently
+    var pids: [OBDPID] = []
 
     // Search text for filtering
-    @Published var searchText: String = ""
+    var searchText: String = ""
 
     private let store: PIDStore
-    private var cancellables = Set<AnyCancellable>()
 
     // Designated initializer without default argument to avoid nonisolated default evaluation
     init(store: PIDStore) {
         self.store = store
-
-        // Keep local pids in sync with the store, and log enabled names
-        store.$pids
-            .removeDuplicates()
-            .receive(on: RunLoop.main)
-            .assign(to: &$pids)
+        // Initialize local mirror
+        self.pids = store.pids
     }
 
     // Convenience initializer accessing MainActor-isolated singleton safely
@@ -46,8 +43,7 @@ final class PIDToggleListViewModel: ObservableObject {
 
     // Computed helpers for sections
     var enabledIndices: [Int] {
-        return pids.indices.filter { pids[$0].enabled && pids[$0].kind == .gauge }
-        
+        pids.indices.filter { pids[$0].enabled && pids[$0].kind == .gauge }
     }
 
     var disabledIndices: [Int] {
@@ -56,6 +52,8 @@ final class PIDToggleListViewModel: ObservableObject {
 
     // Filtered projections for the view
     var filteredEnabled: [OBDPID] {
+        // Keep our mirror in sync with the store when accessed
+        syncFromStore()
         let base = pids.filter { $0.enabled && $0.kind == .gauge }
         let q = normalizedQuery
         guard !q.isEmpty else { return base }
@@ -63,6 +61,8 @@ final class PIDToggleListViewModel: ObservableObject {
     }
 
     var filteredDisabled: [OBDPID] {
+        // Keep our mirror in sync with the store when accessed
+        syncFromStore()
         let base = pids.filter { !$0.enabled && $0.kind == .gauge }
         let q = normalizedQuery
         guard !q.isEmpty else { return base }
@@ -86,12 +86,27 @@ final class PIDToggleListViewModel: ObservableObject {
 
     // Intents
     func toggle(at index: Int, to isOn: Bool) {
-        store.toggle(pids[index])
+        // Ensure mirror is current and get the PID
+        syncFromStore()
+        let pid = pids[index]
+        store.toggle(pid)
+        // Update local mirror after mutation
+        pids = store.pids
     }
 
     // we allow reordering so send that back to the store to handle
     func moveEnabled(fromOffsets indices: IndexSet, toOffset newOffset: Int) {
-        
+        // Ensure mirror is current
+        syncFromStore()
         store.moveEnabled(fromOffsets: indices, toOffset: newOffset)
+        // Update local mirror after mutation
+        pids = store.pids
+    }
+
+    // Keep our local pids in sync with the store when accessed
+    private func syncFromStore() {
+        if pids != store.pids {
+            pids = store.pids
+        }
     }
 }

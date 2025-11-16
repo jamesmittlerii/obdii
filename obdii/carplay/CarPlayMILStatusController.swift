@@ -31,12 +31,10 @@ class CarPlayMILStatusController: CarPlayBaseTemplateController {
 
     override func setInterfaceController(_ interfaceController: CPInterfaceController) {
         super.setInterfaceController(interfaceController)
-        
-        // Observe ViewModel changes to keep the UI in sync
-        // only refresh if visible
-        
-        subscribeAndRefresh(viewModel.$status)
-       
+        // Mimic FuelStatus/Diagnostics pattern: simple callback for changes
+        viewModel.onStatusChanged = { [weak self] in
+            self?.refreshSection()
+        }
     }
     
     private func makeItem(_ text: String, detailText: String) -> CPListItem {
@@ -80,7 +78,7 @@ class CarPlayMILStatusController: CarPlayBaseTemplateController {
         template.updateSections(sections)
     }
     
-    // Ensure demand-driven streaming includes fuel status while this tab is visible
+    // Ensure demand-driven streaming includes MIL/status while this tab is visible
     override func registerVisiblePIDs() {
         PIDInterestRegistry.shared.replace(pids: [.mode1(.status)], for: controllerToken)
     }
@@ -102,4 +100,3 @@ class CarPlayMILStatusController: CarPlayBaseTemplateController {
 
     //  Helpers
 }
-

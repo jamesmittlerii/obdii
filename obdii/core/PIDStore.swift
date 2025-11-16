@@ -20,6 +20,7 @@ import Combine
 final class PIDStore: ObservableObject {
     static let shared = PIDStore()
 
+    // Observed array of all PIDs (gauges and statuses)
     @Published var pids: [OBDPID]
 
     // Persist enabled flags keyed by the Mode1 command string (CommandProperties.command)
@@ -28,8 +29,6 @@ final class PIDStore: ObservableObject {
     // Persist the order of enabled and disabled gauges by their Mode1 command string
     private static let enabledGaugesOrderKey = "PIDStore.enabledGaugesOrder"
     private static let disabledGaugesOrderKey = "PIDStore.disabledGaugesOrder"
-
-    private var cancellables = Set<AnyCancellable>()
 
     private init() {
         // Start from the library defaults
@@ -93,14 +92,9 @@ final class PIDStore: ObservableObject {
 
         self.pids = initial
 
-        // Observe changes and persist enabled flags and orders
-        $pids
-            .sink { [weak self] (pids: [OBDPID]) in
-                guard let self else { return }
-                self.persistEnabledFlags(pids)
-                self.persistGaugeOrders(pids)
-            }
-            .store(in: &cancellables)
+        // Persist initial state
+        persistEnabledFlags(self.pids)
+        persistGaugeOrders(self.pids)
     }
 
     //  Public API
@@ -124,6 +118,10 @@ final class PIDStore: ObservableObject {
         let disabledGauges = pids.filter { $0.kind == .gauge && !$0.enabled }
         let nonGauges = pids.filter { $0.kind != .gauge }
         pids = enabledGauges + disabledGauges + nonGauges
+
+        // Persist after mutation
+        persistEnabledFlags(pids)
+        persistGaugeOrders(pids)
     }
 
     var enabledGauges: [OBDPID] {
@@ -149,6 +147,9 @@ final class PIDStore: ObservableObject {
             newPIDs[masterIndex] = enabledGaugesArray[i]
         }
         pids = newPIDs
+
+        // Persist after mutation
+        persistGaugeOrders(pids)
     }
 
     //  Persistence

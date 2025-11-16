@@ -16,11 +16,20 @@ View Model for showing the Fuel/O2 sensor statuses. Used by CarPlay and SwiftUI
 import Combine
 import SwiftOBD2
 import Foundation
-
+import Observation
 
 @MainActor
-final class FuelStatusViewModel: ObservableObject {
-    @Published private(set) var status: [StatusCodeMetadata?] = []
+@Observable
+final class FuelStatusViewModel {
+    // Callback for controllers (CarPlay, etc.) to observe changes, mirroring DiagnosticsViewModel
+    var onStatusChanged: (() -> Void)?
+
+    private(set) var status: [StatusCodeMetadata?] = [] {
+        didSet {
+            // Notify observers when the status array changes
+            onStatusChanged?()
+        }
+    }
 
     private var cancellable: AnyCancellable?
 

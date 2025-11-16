@@ -19,6 +19,9 @@ import Combine
 
 @MainActor
 final class MILStatusViewModel: ObservableObject {
+    // Callback for controllers (CarPlay, etc.) to observe changes, mirroring FuelStatusViewModel/DiagnosticsViewModel pattern
+    var onStatusChanged: (() -> Void)?
+
     @Published private(set) var status: Status?
     private var cancellable: AnyCancellable?
     private var lastEmitted: Status?
@@ -33,6 +36,8 @@ final class MILStatusViewModel: ObservableObject {
                 if self.lastEmitted != newValue {
                     self.lastEmitted = newValue
                     self.status = newValue
+                    // Notify listeners
+                    self.onStatusChanged?()
                 }
             }
     }

@@ -16,12 +16,11 @@ CarPlay template for Fuel/O2 sensor data
 import CarPlay
 import UIKit
 import SwiftOBD2
-import Combine
+import Observation
 
 @MainActor
 class CarPlayFuelStatusController: CarPlayBaseTemplateController {
     private let viewModel: FuelStatusViewModel
-    private var cancellables = Set<AnyCancellable>()
     private var previousFuelStatus: [StatusCodeMetadata?]?
     
     init(connectionManager: OBDConnectionManager) {
@@ -31,9 +30,10 @@ class CarPlayFuelStatusController: CarPlayBaseTemplateController {
 
     override func setInterfaceController(_ interfaceController: CPInterfaceController) {
         super.setInterfaceController(interfaceController)
-        
-        // Observe ViewModel changes to keep the UI in sync (only refresh if visible)
-        subscribeAndRefresh(viewModel.$status)
+        // Mimic DiagnosticsController: listen to view model changes via a simple callback
+        viewModel.onStatusChanged = { [weak self] in
+            self?.refreshSection()
+        }
     }
     
     // Ensure demand-driven streaming includes fuel status while this tab is visible

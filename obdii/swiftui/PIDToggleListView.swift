@@ -16,7 +16,8 @@ Swift UI view for enable/disable PIDs
 import SwiftUI
 
 struct PIDToggleListView: View {
-    @StateObject private var viewModel = PIDToggleListViewModel()
+    // Use @State with @Observable view model
+    @State private var viewModel = PIDToggleListViewModel()
 
     var body: some View {
         List {

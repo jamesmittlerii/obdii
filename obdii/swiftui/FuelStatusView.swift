@@ -18,7 +18,7 @@ import Combine
 import SwiftOBD2
 
 struct FuelStatusView: View {
-    @StateObject private var viewModel = FuelStatusViewModel()
+    @State private var viewModel = FuelStatusViewModel()
     // Token for demand-driven polling
     @State private var interestToken: UUID = PIDInterestRegistry.shared.makeToken()
 
@@ -75,4 +75,3 @@ struct FuelStatusView: View {
 #Preview {
     FuelStatusView()
 }
-
