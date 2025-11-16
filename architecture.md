@@ -1,3 +1,5 @@
+**Architecture**
+
 The application follows an MVVM architecture.
 
 <img width="960" height="540" alt="MVVM architecture" src="https://github.com/user-attachments/assets/846aed4f-4362-4146-a97f-eb9d3e3da19e" />
