@@ -14,32 +14,38 @@ View Model for showing the Malfunction Indicator Light (CEL) status and detail. 
  */
 import Foundation
 import SwiftOBD2
-import Combine
-
+import Observation
 
 @MainActor
-final class MILStatusViewModel: ObservableObject {
+@Observable
+final class MILStatusViewModel {
     // Callback for controllers (CarPlay, etc.) to observe changes, mirroring FuelStatusViewModel/DiagnosticsViewModel pattern
     var onStatusChanged: (() -> Void)?
 
-    @Published private(set) var status: Status?
-    private var cancellable: AnyCancellable?
+    // Direct dependency on the manager (already @Observable)
+    private let manager: OBDConnectionManager
+
+    // Mirror of the current MIL status for consumers that expect a local property
+    // Observation will track mutations to this property.
+    private(set) var status: Status?
     private var lastEmitted: Status?
 
     init(connectionManager: OBDConnectionManager? = nil) {
-        let manager = connectionManager ?? OBDConnectionManager.shared
-        cancellable = manager.$MILStatus
-            .receive(on: RunLoop.main)
-            .sink { [weak self] newValue in
-                guard let self else { return }
-                // Deduplicate identical snapshots
-                if self.lastEmitted != newValue {
-                    self.lastEmitted = newValue
-                    self.status = newValue
-                    // Notify listeners
-                    self.onStatusChanged?()
-                }
-            }
+        self.manager = connectionManager ?? OBDConnectionManager.shared
+        // Initialize with current value
+        self.status = manager.MILStatus
+        self.lastEmitted = self.status
+    }
+
+    // Call this from UI lifecycle hooks (e.g., view .onAppear or controller setup)
+    // to synchronize and notify non-Observation consumers (CarPlay).
+    func refreshFromManager() {
+        let newValue = manager.MILStatus
+        if lastEmitted != newValue {
+            lastEmitted = newValue
+            status = newValue
+            onStatusChanged?()
+        }
     }
 
     var headerText: String {
