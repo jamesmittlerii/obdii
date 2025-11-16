@@ -15,37 +15,39 @@ View Model for showing the Malfunction Indicator Light (CEL) status and detail. 
 import Foundation
 import SwiftOBD2
 import Observation
+import Combine
 
 @MainActor
 @Observable
 final class MILStatusViewModel {
     // Callback for controllers (CarPlay, etc.) to observe changes, mirroring FuelStatusViewModel/DiagnosticsViewModel pattern
-    var onStatusChanged: (() -> Void)?
+    var onChanged: (() -> Void)?
 
-    // Direct dependency on the manager (already @Observable)
+    // Keep a stable reference to the manager
     private let manager: OBDConnectionManager
 
-    // Mirror of the current MIL status for consumers that expect a local property
-    // Observation will track mutations to this property.
+    // Current MIL status snapshot for UI
     private(set) var status: Status?
-    private var lastEmitted: Status?
+
+    // Combine subscription
+    private var cancellable: AnyCancellable?
 
     init(connectionManager: OBDConnectionManager? = nil) {
         self.manager = connectionManager ?? OBDConnectionManager.shared
-        // Initialize with current value
-        self.status = manager.MILStatus
-        self.lastEmitted = self.status
-    }
 
-    // Call this from UI lifecycle hooks (e.g., view .onAppear or controller setup)
-    // to synchronize and notify non-Observation consumers (CarPlay).
-    func refreshFromManager() {
-        let newValue = manager.MILStatus
-        if lastEmitted != newValue {
-            lastEmitted = newValue
-            status = newValue
-            onStatusChanged?()
-        }
+        // Seed with any existing value so initial UI can show immediately
+        self.status = manager.MILStatus
+
+        // Follow FuelStatusViewModel pattern
+        cancellable = manager.$MILStatus
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] newValue in
+                guard let self else { return }
+                self.status = newValue
+                // Match FuelStatusViewModel style: no manual equality gate here.
+                self.onChanged?()
+            }
     }
 
     var headerText: String {
@@ -75,3 +77,4 @@ final class MILStatusViewModel {
         }
     }
 }
+

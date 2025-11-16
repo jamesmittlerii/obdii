@@ -33,7 +33,7 @@ class CarPlayDiagnosticsController: CarPlayBaseTemplateController {
         
         // Listen to view model changes only (no direct OBDConnectionManager usage)
         viewModel.onSectionsChanged = { [weak self] in
-            self?.refreshSection()
+            self?.performRefresh()
         }
     }
     

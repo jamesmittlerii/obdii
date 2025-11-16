@@ -22,12 +22,12 @@ import Observation
 @Observable
 final class FuelStatusViewModel {
     // Callback for controllers (CarPlay, etc.) to observe changes, mirroring DiagnosticsViewModel
-    var onStatusChanged: (() -> Void)?
+    var onChanged: (() -> Void)?
 
     private(set) var status: [StatusCodeMetadata?] = [] {
         didSet {
             // Notify observers when the status array changes
-            onStatusChanged?()
+            onChanged?()
         }
     }
 

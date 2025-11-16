@@ -15,15 +15,17 @@ Swift UI view managing the settings. Default tab when starting the app.
 
 import SwiftUI
 import SwiftOBD2
+import Observation
 #if canImport(UIKit)
 import UIKit
 #endif
 
 struct SettingsView: View {
-    @StateObject private var viewModel = SettingsViewModel()
+    // With @Observable view model, store it in @State and use @Bindable in body for bindings.
+    @State private var viewModel = SettingsViewModel()
 
-    // Share sheet state (iOS only)
     #if canImport(UIKit)
+    // Share sheet state (iOS only)
     @State private var isPresentingShare = false
     @State private var shareItems: [Any] = []
     @State private var isGeneratingLogs = false
@@ -33,17 +35,17 @@ struct SettingsView: View {
     // Runtime detection: iOS app running on macOS (Designed for iPad) or Mac Catalyst
     private var runningOnMac: Bool {
         #if targetEnvironment(macCatalyst)
-        return true
+            return true
         #else
-        if #available(iOS 14.0, *) {
             return ProcessInfo.processInfo.isiOSAppOnMac
-        } else {
-            return false
-        }
+        
         #endif
     }
 
     var body: some View {
+        // Bindable projection for Observation bindings ($viewModel.property)
+        @Bindable var viewModel = viewModel
+
         NavigationStack {
             Form {
                 Section {

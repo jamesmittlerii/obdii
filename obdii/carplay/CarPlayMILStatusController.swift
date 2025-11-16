@@ -32,8 +32,8 @@ class CarPlayMILStatusController: CarPlayBaseTemplateController {
     override func setInterfaceController(_ interfaceController: CPInterfaceController) {
         super.setInterfaceController(interfaceController)
         // Mimic FuelStatus/Diagnostics pattern: simple callback for changes
-        viewModel.onStatusChanged = { [weak self] in
-            self?.refreshSection()
+        viewModel.onChanged = { [weak self] in
+            self?.performRefresh()
         }
     }
     

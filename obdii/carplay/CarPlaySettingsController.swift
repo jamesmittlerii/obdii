@@ -16,26 +16,20 @@ CarPlay template for showing the settings
 import CarPlay
 import UIKit
 import SwiftOBD2
-import Combine
+import Observation
 import Network
 
 @MainActor
 class CarPlaySettingsController: CarPlayBaseTemplateController {
     private var currentListTemplate: CPListTemplate?
     private let viewModel = SettingsViewModel()
-   
-    
-    
 
     override func setInterfaceController(_ interfaceController: CPInterfaceController) {
         super.setInterfaceController(interfaceController)
-
-        // Observe SettingsViewModel state so the UI stays in sync
-        
-        subscribeAndRefresh(viewModel.$connectionState)
-        subscribeAndRefresh(viewModel.$connectionType)
-        subscribeAndRefresh(viewModel.$units)
-
+        // Mimic FuelStatus/Diagnostics pattern: simple callback for changes
+        viewModel.onChanged = { [weak self] in
+            self?.performRefresh()
+        }
     }
     
     private func makeItem(_ text: String, detailText: String) -> CPListItem {
@@ -136,4 +130,3 @@ class CarPlaySettingsController: CarPlayBaseTemplateController {
         refreshSection()
     }
 }
-
