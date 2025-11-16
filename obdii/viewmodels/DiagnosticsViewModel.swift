@@ -17,17 +17,29 @@ View Model for showing the Diagnostic Trouble Codes. Used by CarPlay and SwiftUI
 import Foundation
 import Combine
 import SwiftOBD2
+import Observation
 
 @MainActor
-final class DiagnosticsViewModel: ObservableObject {
+@Observable
+final class DiagnosticsViewModel {
     struct Section: Equatable {
         let title: String
         let severity: CodeSeverity
         let items: [TroubleCodeMetadata]
     }
 
-    @Published private(set) var sections: [Section] = []
-    @Published private(set) var isEmpty: Bool = true
+    private(set) var sections: [Section] = [] {
+        didSet {
+            // Notify any non-SwiftUI observers (e.g., CarPlay controller)
+            if oldValue != sections {
+                onSectionsChanged?()
+            }
+        }
+    }
+    private(set) var isEmpty: Bool = true
+
+    // Non-SwiftUI observation hook for controllers
+    var onSectionsChanged: (() -> Void)?
 
     private var cancellable: AnyCancellable?
 
@@ -71,3 +83,4 @@ final class DiagnosticsViewModel: ObservableObject {
         }
     }
 }
+

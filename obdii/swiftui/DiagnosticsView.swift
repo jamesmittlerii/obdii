@@ -17,7 +17,7 @@ import SwiftUI
 import SwiftOBD2
 
 struct DiagnosticsView: View {
-    @StateObject private var viewModel = DiagnosticsViewModel()
+    @State private var viewModel = DiagnosticsViewModel()
     @State private var interestToken: UUID = PIDInterestRegistry.shared.makeToken()
 
     var body: some View {
@@ -67,3 +67,4 @@ struct DiagnosticsView: View {
 #Preview {
     DiagnosticsView()
 }
+

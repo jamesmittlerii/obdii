@@ -31,11 +31,13 @@ class CarPlayDiagnosticsController: CarPlayBaseTemplateController {
     override func setInterfaceController(_ interfaceController: CPInterfaceController) {
         super.setInterfaceController(interfaceController)
         
-        subscribeAndRefresh(viewModel.$sections)
-        
+        // Listen to view model changes only (no direct OBDConnectionManager usage)
+        viewModel.onSectionsChanged = { [weak self] in
+            self?.refreshSection()
+        }
     }
     
-    // Ensure demand-driven streaming includes fuel status while this tab is visible
+    // Ensure demand-driven streaming includes DTCs while this tab is visible
     override func registerVisiblePIDs() {
         PIDInterestRegistry.shared.replace(pids: [.mode3(.GET_DTC)], for: controllerToken)
     }
