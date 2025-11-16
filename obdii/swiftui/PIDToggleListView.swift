@@ -21,7 +21,7 @@ struct PIDToggleListView: View {
     var body: some View {
         List {
             // Enabled section
-            let enabledItems: [OBDPID] = viewModel.pids.filter { $0.enabled && $0.kind == .gauge }
+            let enabledItems: [OBDPID] = viewModel.filteredEnabled
             if !enabledItems.isEmpty {
                 Section(header: Text("Enabled")) {
                     ForEach(enabledItems, id: \.id) { pid in
@@ -46,7 +46,7 @@ struct PIDToggleListView: View {
             }
 
             // Disabled section
-            let disabledItems: [OBDPID] = viewModel.pids.filter { !$0.enabled && $0.kind == .gauge }
+            let disabledItems: [OBDPID] = viewModel.filteredDisabled
             if !disabledItems.isEmpty {
                 Section(header: Text("Disabled")) {
                     ForEach(disabledItems, id: \.id) { pid in
@@ -66,6 +66,7 @@ struct PIDToggleListView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .searchable(text: $viewModel.searchText, prompt: "Search PIDs")
     }
 }
 

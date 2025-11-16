@@ -22,6 +22,9 @@ final class PIDToggleListViewModel: ObservableObject {
     // Mirror of the store PIDs for simple view binding
     @Published private(set) var pids: [OBDPID] = []
 
+    // Search text for filtering
+    @Published var searchText: String = ""
+
     private let store: PIDStore
     private var cancellables = Set<AnyCancellable>()
 
@@ -49,6 +52,36 @@ final class PIDToggleListViewModel: ObservableObject {
 
     var disabledIndices: [Int] {
         pids.indices.filter { !pids[$0].enabled && pids[$0].kind == .gauge }
+    }
+
+    // Filtered projections for the view
+    var filteredEnabled: [OBDPID] {
+        let base = pids.filter { $0.enabled && $0.kind == .gauge }
+        let q = normalizedQuery
+        guard !q.isEmpty else { return base }
+        return base.filter { matchesQuery($0, q) }
+    }
+
+    var filteredDisabled: [OBDPID] {
+        let base = pids.filter { !$0.enabled && $0.kind == .gauge }
+        let q = normalizedQuery
+        guard !q.isEmpty else { return base }
+        return base.filter { matchesQuery($0, q) }
+    }
+
+    private var normalizedQuery: String {
+        searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private func matchesQuery(_ pid: OBDPID, _ q: String) -> Bool {
+        if q.isEmpty { return true }
+        // Search label, name, notes, and command string if available
+        if pid.label.lowercased().contains(q) { return true }
+        if pid.name.lowercased().contains(q) { return true }
+        if let notes = pid.notes?.lowercased(), notes.contains(q) { return true }
+        let command = pid.pid.properties.command.lowercased()
+        if command.contains(q) { return true }
+        return false
     }
 
     // Intents
