@@ -20,9 +20,17 @@ import Combine
 
 struct GaugeDetailView: View {
     @StateObject private var viewModel: GaugeDetailViewModel
+    // Demand-driven polling token
+    @State private var interestToken: UUID = PIDInterestRegistry.shared.makeToken()
 
     init(pid: OBDPID, connectionManager: OBDConnectionManager) {
         _viewModel = StateObject(wrappedValue: GaugeDetailViewModel(pid: pid, connectionManager: connectionManager))
+    }
+    
+    private func updateInterest() {
+        // Register interest for this gauge's command
+        let commands: Set<OBDCommand> = [viewModel.pid.pid]
+        PIDInterestRegistry.shared.replace(pids: commands, for: interestToken)
     }
 
     var body: some View {
@@ -49,6 +57,12 @@ struct GaugeDetailView: View {
             }
         }
         .navigationTitle(viewModel.pid.name)
+        .onAppear {
+            updateInterest()
+        }
+        .onDisappear {
+            PIDInterestRegistry.shared.clear(token: interestToken)
+        }
     }
 }
 
