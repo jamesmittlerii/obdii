@@ -175,4 +175,24 @@ class CarPlayBaseTemplateController: NSObject, @MainActor CarPlayTabControlling 
         return String(describing: Unmanaged.passUnretained(obj).toOpaque())
     }
    
+    // MARK: - Template visibility hooks (to be called by the CPInterfaceController delegate)
+
+    /// Call when a CPTemplate did appear. If it is our currentTemplate, we refresh and register interest.
+    func templateDidAppear(_ template: CPTemplate) {
+        guard let currentTemplate, template === currentTemplate else { return }
+        let owner = String(describing: type(of: self))
+        let tid = id(template)
+        obdDebug("CarPlay templateDidAppear: \(owner) template=\(tid)", category: .service)
+        performRefresh()
+        registerVisiblePIDs()
+    }
+
+    /// Call when a CPTemplate did disappear. If it is our currentTemplate, clear our PID interest.
+    func templateDidDisappear(_ template: CPTemplate) {
+        guard let currentTemplate, template === currentTemplate else { return }
+        let owner = String(describing: type(of: self))
+        let tid = id(template)
+        obdDebug("CarPlay templateDidDisappear: \(owner) template=\(tid)", category: .service)
+        PIDInterestRegistry.shared.clear(token: controllerToken)
+    }
 }

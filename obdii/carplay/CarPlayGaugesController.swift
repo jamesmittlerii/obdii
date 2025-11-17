@@ -105,7 +105,7 @@ class CarPlayGaugesController: CarPlayBaseTemplateController {
             let tappedPID = tiles[index].pid
 
             // Before pushing detail, clear root interest and rely on detail controller to own interest for single PID
-            PIDInterestRegistry.shared.clear(token: self.controllerToken)
+            //PIDInterestRegistry.shared.clear(token: self.controllerToken)
 
             self.presentSensorTemplate(for: tappedPID)
             completion()
@@ -115,19 +115,31 @@ class CarPlayGaugesController: CarPlayBaseTemplateController {
     }
 
     private func presentSensorTemplate(for pid: OBDPID) {
-        // Releasing the old controller cancels its subscriptions automatically
-        detailController = nil
+    // Releasing the old controller cancels its subscriptions automatically
+    detailController = nil
 
-        // Create a new self-contained detail controller (auto-subscribes in init)
-        let controller = CarPlayGaugeDetailController(pid: pid, connectionManager: connectionManager)
-        detailController = controller
+    // Create a new self-contained detail controller
+    let controller = CarPlayGaugeDetailController(pid: pid, connectionManager: connectionManager)
+    detailController = controller
 
-        // Push its template
-        interfaceController?.pushTemplate(controller.template, animated: false, completion: { [weak self] success, error in
-            // no-op
-            _ = self
-        })
+    // IMPORTANT: give the detail controller the same CPInterfaceController so it can wire callbacks and tokens
+    if let ic = self.interfaceController {
+        controller.setInterfaceController(ic)
     }
+
+    // Ensure its root template is created
+    let detailTemplate = controller.makeRootTemplate()
+
+    // Register ownership with the scene delegate so appear/disappear are forwarded
+    if let sceneDelegate = interfaceController?.delegate as? CarPlaySceneDelegate {
+        sceneDelegate.register(template: detailTemplate, owner: controller)
+    }
+
+    // Push its template
+    interfaceController?.pushTemplate(detailTemplate, animated: false, completion: { [weak self] success, error in
+        _ = self
+    })
+}
 
     override func performRefresh() {
         // Update the UI for any tiles change

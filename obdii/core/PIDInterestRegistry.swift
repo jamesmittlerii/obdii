@@ -60,8 +60,38 @@ final class PIDInterestRegistry: ObservableObject {
             acc.formUnion(next)
         }
         if union != interested {
+            // Log the change with human-readable names
+            let names = union
+                .map { PIDInterestRegistry.displayName(for: $0) }
+                .sorted()
+                .joined(separator: ", ")
+            obdDebug("PIDInterestRegistry: interested set changed to {\(names)}", category: .service)
             interested = union
         }
     }
-}
 
+    // MARK: - Logging helpers
+
+    private static func displayName(for command: OBDCommand) -> String {
+        switch command {
+        case .mode1(let pid):
+            // Try to give a friendly short label when possible
+            switch pid {
+            case .status: return "Mode01 Status (0101)"
+            case .fuelStatus: return "Mode01 Fuel Status (0103)"
+            case .rpm: return "Mode01 RPM (010C)"
+            case .speed: return "Mode01 Speed (010D)"
+            default:
+                return "Mode01 \(pid)"
+            }
+        case .mode3(let m3):
+            switch m3 {
+            case .GET_DTC: return "Mode03 DTCs"
+            }
+        case .GMmode22(let gm):
+            return "GM Mode22 \(gm)"
+        default:
+            return String(describing: command)
+        }
+    }
+}

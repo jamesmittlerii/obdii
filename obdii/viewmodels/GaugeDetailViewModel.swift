@@ -16,14 +16,25 @@ View Model for displaying a single gauge..either graphically or in text detail. 
 import SwiftUI
 import SwiftOBD2
 import Combine
+import Observation
 
 @MainActor
-final class GaugeDetailViewModel: ObservableObject {
+@Observable
+final class GaugeDetailViewModel {
     let pid: OBDPID
     private let connectionManager: OBDConnectionManager
 
-    // Expose the live stats for this PID
-    @Published private(set) var stats: OBDConnectionManager.PIDStats?
+    // Expose the live stats for this PID (SwiftUI observes via @Observable)
+    private(set) var stats: OBDConnectionManager.PIDStats? {
+        didSet {
+            if oldValue != stats {
+                onChanged?()
+            }
+        }
+    }
+
+    // Non-SwiftUI observation hook for controllers (CarPlay, etc.)
+    var onChanged: (() -> Void)?
 
     private var cancellables = Set<AnyCancellable>()
 
@@ -51,13 +62,15 @@ final class GaugeDetailViewModel: ObservableObject {
                 }
             })
             .receive(on: DispatchQueue.main)
-            .assign(to: &$stats)
+            .sink { [weak self] newValue in
+                self?.stats = newValue
+            }
+            .store(in: &cancellables)
 
         // Also listen to units changes so the view can re-render formatting even if stats didn’t change
         ConfigData.shared.$unitsPublished
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                // Trigger a change by reassigning the current stats
                 guard let self else { return }
                 self.stats = self.connectionManager.stats(for: self.pid.pid)
             }

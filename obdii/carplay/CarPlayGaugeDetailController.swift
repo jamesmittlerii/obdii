@@ -19,33 +19,50 @@ import Combine
 import SwiftOBD2
 
 @MainActor
-final class CarPlayGaugeDetailController {
+final class CarPlayGaugeDetailController: CarPlayBaseTemplateController {
     private let viewModel: GaugeDetailViewModel
-
-    private(set) var template: CPInformationTemplate
-    private var cancellables = Set<AnyCancellable>()
+    private let connectionManager: OBDConnectionManager
+    private let pid: OBDPID
 
     init(pid: OBDPID, connectionManager: OBDConnectionManager) {
-        // Reuse the existing GaugeDetailViewModel for data and formatting
+        self.connectionManager = connectionManager
+        self.pid = pid
+        // Use GaugeDetailViewModel for data and formatting
         self.viewModel = GaugeDetailViewModel(pid: pid, connectionManager: connectionManager)
 
-        // Build initial items and template
-        let items = CarPlayGaugeDetailController.buildItems(for: viewModel.pid, stats: viewModel.stats)
-        self.template = CPInformationTemplate(title: viewModel.pid.name, layout: .twoColumn, items: items, actions: [])
-
-        // Subscribe to live updates from the view model
-        
-        viewModel.$stats
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                guard let self else { return }
-                let items = CarPlayGaugeDetailController.buildItems(for: self.viewModel.pid, stats: self.viewModel.stats)
-                self.template.items = items
-            }
-            .store(in: &cancellables)
+       
     }
 
-    private static func buildItems(for pid: OBDPID, stats: OBDConnectionManager.PIDStats?) -> [CPInformationItem] {
+    // Wire the simple callback if/when the interface controller gets set (idempotent)
+    override func setInterfaceController(_ interfaceController: CPInterfaceController) {
+        super.setInterfaceController(interfaceController)
+        viewModel.onChanged = { [weak self] in
+            self?.performRefresh()
+        }
+    
+    }
+
+    // Register interest for just this PID while this template is visible
+    override func registerVisiblePIDs() {
+        PIDInterestRegistry.shared.replace(pids: [pid.pid], for: controllerToken)
+    }
+
+    // Create the root information template for this PID
+    override func makeRootTemplate() -> CPTemplate {
+        let items = buildItems(for: viewModel.pid, stats: viewModel.stats)
+        let info = CPInformationTemplate(title: viewModel.pid.name, layout: .twoColumn, items: items, actions: [])
+        self.currentTemplate = info
+        return info
+    }
+
+    // Rebuild from the current snapshot
+    override func performRefresh() {
+        guard let info = currentTemplate as? CPInformationTemplate else { return }
+        let items = buildItems(for: viewModel.pid, stats: viewModel.stats)
+        info.items = items
+    }
+
+    private func buildItems(for pid: OBDPID, stats: OBDConnectionManager.PIDStats?) -> [CPInformationItem] {
         var items: [CPInformationItem] = []
 
         if let s = stats {

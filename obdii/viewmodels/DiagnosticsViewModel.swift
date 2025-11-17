@@ -32,14 +32,14 @@ final class DiagnosticsViewModel {
         didSet {
             // Notify any non-SwiftUI observers (e.g., CarPlay controller)
             if oldValue != sections {
-                onSectionsChanged?()
+                onChanged?()
             }
         }
     }
     private(set) var isEmpty: Bool = true
 
     // Non-SwiftUI observation hook for controllers
-    var onSectionsChanged: (() -> Void)?
+    var onChanged: (() -> Void)?
 
     private var cancellable: AnyCancellable?
 

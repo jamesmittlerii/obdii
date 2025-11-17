@@ -16,15 +16,16 @@ Swift UI view for the individual gauge detail (textual)
 import SwiftUI
 import SwiftOBD2
 import Combine
-
+import Observation
 
 struct GaugeDetailView: View {
-    @StateObject private var viewModel: GaugeDetailViewModel
+    // With @Observable view models, store them in @State to keep a stable instance
+    @State private var viewModel: GaugeDetailViewModel
     // Demand-driven polling token
     @State private var interestToken: UUID = PIDInterestRegistry.shared.makeToken()
 
     init(pid: OBDPID, connectionManager: OBDConnectionManager) {
-        _viewModel = StateObject(wrappedValue: GaugeDetailViewModel(pid: pid, connectionManager: connectionManager))
+        _viewModel = State(initialValue: GaugeDetailViewModel(pid: pid, connectionManager: connectionManager))
     }
     
     private func updateInterest() {
@@ -74,3 +75,4 @@ struct GaugeDetailView: View {
         )
     }
 }
+

@@ -32,12 +32,15 @@ protocol CarPlayTabControlling: AnyObject {
     func setTabSelectionPublisher(_ publisher: AnyPublisher<Int, Never>, tabIndex: Int)
 }
 
-class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
+class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate, CPInterfaceControllerDelegate {
 
     var interfaceController: CPInterfaceController?
     private let logger = Logger()
     private let connectionManager = OBDConnectionManager.shared
     private let tabCoordinator = CarPlayTabCoordinator()
+
+    // Registry: map templates to their owning controllers so we can forward appear/disappear
+    private var ownerByTemplateID: [ObjectIdentifier: CarPlayBaseTemplateController] = [:]
 
     // Tab Controllers
     private lazy var controllers: [any CarPlayTabControlling] = [
@@ -52,12 +55,21 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
                                   didConnect interfaceController: CPInterfaceController) {
 
         self.interfaceController = interfaceController
+        interfaceController.delegate = self
 
         // 1) Provide interface controller to all tab controllers
         controllers.forEach { $0.setInterfaceController(interfaceController) }
 
         // 2) Build templates from controllers
         let templates = controllers.map { $0.makeRootTemplate() }
+
+        // 2a) Register ownership for visibility forwarding (only for controllers that are CarPlayBaseTemplateController subclasses)
+        for (index, controller) in controllers.enumerated() {
+            if let base = controller as? CarPlayBaseTemplateController {
+                let template = templates[index]
+                ownerByTemplateID[ObjectIdentifier(template)] = base
+            }
+        }
 
         // 3) Create tab bar
         let tabBar = CPTabBarTemplate(templates: templates)
@@ -91,5 +103,44 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
             didDisconnectInterfaceController interfaceController: CPInterfaceController) {
         self.interfaceController = nil
+        ownerByTemplateID.removeAll()
+    }
+
+    // MARK: - CPInterfaceControllerDelegate (visibility forwarding)
+
+    func templateDidAppear(_ aTemplate: CPTemplate, animated: Bool) {
+        if let owner = ownerByTemplateID[ObjectIdentifier(aTemplate)] {
+            owner.templateDidAppear(aTemplate)
+        }
+    }
+
+    func templateDidDisappear(_ aTemplate: CPTemplate, animated: Bool) {
+        if let owner = ownerByTemplateID[ObjectIdentifier(aTemplate)] {
+            owner.templateDidDisappear(aTemplate)
+        }
+    }
+
+    // Older iOS compatibility (if needed)
+    func interfaceController(_ interfaceController: CPInterfaceController, didShow template: CPTemplate, animated: Bool) {
+        templateDidAppear(template, animated: animated)
+    }
+
+    func interfaceController(_ interfaceController: CPInterfaceController, didHide template: CPTemplate, animated: Bool) {
+        templateDidDisappear(template, animated: animated)
+    }
+
+    // Unregister mapping when a template is popped off the stack
+    func interfaceController(_ interfaceController: CPInterfaceController, didPop template: CPTemplate, to newTopTemplate: CPTemplate, animated: Bool) {
+        unregister(template: template)
+    }
+
+    // Public helper to register ownership for pushed templates
+    func register(template: CPTemplate, owner: CarPlayBaseTemplateController) {
+        ownerByTemplateID[ObjectIdentifier(template)] = owner
+    }
+
+    func unregister(template: CPTemplate) {
+        ownerByTemplateID.removeValue(forKey: ObjectIdentifier(template))
     }
 }
+
