@@ -131,7 +131,10 @@ class CarPlayGaugesController: CarPlayBaseTemplateController<GaugesViewModel> {
         refreshSection()
         // Also (re)register interest for whatever tiles are currently visible.
         // This ensures newly added gauges start streaming immediately while the tab is visible.
-        registerVisiblePIDs()
+        
+        if isTemplateVisible {
+            registerVisiblePIDs()
+        }
     }
 }
 

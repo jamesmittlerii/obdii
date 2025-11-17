@@ -38,6 +38,7 @@ class CarPlayBaseTemplateController<VM: BaseViewModel>: NSObject, @MainActor Car
     // Tab selection
     private var tabIndex: Int = 0
     private var isTabSelected = false
+    private var isVisible = false
     private var tabCancellable: AnyCancellable?
     
     // Demand-driven polling token for this controller
@@ -86,9 +87,12 @@ class CarPlayBaseTemplateController<VM: BaseViewModel>: NSObject, @MainActor Car
     }
 
     var isTemplateVisible: Bool {
+        /* XXX
         guard let interfaceController, let currentTemplate,
               let top = interfaceController.topTemplate else { return false }
         return top === currentTemplate
+         */
+        return isVisible
     }
 
     func refreshIfVisible(_ action: () -> Void) {
@@ -129,6 +133,7 @@ class CarPlayBaseTemplateController<VM: BaseViewModel>: NSObject, @MainActor Car
         let owner = String(describing: type(of: self))
         let tid = id(template)
         obdDebug("CarPlay templateDidAppear: \(owner) template=\(tid)", category: .service)
+        isVisible = true
         performRefresh()
         registerVisiblePIDs()
     }
@@ -139,6 +144,7 @@ class CarPlayBaseTemplateController<VM: BaseViewModel>: NSObject, @MainActor Car
         let owner = String(describing: type(of: self))
         let tid = id(template)
         obdDebug("CarPlay templateDidDisappear: \(owner) template=\(tid)", category: .service)
+        isVisible = false
         PIDInterestRegistry.shared.clear(token: controllerToken)
     }
 }

@@ -73,13 +73,14 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate, CPI
         let tabBar = CPTabBarTemplate(templates: templates)
         tabBar.delegate = tabCoordinator
 
+        /*
         // 4) Inject selection publisher + index for each controller
         for (index, controller) in controllers.enumerated() {
             controller.setTabSelectionPublisher(
                 tabCoordinator.selectedIndexPublisher,
                 tabIndex: index
             )
-        }
+        }*/
 
         // 5) Set root template
         interfaceController.setRootTemplate(tabBar, animated: true, completion: nil)
