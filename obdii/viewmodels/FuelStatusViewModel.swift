@@ -20,9 +20,9 @@ import Observation
 
 @MainActor
 @Observable
-final class FuelStatusViewModel {
+final class FuelStatusViewModel : BaseViewModel{
     // Callback for controllers (CarPlay, etc.) to observe changes, mirroring DiagnosticsViewModel
-    var onChanged: (() -> Void)?
+    //var onChanged: (() -> Void)?
 
     private(set) var status: [StatusCodeMetadata?] = [] {
         didSet {
@@ -33,8 +33,9 @@ final class FuelStatusViewModel {
 
     private var cancellable: AnyCancellable?
 
-    init(connectionManager: OBDConnectionManager? = nil) {
-        let manager = connectionManager ?? OBDConnectionManager.shared
+    override init() {
+        super.init()
+        let manager = OBDConnectionManager.shared
         cancellable = manager.$fuelStatus
             .removeDuplicates()
             .receive(on: DispatchQueue.main)

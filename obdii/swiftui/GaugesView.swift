@@ -20,14 +20,13 @@ import UIKit
 
 @MainActor
 struct GaugesView: View {
-    @StateObject private var viewModel: GaugesViewModel
+    @State private var viewModel: GaugesViewModel
 
     // Demand-driven polling token
     @State private var interestToken: UUID = PIDInterestRegistry.shared.makeToken()
 
-    init(connectionManager: OBDConnectionManager, pidStore: PIDStore? = nil) {
-        let resolvedStore = pidStore ?? PIDStore.shared
-        _viewModel = StateObject(wrappedValue: GaugesViewModel(connectionManager: connectionManager, pidStore: resolvedStore))
+    init() {
+        _viewModel = State(wrappedValue: GaugesViewModel())
     }
 
     // Adaptive grid: 2–4 columns depending on width
@@ -103,6 +102,7 @@ private struct GaugeTile: View {
 
 #Preview {
     NavigationStack {
-        GaugesView(connectionManager: .shared, pidStore: .shared)
+        GaugesView()
     }
 }
+

@@ -20,18 +20,14 @@ import Observation
 import Network
 
 @MainActor
-class CarPlaySettingsController: CarPlayBaseTemplateController {
+class CarPlaySettingsController: CarPlayBaseTemplateController<SettingsViewModel> {
     private var currentListTemplate: CPListTemplate?
-    private let viewModel = SettingsViewModel()
-
-    override func setInterfaceController(_ interfaceController: CPInterfaceController) {
-        super.setInterfaceController(interfaceController)
-        // Mimic FuelStatus/Diagnostics pattern: simple callback for changes
-        viewModel.onChanged = { [weak self] in
-            self?.performRefresh()
-        }
-    }
     
+    
+     init() {
+        super.init(viewModel: SettingsViewModel())
+    }
+
     private func makeItem(_ text: String, detailText: String) -> CPListItem {
         let item = CPListItem(text: text, detailText: detailText)
         item.handler = { _, completion in completion() }
@@ -130,3 +126,4 @@ class CarPlaySettingsController: CarPlayBaseTemplateController {
         refreshSection()
     }
 }
+

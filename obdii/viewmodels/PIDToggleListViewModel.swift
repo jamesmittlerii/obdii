@@ -30,16 +30,13 @@ final class PIDToggleListViewModel {
     private let store: PIDStore
 
     // Designated initializer without default argument to avoid nonisolated default evaluation
-    init(store: PIDStore) {
-        self.store = store
+    init() {
+        self.store = PIDStore.shared
         // Initialize local mirror
         self.pids = store.pids
     }
 
-    // Convenience initializer accessing MainActor-isolated singleton safely
-    convenience init() {
-        self.init(store: .shared)
-    }
+    
 
     // Computed helpers for sections
     var enabledIndices: [Int] {

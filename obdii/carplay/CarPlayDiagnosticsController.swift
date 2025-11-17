@@ -19,24 +19,12 @@ import SwiftOBD2
 import Combine
 
 @MainActor
-class CarPlayDiagnosticsController: CarPlayBaseTemplateController {
-    private let viewModel: DiagnosticsViewModel
-    private var cancellables = Set<AnyCancellable>()
+class CarPlayDiagnosticsController: CarPlayBaseTemplateController<DiagnosticsViewModel> {
     
-    init(connectionManager: OBDConnectionManager) {
-        // Use the shared diagnostics ViewModel logic
-        self.viewModel = DiagnosticsViewModel(connectionManager: connectionManager)
+    init() {
+        super.init(viewModel: DiagnosticsViewModel())
     }
 
-    override func setInterfaceController(_ interfaceController: CPInterfaceController) {
-        super.setInterfaceController(interfaceController)
-        
-        // Listen to view model changes only (no direct OBDConnectionManager usage)
-        viewModel.onChanged = { [weak self] in
-            self?.performRefresh()
-        }
-    }
-    
     // Ensure demand-driven streaming includes DTCs while this tab is visible
     override func registerVisiblePIDs() {
         PIDInterestRegistry.shared.replace(pids: [.mode3(.GET_DTC)], for: controllerToken)
@@ -133,4 +121,3 @@ class CarPlayDiagnosticsController: CarPlayBaseTemplateController {
 
     //  Helpers
 }
-

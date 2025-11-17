@@ -21,7 +21,7 @@ import Observation
 
 @MainActor
 @Observable
-class SettingsViewModel {
+class SettingsViewModel : BaseViewModel {
     // Observable state for the View
     var wifiHost: String {
         didSet {
@@ -83,7 +83,7 @@ class SettingsViewModel {
     }
 
     // Callback for non-SwiftUI consumers (CarPlay)
-    var onChanged: (() -> Void)?
+    //var onChanged: (() -> Void)?
 
     //  Private Model References
     private let configData: ConfigData
@@ -115,9 +115,9 @@ class SettingsViewModel {
     //  Initializers
 
     // Designated initializer
-    init(configData: ConfigData, connectionManager: OBDConnectionManager) {
-        self.configData = configData
-        self.connectionManager = connectionManager
+    override init() {
+        self.configData = ConfigData.shared
+        self.connectionManager = OBDConnectionManager.shared
 
         // Initialize observable properties from the models
         self.wifiHost = configData.wifiHost
@@ -127,13 +127,13 @@ class SettingsViewModel {
         self.connectionState = connectionManager.connectionState
         self.units = configData.unitsPublished
 
+        super.init()
+        
         bindExternalPublishers()
     }
 
-    // Convenience initializer for shared singletons
-    convenience init() {
-        self.init(configData: .shared, connectionManager: .shared)
-    }
+    // Labeled convenience initializer for shared singletons (avoid colliding with @Observable init)
+   
 
     // MARK: - Debounced apply helpers
 
@@ -221,3 +221,4 @@ class SettingsViewModel {
         onChanged?()
     }
 }
+

@@ -22,19 +22,33 @@ import CarPlay
 import Combine
 import SwiftOBD2
 
+// Non-generic protocol to allow CarPlaySceneDelegate to forward visibility
 @MainActor
-class CarPlayBaseTemplateController: NSObject, @MainActor CarPlayTabControlling {
+protocol CarPlayVisibilityForwarding: AnyObject {
+    func templateDidAppear(_ template: CPTemplate)
+    func templateDidDisappear(_ template: CPTemplate)
+}
+
+@MainActor
+class CarPlayBaseTemplateController<VM: BaseViewModel>: NSObject, @MainActor CarPlayTabControlling, CarPlayVisibilityForwarding {
     weak var interfaceController: CPInterfaceController?
     var currentTemplate: CPTemplate?
+    let viewModel: VM
 
     // Tab selection
     private var tabIndex: Int = 0
     private var isTabSelected = false
     private var tabCancellable: AnyCancellable?
-    private var cancellables = Set<AnyCancellable>()
-
+    
     // Demand-driven polling token for this controller
     let controllerToken: UUID = PIDInterestRegistry.shared.makeToken()
+
+    // MARK: - Init
+
+    init(viewModel: VM) {
+        self.viewModel = viewModel
+        super.init()
+    }
 
     // MARK: - CarPlayTabControlling
 
@@ -46,6 +60,11 @@ class CarPlayBaseTemplateController: NSObject, @MainActor CarPlayTabControlling 
 
     func setInterfaceController(_ interfaceController: CPInterfaceController) {
         self.interfaceController = interfaceController
+        
+        // Listen to view model changes only (no direct OBDConnectionManager usage)
+        viewModel.onChanged = { [weak self] in
+            self?.performRefresh()
+        }
     }
 
     func setTabSelectionPublisher(_ publisher: AnyPublisher<Int, Never>, tabIndex: Int) {
@@ -94,79 +113,6 @@ class CarPlayBaseTemplateController: NSObject, @MainActor CarPlayTabControlling 
     // Subclasses can override to register their currently visible PIDs.
     func registerVisiblePIDs() {
         // Default does nothing.
-    }
-
-    // MARK: - Subscribe helpers (Equatable)
-
-    func subscribeAndRefresh<T: Equatable>(_ publisher: Published<T>.Publisher) {
-        subscribeAndRefresh(publisher, throttleSeconds: 0)
-    }
-    
-    func subscribeAndRefresh<T: Equatable>(
-        _ publisher: Published<T>.Publisher,
-        throttleSeconds: TimeInterval,
-        scheduler: DispatchQueue = .main,
-        latest: Bool = true
-    ) {
-        let base = publisher
-            .removeDuplicates()
-            .receive(on: scheduler)
-        
-        let erased: AnyPublisher<T, Never>
-        if throttleSeconds > 0 {
-            erased = base
-                .throttle(for: .seconds(throttleSeconds), scheduler: scheduler, latest: latest)
-                .receive(on: scheduler)
-                .eraseToAnyPublisher()
-        } else {
-            erased = base
-                .eraseToAnyPublisher()
-        }
-
-        erased
-            .sink { [weak self] _ in
-                self?.refreshIfVisible {
-                    // Only refresh UI on data ticks; do not re-register interest here.
-                    self?.performRefresh()
-                }
-            }
-            .store(in: &cancellables)
-    }
-
-    // MARK: - Subscribe helpers (no Equatable)
-
-    func subscribeAndRefresh<T>(_ publisher: Published<T>.Publisher) {
-        subscribeAndRefresh(publisher, throttleSeconds: 0)
-    }
-
-    func subscribeAndRefresh<T>(
-        _ publisher: Published<T>.Publisher,
-        throttleSeconds: TimeInterval,
-        scheduler: DispatchQueue = .main,
-        latest: Bool = true
-    ) {
-        let base = publisher
-            .receive(on: scheduler)
-
-        let erased: AnyPublisher<T, Never>
-        if throttleSeconds > 0 {
-            erased = base
-                .throttle(for: .seconds(throttleSeconds), scheduler: scheduler, latest: latest)
-                .receive(on: scheduler)
-                .eraseToAnyPublisher()
-        } else {
-            erased = base
-                .eraseToAnyPublisher()
-        }
-
-        erased
-            .sink { [weak self] _ in
-                self?.refreshIfVisible {
-                    // Only refresh UI on data ticks; do not re-register interest here.
-                    self?.performRefresh()
-                }
-            }
-            .store(in: &cancellables)
     }
 
     // Debug helpers

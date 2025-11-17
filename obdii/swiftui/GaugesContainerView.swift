@@ -57,9 +57,9 @@ struct GaugesContainerView: View {
             Group {
                 switch GaugesDisplayMode(rawValue: storedMode) ?? .gauges {
                 case .gauges:
-                    GaugesView(connectionManager: connectionManager, pidStore: .shared)
+                    GaugesView()
                 case .list:
-                    GaugeListView(connectionManager: connectionManager)
+                    GaugeListView()
                  }
             }
         }

@@ -16,16 +16,34 @@ View Model for showing the a collection of enabled/selected Gauges. Used by CarP
 import Foundation
 import Combine
 import SwiftOBD2
+import Observation
 
 @MainActor
-final class GaugesViewModel: ObservableObject {
+@Observable
+final class GaugesViewModel : BaseViewModel{
     struct Tile: Identifiable, Equatable {
         let id: UUID
         let pid: OBDPID
         let measurement: MeasurementResult?
     }
 
-    @Published private(set) var tiles: [Tile] = []
+    // Non-SwiftUI observation hook for controllers (CarPlay, etc.)
+    //var onChanged: (() -> Void)?
+
+    // Observation tracks mutations to this var.
+    private(set) var tiles: [Tile] = [] {
+        didSet {
+            // Bridge for legacy Combine consumers (CarPlay controllers)
+            tilesPublisher.send(tiles)
+            // Notify non-SwiftUI observers
+            if oldValue != tiles {
+                onChanged?()
+            }
+        }
+    }
+
+    // Legacy Combine bridge so UIKit/CarPlay code can still throttle/subscribe.
+    let tilesPublisher = PassthroughSubject<[Tile], Never>()
 
     private let connectionManager: OBDConnectionManager
     private let pidStore: PIDStore
@@ -35,10 +53,11 @@ final class GaugesViewModel: ObservableObject {
     private var lastPids: [OBDPID] = []
     private var lastStats: [OBDCommand: OBDConnectionManager.PIDStats] = [:]
 
-    // Designated initializer without default arguments (avoids nonisolated default evaluation)
-    init(connectionManager: OBDConnectionManager, pidStore: PIDStore) {
-        self.connectionManager = connectionManager
-        self.pidStore = pidStore
+    // Designated initializer (no default args that touch main-actor singletons)
+    override init() {
+        self.connectionManager = OBDConnectionManager.shared
+        self.pidStore = PIDStore.shared
+        super.init()
 
         // Rebuild tiles whenever enabled PIDs or live stats change
         Publishers.CombineLatest(pidStore.$pids, connectionManager.$pidStats)
@@ -63,14 +82,7 @@ final class GaugesViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
-    // Convenience initializers that safely access MainActor singletons
-    convenience init(connectionManager: OBDConnectionManager) {
-        self.init(connectionManager: connectionManager, pidStore: .shared)
-    }
-
-    convenience init() {
-        self.init(connectionManager: .shared, pidStore: .shared)
-    }
+    
 
     private func rebuildTiles(pids: [OBDPID], stats: [OBDCommand: OBDConnectionManager.PIDStats]) {
         let enabled = pids.filter { $0.enabled && $0.kind == .gauge }

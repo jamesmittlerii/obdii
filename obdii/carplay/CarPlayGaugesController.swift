@@ -20,29 +20,18 @@ import SwiftUI // For Color
 import UIKit   // For UIImage
 
 @MainActor
-class CarPlayGaugesController: CarPlayBaseTemplateController {
-    private let connectionManager: OBDConnectionManager
-    private let viewModel: GaugesViewModel
+class CarPlayGaugesController: CarPlayBaseTemplateController<GaugesViewModel> {
     private var sensorItems: [CPInformationItem] = []
-    private var cancellables = Set<AnyCancellable>()
     
     // Detail screen controller (manages template and live updates)
     private var detailController: CarPlayGaugeDetailController?
 
-    // Cache of last tile identity to avoid re-registering interest on measurement changes
-    private var lastTileIDs: Set<UUID> = []
-    
-    init(connectionManager: OBDConnectionManager) {
-        self.connectionManager = connectionManager
-        self.viewModel = GaugesViewModel(connectionManager: connectionManager, pidStore: PIDStore.shared)
+   
+     
+     init() {
+        super.init(viewModel: GaugesViewModel())
     }
 
-    override func setInterfaceController(_ interfaceController: CPInterfaceController) {
-        super.setInterfaceController(interfaceController)
-        // Subscribe with throttling; base class will call performRefresh.
-        subscribeAndRefresh(viewModel.$tiles, throttleSeconds: 1.0)
-    }
-   
     override func registerVisiblePIDs() {
         // Register interest for the corresponding commands
         let visiblePIDs: Set<OBDCommand> = Set(viewModel.tiles.map { $0.pid.pid })
@@ -104,9 +93,6 @@ class CarPlayGaugesController: CarPlayBaseTemplateController {
             }
             let tappedPID = tiles[index].pid
 
-            // Before pushing detail, clear root interest and rely on detail controller to own interest for single PID
-            //PIDInterestRegistry.shared.clear(token: self.controllerToken)
-
             self.presentSensorTemplate(for: tappedPID)
             completion()
         }
@@ -115,31 +101,31 @@ class CarPlayGaugesController: CarPlayBaseTemplateController {
     }
 
     private func presentSensorTemplate(for pid: OBDPID) {
-    // Releasing the old controller cancels its subscriptions automatically
-    detailController = nil
+        // Releasing the old controller cancels its subscriptions automatically
+        detailController = nil
 
-    // Create a new self-contained detail controller
-    let controller = CarPlayGaugeDetailController(pid: pid, connectionManager: connectionManager)
-    detailController = controller
+        // Create a new self-contained detail controller
+        let controller = CarPlayGaugeDetailController(pid: pid)
+        detailController = controller
 
-    // IMPORTANT: give the detail controller the same CPInterfaceController so it can wire callbacks and tokens
-    if let ic = self.interfaceController {
-        controller.setInterfaceController(ic)
+        // IMPORTANT: give the detail controller the same CPInterfaceController so it can wire callbacks and tokens
+        if let ic = self.interfaceController {
+            controller.setInterfaceController(ic)
+        }
+
+        // Ensure its root template is created
+        let detailTemplate = controller.makeRootTemplate()
+
+        // Register ownership with the scene delegate so appear/disappear are forwarded
+        if let sceneDelegate = interfaceController?.delegate as? CarPlaySceneDelegate {
+            sceneDelegate.register(template: detailTemplate, owner: controller)
+        }
+
+        // Push its template
+        interfaceController?.pushTemplate(detailTemplate, animated: false, completion: { [weak self] success, error in
+            _ = self
+        })
     }
-
-    // Ensure its root template is created
-    let detailTemplate = controller.makeRootTemplate()
-
-    // Register ownership with the scene delegate so appear/disappear are forwarded
-    if let sceneDelegate = interfaceController?.delegate as? CarPlaySceneDelegate {
-        sceneDelegate.register(template: detailTemplate, owner: controller)
-    }
-
-    // Push its template
-    interfaceController?.pushTemplate(detailTemplate, animated: false, completion: { [weak self] success, error in
-        _ = self
-    })
-}
 
     override func performRefresh() {
         // Update the UI for any tiles change

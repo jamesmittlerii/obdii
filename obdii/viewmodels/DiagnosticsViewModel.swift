@@ -21,7 +21,7 @@ import Observation
 
 @MainActor
 @Observable
-final class DiagnosticsViewModel {
+final class DiagnosticsViewModel : BaseViewModel{
     struct Section: Equatable {
         let title: String
         let severity: CodeSeverity
@@ -39,12 +39,14 @@ final class DiagnosticsViewModel {
     private(set) var isEmpty: Bool = true
 
     // Non-SwiftUI observation hook for controllers
-    var onChanged: (() -> Void)?
+    //var onChanged: (() -> Void)?
 
     private var cancellable: AnyCancellable?
 
-    init(connectionManager: OBDConnectionManager? = nil) {
-        let manager = connectionManager ?? OBDConnectionManager.shared
+    override init() {
+        super.init()
+
+        let manager = OBDConnectionManager.shared
         cancellable = manager.$troubleCodes
             .removeDuplicates()
             .receive(on: DispatchQueue.main)

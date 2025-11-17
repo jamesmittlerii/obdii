@@ -19,23 +19,13 @@ import SwiftOBD2
 import Observation
 
 @MainActor
-class CarPlayFuelStatusController: CarPlayBaseTemplateController {
-    private let viewModel: FuelStatusViewModel
+class CarPlayFuelStatusController: CarPlayBaseTemplateController<FuelStatusViewModel> {
     private var previousFuelStatus: [StatusCodeMetadata?]?
     
-    init(connectionManager: OBDConnectionManager) {
-        // Use the shared FuelStatusViewModel logic
-        self.viewModel = FuelStatusViewModel(connectionManager: connectionManager)
+     init() {
+        super.init(viewModel: FuelStatusViewModel())
     }
 
-    override func setInterfaceController(_ interfaceController: CPInterfaceController) {
-        super.setInterfaceController(interfaceController)
-        // Mimic DiagnosticsController: listen to view model changes via a simple callback
-        viewModel.onChanged = { [weak self] in
-            self?.performRefresh()
-        }
-    }
-    
     // Ensure demand-driven streaming includes fuel status while this tab is visible
     override func registerVisiblePIDs() {
         PIDInterestRegistry.shared.replace(pids: [.mode1(.fuelStatus)], for: controllerToken)
@@ -105,3 +95,4 @@ class CarPlayFuelStatusController: CarPlayBaseTemplateController {
 
     //  Helpers
 }
+

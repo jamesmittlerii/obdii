@@ -20,7 +20,7 @@ import Observation
 
 @MainActor
 @Observable
-final class GaugeDetailViewModel {
+final class GaugeDetailViewModel : BaseViewModel{
     let pid: OBDPID
     private let connectionManager: OBDConnectionManager
 
@@ -34,16 +34,19 @@ final class GaugeDetailViewModel {
     }
 
     // Non-SwiftUI observation hook for controllers (CarPlay, etc.)
-    var onChanged: (() -> Void)?
+   // var onChanged: (() -> Void)?
 
     private var cancellables = Set<AnyCancellable>()
 
-    init(pid: OBDPID, connectionManager: OBDConnectionManager) {
+    init(pid: OBDPID) {
+        
         self.pid = pid
-        self.connectionManager = connectionManager
+        self.connectionManager = OBDConnectionManager.shared
 
         // Seed with current value if available
         self.stats = connectionManager.stats(for: pid.pid)
+        
+        super.init()
 
         // Subscribe to pidStats and extract the one for our pid
         connectionManager.$pidStats

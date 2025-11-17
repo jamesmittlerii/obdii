@@ -25,7 +25,7 @@ struct GaugeDetailView: View {
     @State private var interestToken: UUID = PIDInterestRegistry.shared.makeToken()
 
     init(pid: OBDPID, connectionManager: OBDConnectionManager) {
-        _viewModel = State(initialValue: GaugeDetailViewModel(pid: pid, connectionManager: connectionManager))
+        _viewModel = State(initialValue: GaugeDetailViewModel(pid: pid))
     }
     
     private func updateInterest() {

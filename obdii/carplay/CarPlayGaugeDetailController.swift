@@ -19,27 +19,18 @@ import Combine
 import SwiftOBD2
 
 @MainActor
-final class CarPlayGaugeDetailController: CarPlayBaseTemplateController {
-    private let viewModel: GaugeDetailViewModel
-    private let connectionManager: OBDConnectionManager
+final class CarPlayGaugeDetailController: CarPlayBaseTemplateController<GaugeDetailViewModel> {
     private let pid: OBDPID
 
-    init(pid: OBDPID, connectionManager: OBDConnectionManager) {
-        self.connectionManager = connectionManager
+    init(pid: OBDPID) {
+        // Initialize own stored properties first
         self.pid = pid
-        // Use GaugeDetailViewModel for data and formatting
-        self.viewModel = GaugeDetailViewModel(pid: pid, connectionManager: connectionManager)
 
-       
-    }
+        // Prepare the view model locally
+        let vm = GaugeDetailViewModel(pid: pid)
 
-    // Wire the simple callback if/when the interface controller gets set (idempotent)
-    override func setInterfaceController(_ interfaceController: CPInterfaceController) {
-        super.setInterfaceController(interfaceController)
-        viewModel.onChanged = { [weak self] in
-            self?.performRefresh()
-        }
-    
+        // Then call super.init with required VM
+        super.init(viewModel: vm)
     }
 
     // Register interest for just this PID while this template is visible
@@ -50,7 +41,8 @@ final class CarPlayGaugeDetailController: CarPlayBaseTemplateController {
     // Create the root information template for this PID
     override func makeRootTemplate() -> CPTemplate {
         let items = buildItems(for: viewModel.pid, stats: viewModel.stats)
-        let info = CPInformationTemplate(title: viewModel.pid.name, layout: .twoColumn, items: items, actions: [])
+        let title = viewModel.pid.name
+        let info = CPInformationTemplate(title: title, layout: .twoColumn, items: items, actions: [])
         self.currentTemplate = info
         return info
     }
@@ -85,3 +77,4 @@ final class CarPlayGaugeDetailController: CarPlayBaseTemplateController {
         return items
     }
 }
+

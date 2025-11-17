@@ -18,14 +18,14 @@ import SwiftOBD2
 
 struct GaugeListView: View {
     @ObservedObject var connectionManager: OBDConnectionManager
-    @StateObject private var viewModel: GaugesViewModel
+    @State private var viewModel: GaugesViewModel
 
     // Demand-driven polling token
     @State private var interestToken: UUID = PIDInterestRegistry.shared.makeToken()
 
-    init(connectionManager: OBDConnectionManager) {
-        self.connectionManager = connectionManager
-        _viewModel = StateObject(wrappedValue: GaugesViewModel(connectionManager: connectionManager, pidStore: .shared))
+    init() {
+        self.connectionManager = OBDConnectionManager.shared
+        _viewModel = State(wrappedValue: GaugesViewModel())
     }
     
     private var tileIdentities: [TileIdentity] {
@@ -93,6 +93,7 @@ struct GaugeListView: View {
 
 #Preview {
     NavigationView {
-        GaugeListView(connectionManager: .shared)
+        GaugeListView()
     }
 }
+

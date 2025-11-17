@@ -20,23 +20,12 @@ import SwiftOBD2
 import Combine
 
 @MainActor
-class CarPlayMILStatusController: CarPlayBaseTemplateController {
-    private let viewModel: MILStatusViewModel
-    private var cancellables = Set<AnyCancellable>()
+class CarPlayMILStatusController: CarPlayBaseTemplateController<MILStatusViewModel> {
     
-    init(connectionManager: OBDConnectionManager) {
-        // Use the shared ViewModel logic for MIL status
-        self.viewModel = MILStatusViewModel(connectionManager: connectionManager)
+     init() {
+        super.init(viewModel: MILStatusViewModel())
     }
 
-    override func setInterfaceController(_ interfaceController: CPInterfaceController) {
-        super.setInterfaceController(interfaceController)
-        // Mimic FuelStatus/Diagnostics pattern: simple callback for changes
-        viewModel.onChanged = { [weak self] in
-            self?.performRefresh()
-        }
-    }
-    
     private func makeItem(_ text: String, detailText: String) -> CPListItem {
         let item = CPListItem(text: text, detailText: detailText)
         item.handler = { _, completion in completion() }
@@ -100,3 +89,4 @@ class CarPlayMILStatusController: CarPlayBaseTemplateController {
 
     //  Helpers
 }
+

@@ -19,9 +19,9 @@ import Combine
 
 @MainActor
 @Observable
-final class MILStatusViewModel {
+final class MILStatusViewModel : BaseViewModel{
     // Callback for controllers (CarPlay, etc.) to observe changes, mirroring FuelStatusViewModel/DiagnosticsViewModel pattern
-    var onChanged: (() -> Void)?
+   // var onChanged: (() -> Void)?
 
     // Keep a stable reference to the manager
     private let manager: OBDConnectionManager
@@ -32,11 +32,14 @@ final class MILStatusViewModel {
     // Combine subscription
     private var cancellable: AnyCancellable?
 
-    init(connectionManager: OBDConnectionManager? = nil) {
-        self.manager = connectionManager ?? OBDConnectionManager.shared
+    override init() {
+        self.manager = OBDConnectionManager.shared
 
+        
         // Seed with any existing value so initial UI can show immediately
         self.status = manager.MILStatus
+
+        super.init()
 
         // Follow FuelStatusViewModel pattern
         cancellable = manager.$MILStatus
@@ -77,4 +80,3 @@ final class MILStatusViewModel {
         }
     }
 }
-
