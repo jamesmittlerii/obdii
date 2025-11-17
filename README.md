@@ -10,7 +10,7 @@ The application is designed to run on iPhone and connect to a car's OBD-II port 
 - [Architecture](./architecture.md)
 - [Optimizations](./optimization.md)
 
-** Implementation **
+**Implementation**
 
 The Application is built in Swift for IOS 26. It produces Swift Views and CarPlay templates.
 
