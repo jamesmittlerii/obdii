@@ -4,6 +4,11 @@ Rheosoft OBD2 is a CarPlay-enabled [OBD-II](./obd2.md) viewer focused on reporti
 
 The application is designed to run on iPhone and connect to a car's OBD-II port via an ELM327 adapter.
 
+**Final Project**
+
+[![Watch the video](https://img.youtube.com/vi/G5GD207dA48/0.jpg)](https://youtu.be/G5GD207dA48)
+
+
 **Explore**
 
 - [Features](./features.md)
