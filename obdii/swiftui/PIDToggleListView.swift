@@ -18,56 +18,101 @@ import SwiftUI
 struct PIDToggleListView: View {
     // Use @State with @Observable view model
     @State private var viewModel = PIDToggleListViewModel()
+    // Control programmatic presentation of the search UI
+    @State private var isSearchPresented: Bool = false
+
+    // Break up complex expressions to help the type checker
+    private var enabledItems: [OBDPID] { viewModel.filteredEnabled }
+    private var disabledItems: [OBDPID] { viewModel.filteredDisabled }
 
     var body: some View {
+        Group {
+            if isSearchPresented {
+                listView
+                    .id("search-on") // force rebuild so nav drawer syncs
+                    .searchable(
+                        text: $viewModel.searchText,
+                        isPresented: $isSearchPresented,
+                        placement: .navigationBarDrawer(displayMode: .automatic),
+                        prompt: Text("Search PIDs")
+                    )
+            } else {
+                listView
+                    .id("search-off") // force rebuild so drawer fully disappears
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    isSearchPresented = true
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                }
+                .accessibilityLabel("Search PIDs")
+            }
+        }
+        .textInputAutocapitalization(.never)
+        .disableAutocorrection(true)
+        .onSubmit(of: .search) {
+            viewModel.searchText = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        // iOS 17+ two-parameter onChange overload
+        .onChange(of: isSearchPresented) { _, presented in
+            // When search is dismissed (Cancel), clear query so full list returns
+            if !presented {
+                viewModel.searchText = ""
+            }
+        }
+    }
+
+    // Extracted list to avoid duplicating content when conditionally applying .searchable
+    private var listView: some View {
         List {
-            // Enabled section
-            let enabledItems: [OBDPID] = viewModel.filteredEnabled
             if !enabledItems.isEmpty {
                 Section(header: Text("Enabled")) {
                     ForEach(enabledItems, id: \.id) { pid in
                         PIDToggleRow(
                             pid: pid,
-                            isOn: Binding(
-                                get: { pid.enabled },
-                                set: { newValue in
-                                    // Find the current index in the master array to toggle
-                                    if let idx = viewModel.pids.firstIndex(where: { $0.id == pid.id }) {
-                                        viewModel.toggle(at: idx, to: newValue)
-                                    }
-                                }
-                            )
+                            isOn: toggleBinding(for: pid)
                         )
                     }
                     .onMove { source, destination in
-                        // Map source/destination within the enabled subset to the view model’s move API
                         viewModel.moveEnabled(fromOffsets: source, toOffset: destination)
                     }
                 }
             }
 
-            // Disabled section
-            let disabledItems: [OBDPID] = viewModel.filteredDisabled
             if !disabledItems.isEmpty {
                 Section(header: Text("Disabled")) {
                     ForEach(disabledItems, id: \.id) { pid in
                         PIDToggleRow(
                             pid: pid,
-                            isOn: Binding(
-                                get: { pid.enabled },
-                                set: { newValue in
-                                    if let idx = viewModel.pids.firstIndex(where: { $0.id == pid.id }) {
-                                        viewModel.toggle(at: idx, to: newValue)
-                                    }
-                                }
-                            )
+                            isOn: toggleBinding(for: pid)
                         )
                     }
                 }
             }
+
+            if enabledItems.isEmpty && disabledItems.isEmpty && !viewModel.searchText.isEmpty {
+                Section {
+                    Text("No results for “\(viewModel.searchText)”")
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
         .listStyle(.insetGrouped)
-        .searchable(text: $viewModel.searchText, prompt: "Search PIDs")
+    }
+
+    // Extracting this binding reduces type-checking complexity inside the ViewBuilder.
+    private func toggleBinding(for pid: OBDPID) -> Binding<Bool> {
+        Binding<Bool>(
+            get: { pid.enabled },
+            set: { newValue in
+                if let idx = viewModel.pids.firstIndex(where: { $0.id == pid.id }) {
+                    viewModel.toggle(at: idx, to: newValue)
+                }
+            }
+        )
     }
 }
 
