@@ -1,6 +1,6 @@
 **Rheosoft OBD2**
 
-Rheosoft OBD2 is a CarPlay-enabled OBD-II viewer focused on reporting diagnostic trouble codes, readiness monitors, and live sensor data.
+Rheosoft OBD2 is a CarPlay-enabled [OBD-II](./obd2.md) viewer focused on reporting diagnostic trouble codes, readiness monitors, and live sensor data.
 
 The OBD2 interface uses a [forked](https://github.com/jamesmittlerii/SwiftOBD2) version of the Swift OBD2 library by [kkonteh97](https://github.com/kkonteh97/SwiftOBD2).
 
