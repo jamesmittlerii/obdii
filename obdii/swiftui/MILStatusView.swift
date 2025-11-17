@@ -28,7 +28,16 @@ struct MILStatusView: View {
         NavigationStack {
             List {
                 Section(header: Text("Malfunction Indicator Lamp")) {
-                    if viewModel.hasStatus {
+                    // Waiting state before first payload
+                    if viewModel.status == nil {
+                        HStack(spacing: 12) {
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                            Text("Waiting for data…")
+                                .foregroundStyle(.secondary)
+                        }
+                        .accessibilityLabel("Waiting for data")
+                    } else if viewModel.hasStatus {
                         HStack(spacing: 12) {
                             Image(systemName: "wrench.and.screwdriver")
                                 .foregroundStyle(.orange)
@@ -43,7 +52,7 @@ struct MILStatusView: View {
                     }
                 }
 
-                if viewModel.hasStatus {
+                if viewModel.status != nil {
                     Section(header: Text("Readiness Monitors")) {
                         ForEach(viewModel.sortedSupportedMonitors, id: \.name) { monitor in
                             HStack(spacing: 12) {
@@ -85,3 +94,4 @@ private extension ReadinessMonitor {
 #Preview {
     MILStatusView()
 }
+

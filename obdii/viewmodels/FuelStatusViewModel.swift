@@ -24,7 +24,10 @@ final class FuelStatusViewModel : BaseViewModel{
     // Callback for controllers (CarPlay, etc.) to observe changes, mirroring DiagnosticsViewModel
     //var onChanged: (() -> Void)?
 
-    private(set) var status: [StatusCodeMetadata?] = [] {
+    // Optional container:
+    // nil = not yet received any data
+    // [] or only nils = received, but effectively empty
+    private(set) var status: [StatusCodeMetadata?]? = nil {
         didSet {
             // Notify observers when the status array changes
             onChanged?()
@@ -44,7 +47,19 @@ final class FuelStatusViewModel : BaseViewModel{
             }
     }
 
-    var bank1: StatusCodeMetadata? { status.indices.contains(0) ? status[0] : nil }
-    var bank2: StatusCodeMetadata? { status.indices.contains(1) ? status[1] : nil }
-    var hasAnyStatus: Bool { bank1 != nil || bank2 != nil }
+    var bank1: StatusCodeMetadata? {
+        guard let status, status.indices.contains(0) else { return nil }
+        return status[0]
+    }
+
+    var bank2: StatusCodeMetadata? {
+        guard let status, status.indices.contains(1) else { return nil }
+        return status[1]
+    }
+
+    var hasAnyStatus: Bool {
+        guard let status else { return false } // treat "not yet received" as no status for this flag
+        return status.contains { $0 != nil }
+    }
 }
+

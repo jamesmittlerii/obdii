@@ -37,6 +37,12 @@ class CarPlayDiagnosticsController: CarPlayBaseTemplateController<DiagnosticsVie
     }
      
     private func buildSections() -> [CPListSection] {
+        // Waiting state
+        if viewModel.codes == nil {
+            let item = makeItem("Waiting for data…", detailText: nil)
+            return [CPListSection(items: [item])]
+        }
+
         // No DTCs → single info row
         if viewModel.sections.isEmpty {
             let item = makeItem("No Diagnostic Trouble Codes", detailText: nil)
@@ -121,3 +127,4 @@ class CarPlayDiagnosticsController: CarPlayBaseTemplateController<DiagnosticsVie
 
     //  Helpers
 }
+

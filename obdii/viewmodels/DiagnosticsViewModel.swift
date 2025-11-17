@@ -28,18 +28,17 @@ final class DiagnosticsViewModel : BaseViewModel{
         let items: [TroubleCodeMetadata]
     }
 
+    // Optional source mirror: nil = waiting, [] = loaded but empty
+    private(set) var codes: [TroubleCodeMetadata]? = nil
+
     private(set) var sections: [Section] = [] {
         didSet {
-            // Notify any non-SwiftUI observers (e.g., CarPlay controller)
             if oldValue != sections {
                 onChanged?()
             }
         }
     }
     private(set) var isEmpty: Bool = true
-
-    // Non-SwiftUI observation hook for controllers
-    //var onChanged: (() -> Void)?
 
     private var cancellable: AnyCancellable?
 
@@ -51,11 +50,21 @@ final class DiagnosticsViewModel : BaseViewModel{
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] codes in
-                self?.rebuildSections(from: codes)
+                guard let self else { return }
+                self.codes = codes
+                self.rebuildSections(from: codes)
             }
     }
 
-    private func rebuildSections(from codes: [TroubleCodeMetadata]) {
+    private func rebuildSections(from codes: [TroubleCodeMetadata]?) {
+        // Waiting state
+        guard let codes = codes else {
+            sections = []
+            isEmpty = false // Not "empty" yet; we're waiting
+            return
+        }
+
+        // Loaded: empty payload
         guard !codes.isEmpty else {
             sections = []
             isEmpty = true

@@ -26,38 +26,49 @@ struct FuelStatusView: View {
         NavigationStack {
             List {
                 Section {
-                    if let b1 = viewModel.bank1 {
+                    // Waiting state: status has not been received yet
+                    if viewModel.status == nil {
                         HStack(spacing: 12) {
-                            Image(systemName: "fuelpump.fill")
-                                .foregroundStyle(.blue)
-                                .imageScale(.large)
-                            Text("Bank 1")
-                            Spacer()
-                            Text(b1.description)
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                            Text("Waiting for data…")
                                 .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.trailing)
                         }
-                        .accessibilityLabel("Bank 1, \(b1.description)")
-                    }
+                        .accessibilityLabel("Waiting for data")
+                    } else {
+                        if let b1 = viewModel.bank1 {
+                            HStack(spacing: 12) {
+                                Image(systemName: "fuelpump.fill")
+                                    .foregroundStyle(.blue)
+                                    .imageScale(.large)
+                                Text("Bank 1")
+                                Spacer()
+                                Text(b1.description)
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.trailing)
+                            }
+                            .accessibilityLabel("Bank 1, \(b1.description)")
+                        }
 
-                    if let b2 = viewModel.bank2 {
-                        HStack(spacing: 12) {
-                            Image(systemName: "fuelpump.fill")
-                                .foregroundStyle(.blue)
-                                .imageScale(.large)
-                            Text("Bank 2")
-                            Spacer()
-                            Text(b2.description)
+                        if let b2 = viewModel.bank2 {
+                            HStack(spacing: 12) {
+                                Image(systemName: "fuelpump.fill")
+                                    .foregroundStyle(.blue)
+                                    .imageScale(.large)
+                                Text("Bank 2")
+                                Spacer()
+                                Text(b2.description)
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.trailing)
+                            }
+                            .accessibilityLabel("Bank 2, \(b2.description)")
+                        }
+
+                        if !viewModel.hasAnyStatus {
+                            Label("No Fuel System Status Codes", systemImage: "info.circle")
                                 .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.trailing)
+                                .accessibilityLabel("No Fuel System Status Codes")
                         }
-                        .accessibilityLabel("Bank 2, \(b2.description)")
-                    }
-
-                    if !viewModel.hasAnyStatus {
-                        Label("No Fuel System Status Codes", systemImage: "info.circle")
-                            .foregroundStyle(.secondary)
-                            .accessibilityLabel("No Fuel System Status Codes")
                     }
                 }
             }
@@ -75,3 +86,4 @@ struct FuelStatusView: View {
 #Preview {
     FuelStatusView()
 }
+

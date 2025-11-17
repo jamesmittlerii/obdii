@@ -33,6 +33,13 @@ class CarPlayMILStatusController: CarPlayBaseTemplateController<MILStatusViewMod
     }
     
     private func buildSections() -> [CPListSection] {
+        // Waiting state before first payload
+        if viewModel.status == nil {
+            let item = makeItem("Waiting for data…", detailText: "")
+            let section = CPListSection(items: [item])
+            return [section]
+        }
+        
         guard let status = viewModel.status else {
             let item = makeItem("No MIL Status", detailText: "")
             let section = CPListSection(items: [item])

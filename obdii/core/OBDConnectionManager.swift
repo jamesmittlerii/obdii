@@ -56,13 +56,13 @@ class OBDConnectionManager: ObservableObject {
     // our connection status
     @Published var connectionState: ConnectionState = .disconnected
     
-    // current DTCs
-    @Published var troubleCodes: [TroubleCodeMetadata]  = []
+    // current DTCs (optional: nil = not yet received)
+    @Published var troubleCodes: [TroubleCodeMetadata]?  = nil
     
-    // the FI/O2 sensor status
-    @Published var fuelStatus: [StatusCodeMetadata?] = []
+    // the FI/O2 sensor status (optional: nil = not yet received)
+    @Published var fuelStatus: [StatusCodeMetadata?]? = nil
     
-    // our MIL status
+    // our MIL status (optional: nil = not yet received)
     @Published var MILStatus: Status?
 
     // publish the connected peripheral name (Bluetooth), or nil for Wi‑Fi/Demo/none
@@ -183,9 +183,9 @@ class OBDConnectionManager: ObservableObject {
         streamCancellables.removeAll()
         lastStreamingPIDs = []
         pidStats.removeAll()
-        fuelStatus = []
+        fuelStatus = nil
         MILStatus = nil
-        troubleCodes = []
+        troubleCodes = nil
         connectedPeripheralName = nil
     }
 
@@ -408,10 +408,13 @@ class OBDConnectionManager: ObservableObject {
                         case .mode3(let m3):
                             switch m3 {
                             case .GET_DTC:
-                                if let dtcs = decode.troubleCodesByECU {
-                                    if let engine = dtcs[SwiftOBD2.ECUID.engine] {
-                                        self.troubleCodes = engine
-                                    }
+                                if let dtcs = decode.troubleCodesByECU,
+                                   let engine = dtcs[SwiftOBD2.ECUID.engine] {
+                                    // Publish real payload (possibly empty array) to indicate "loaded"
+                                    self.troubleCodes = engine
+                                } else {
+                                    // Loaded, but no engine ECU or no codes
+                                    self.troubleCodes = []
                                 }
                             }
                         default:
@@ -437,3 +440,4 @@ extension OBDConnectionManager.ConnectionState {
         return false
     }
 }
+

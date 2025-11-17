@@ -20,6 +20,7 @@ import Observation
 
 @MainActor
 class CarPlayFuelStatusController: CarPlayBaseTemplateController<FuelStatusViewModel> {
+    // Optional snapshot to match ViewModel.status optionality
     private var previousFuelStatus: [StatusCodeMetadata?]?
     
      init() {
@@ -39,6 +40,12 @@ class CarPlayFuelStatusController: CarPlayBaseTemplateController<FuelStatusViewM
     
     private func buildInformationItems() -> [CPInformationItem] {
         var items: [CPInformationItem] = []
+        
+        // Waiting state
+        if viewModel.status == nil {
+            items.append(CPInformationItem(title: "Waiting for data…", detail: ""))
+            return items
+        }
         
         if let b1 = viewModel.bank1 {
             let item = CPInformationItem(
@@ -67,7 +74,7 @@ class CarPlayFuelStatusController: CarPlayBaseTemplateController<FuelStatusViewM
         template.tabImage = symbolImage(named: "wrench.and.screwdriver")
         currentTemplate = template
         // Initialize previous snapshot to match what we just rendered
-        previousFuelStatus = viewModel.status
+        previousFuelStatus = viewModel.status ?? []
         return template
     }
     
@@ -75,7 +82,7 @@ class CarPlayFuelStatusController: CarPlayBaseTemplateController<FuelStatusViewM
     private func refreshSection() {
         guard let template = currentTemplate as? CPInformationTemplate else { return }
         
-        let current = viewModel.status
+        let current = viewModel.status ?? []
         
         // Early exit if nothing changed
         if let previous = previousFuelStatus, previous == current {

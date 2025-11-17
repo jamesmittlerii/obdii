@@ -23,7 +23,18 @@ struct DiagnosticsView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if viewModel.isEmpty {
+                // Waiting for first payload
+                if viewModel.codes == nil {
+                    List {
+                        HStack(spacing: 12) {
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                            Text("Waiting for data…")
+                                .foregroundStyle(.secondary)
+                        }
+                        .accessibilityLabel("Waiting for data")
+                    }
+                } else if viewModel.isEmpty {
                     List {
                         Text("No Diagnostic Trouble Codes")
                             .foregroundStyle(.secondary)
