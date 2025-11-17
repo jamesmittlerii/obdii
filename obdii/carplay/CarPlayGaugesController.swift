@@ -120,10 +120,8 @@ class CarPlayGaugesController: CarPlayBaseTemplateController<GaugesViewModel> {
             sceneDelegate.register(template: detailTemplate, owner: controller)
         }
 
-        // Push its template
-        interfaceController?.pushTemplate(detailTemplate, animated: false, completion: { [weak self] success, error in
-            _ = self
-        })
+        // Push its template (no-op completion)
+        interfaceController?.pushTemplate(detailTemplate, animated: false, completion: nil)
     }
 
     override func performRefresh() {
@@ -132,9 +130,8 @@ class CarPlayGaugesController: CarPlayBaseTemplateController<GaugesViewModel> {
         // Also (re)register interest for whatever tiles are currently visible.
         // This ensures newly added gauges start streaming immediately while the tab is visible.
         
-        if isTemplateVisible {
+        if isVisible {
             registerVisiblePIDs()
         }
     }
 }
-

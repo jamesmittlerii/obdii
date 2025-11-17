@@ -29,7 +29,7 @@ protocol CarPlayTabControlling: AnyObject {
     func setInterfaceController(_ interfaceController: CPInterfaceController)
 
     /// Called when the tab coordinator publishes tab selections.
-    func setTabSelectionPublisher(_ publisher: AnyPublisher<Int, Never>, tabIndex: Int)
+   // XXX  func setTabSelectionPublisher(_ publisher: AnyPublisher<Int, Never>, tabIndex: Int)
 }
 
 class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate, CPInterfaceControllerDelegate {
@@ -73,7 +73,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate, CPI
         let tabBar = CPTabBarTemplate(templates: templates)
         tabBar.delegate = tabCoordinator
 
-        /*
+        /* XXX
         // 4) Inject selection publisher + index for each controller
         for (index, controller) in controllers.enumerated() {
             controller.setTabSelectionPublisher(

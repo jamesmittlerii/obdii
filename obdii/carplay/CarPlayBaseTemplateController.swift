@@ -33,14 +33,9 @@ protocol CarPlayVisibilityForwarding: AnyObject {
 class CarPlayBaseTemplateController<VM: BaseViewModel>: NSObject, @MainActor CarPlayTabControlling, CarPlayVisibilityForwarding {
     weak var interfaceController: CPInterfaceController?
     var currentTemplate: CPTemplate?
-    let viewModel: VM
-
-    // Tab selection
-    private var tabIndex: Int = 0
-    private var isTabSelected = false
-    private var isVisible = false
-    private var tabCancellable: AnyCancellable?
-    
+    var isVisible = false
+   let viewModel: VM
+ 
     // Demand-driven polling token for this controller
     let controllerToken: UUID = PIDInterestRegistry.shared.makeToken()
 
@@ -65,47 +60,6 @@ class CarPlayBaseTemplateController<VM: BaseViewModel>: NSObject, @MainActor Car
         // Listen to view model changes only (no direct OBDConnectionManager usage)
         viewModel.onChanged = { [weak self] in
             self?.performRefresh()
-        }
-    }
-
-    func setTabSelectionPublisher(_ publisher: AnyPublisher<Int, Never>, tabIndex: Int) {
-        self.tabIndex = tabIndex
-        tabCancellable = publisher
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] selected in
-                guard let self else { return }
-                let wasSelected = self.isTabSelected
-                self.isTabSelected = (selected == tabIndex)
-         
-                if self.isTabSelected && !wasSelected {
-                    self.didBecomeVisible()
-                } else if !self.isTabSelected && wasSelected {
-                    // Tab just got deselected: clear any interest registered by this controller
-                    PIDInterestRegistry.shared.clear(token: self.controllerToken)
-                }
-            }
-    }
-
-    var isTemplateVisible: Bool {
-        /* XXX
-        guard let interfaceController, let currentTemplate,
-              let top = interfaceController.topTemplate else { return false }
-        return top === currentTemplate
-         */
-        return isVisible
-    }
-
-    func refreshIfVisible(_ action: () -> Void) {
-        let allow = isTabSelected
-        guard allow else { return }
-        action()
-    }
-
-    func didBecomeVisible() {
-        refreshIfVisible { [weak self] in
-            self?.performRefresh()
-            // Subclasses should also register their visible PIDs in this moment.
-            self?.registerVisiblePIDs()
         }
     }
 
