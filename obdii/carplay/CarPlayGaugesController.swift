@@ -21,7 +21,6 @@ import UIKit   // For UIImage
 
 @MainActor
 class CarPlayGaugesController: CarPlayBaseTemplateController<GaugesViewModel> {
-    private var sensorItems: [CPInformationItem] = []
     
     // Detail screen controller (manages template and live updates)
     private var detailController: CarPlayGaugeDetailController?
