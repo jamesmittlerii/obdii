@@ -33,17 +33,12 @@ final class GaugesViewModel : BaseViewModel{
     // Observation tracks mutations to this var.
     private(set) var tiles: [Tile] = [] {
         didSet {
-            // Bridge for legacy Combine consumers (CarPlay controllers)
-            tilesPublisher.send(tiles)
             // Notify non-SwiftUI observers
             if oldValue != tiles {
                 onChanged?()
             }
         }
     }
-
-    // Legacy Combine bridge so UIKit/CarPlay code can still throttle/subscribe.
-    let tilesPublisher = PassthroughSubject<[Tile], Never>()
 
     private let connectionManager: OBDConnectionManager
     private let pidStore: PIDStore
@@ -81,8 +76,6 @@ final class GaugesViewModel : BaseViewModel{
             }
             .store(in: &cancellables)
     }
-
-    
 
     private func rebuildTiles(pids: [OBDPID], stats: [OBDCommand: OBDConnectionManager.PIDStats]) {
         let enabled = pids.filter { $0.enabled && $0.kind == .gauge }
