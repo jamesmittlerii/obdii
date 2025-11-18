@@ -1,16 +1,27 @@
 **Rheosoft OBD2**
 
-Rheosoft OBD2 is a CarPlay-enabled OBD-II viewer focused on reporting diagnostic trouble codes, readiness monitors, and live sensor data.
+Rheosoft OBD2 is a CarPlay-enabled [OBD-II](./obd2.md) viewer focused on reporting diagnostic trouble codes, readiness monitors, and live sensor data.
 
-The OBD2 interface uses a [forked](https://github.com/jamesmittlerii/SwiftOBD2) version of the Swift OBD2 library by [kkonteh97](https://github.com/kkonteh97/SwiftOBD2).
+The application is designed to run on iPhone and connect to a car's OBD-II port via an ELM327 adapter.
 
-The user interface builds on Apple’s CarSample from the WWDC20 session “[Accelerate your app with CarPlay](https://github.com/below/CarSample),” and was extensively rewritten to support both CarPlay templates and SwiftUI views.
+**Final Project (click the thumbnail)**
+
+[![Watch the video](https://img.youtube.com/vi/G5GD207dA48/0.jpg)](https://youtu.be/G5GD207dA48)
+
 
 **Explore**
 
 - [Features](./features.md)
 - [Architecture](./architecture.md)
 - [Optimizations](./optimization.md)
+
+**Implementation**
+
+The Application is built in Swift for IOS 26. It produces Swift Views and CarPlay templates.
+
+The OBD2 interface uses a [forked](https://github.com/jamesmittlerii/SwiftOBD2) version of the Swift OBD2 library by [kkonteh97](https://github.com/kkonteh97/SwiftOBD2).
+
+The CarPlay user interface builds on Apple’s CarSample from the WWDC20 session “[Accelerate your app with CarPlay](https://github.com/below/CarSample),” and was extensively rewritten to support the OBD-II functionality.
 
 **Demo Video**
 
