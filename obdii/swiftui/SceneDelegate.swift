@@ -48,6 +48,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         }
 #endif
 
+
         // Normal root for supported devices (e.g., iPhone)
         window.rootViewController = ViewController()
         self.window = window

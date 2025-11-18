@@ -278,18 +278,50 @@ private extension Double {
     var clamped01: Double { max(0.0, min(1.0, self)) }
 }
 
-#Preview("With Value") {
-    let pid = OBDPIDLibrary.standard.first { $0.label == "RPM" }!
-    // Example RPM value using your custom Unit.rpm
-    let measurement = MeasurementResult(value: 2500, unit: Unit(symbol: "rpm"))
-    RingGaugeView(pid: pid, measurement: measurement)
-        .frame(width: 200, height: 200)
+
+// MARK: - Previews
+
+#Preview("RPM – With Value") {
+    // Sample RPM PID in metric canonical units (RPM label is left as "RPM")
+    let rpmPID = OBDPID(
+        enabled: true,
+        label: "RPM",
+        name: "Engine RPM",
+        pid: .mode1(.rpm),
+        formula: nil,
+        units: "RPM",
+        typicalRange: ValueRange(min: 700, max: 6500),
+        warningRange: ValueRange(min: 6500, max: 7000),
+        dangerRange: ValueRange(min: 7000, max: 8000),
+        notes: "Typical redline near 7k"
+    )
+    // Example RPM measurement using custom Unit.rpm (defined in decoders.swift)
+    let measurement =  MeasurementResult(value: 2500, unit: Unit(symbol: "rpm"))
+
+    RingGaugeView(pid: rpmPID, measurement: measurement)
+        .frame(width: 220, height: 220)
         .padding()
+        .background(Color(UIColor.systemBackground))
 }
 
-#Preview("No Value") {
-    let pid = OBDPIDLibrary.standard.first { $0.label == "Coolant" }!
-     RingGaugeView(pid: pid, measurement: nil)
-        .frame(width: 200, height: 200)
+#Preview("Coolant – No Value") {
+    // Sample Coolant Temp PID in metric canonical units ("°C")
+    let coolantPID = OBDPID(
+        enabled: true,
+        label: "Coolant",
+        name: "Coolant Temperature",
+        pid: .mode1(.coolantTemp),
+        formula: nil,
+        units: "°C",
+        typicalRange: ValueRange(min: 70, max: 105),
+        warningRange: ValueRange(min: 105, max: 115),
+        dangerRange: ValueRange(min: 115, max: 130),
+        notes: "Normal operating temp ~90°C"
+    )
+
+    RingGaugeView(pid: coolantPID, measurement: nil)
+        .frame(width: 220, height: 220)
         .padding()
+        .background(Color(UIColor.systemBackground))
 }
+

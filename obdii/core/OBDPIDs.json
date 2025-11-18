@@ -1,0 +1,1685 @@
+[
+  {
+    "id": "BE93617F-4735-4272-9D3E-585A3598684D",
+    "enabled": true,
+    "label": "FuelStat",
+    "name": "Fuel Control Status",
+    "pid": {
+      "type": "mode1",
+      "command": "fuelStatus"
+    },
+    "units": "NA",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "notes": "Returns open/closed loop data.",
+    "kind": "status"
+  },
+  {
+    "id": "3B94033C-9F61-46EA-A8B9-A512A4213506",
+    "enabled": true,
+    "label": "MIL Stat",
+    "name": "MIL Status",
+    "pid": {
+      "type": "mode1",
+      "command": "status"
+    },
+    "units": "NA",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "notes": "Returns MIL status",
+    "kind": "status"
+  },
+  {
+    "id": "7D50A83A-3E5C-4158-94A5-06B781E57A0F",
+    "enabled": true,
+    "label": "DTCs",
+    "name": "DTCs",
+    "pid": {
+      "type": "mode3",
+      "command": "GET_DTC"
+    },
+    "units": "NA",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "notes": "Returns DTCs",
+    "kind": "status"
+  },
+  {
+    "id": "2A56C6A9-D966-4AF3-8E5A-1C5D2C2A2D4F",
+    "enabled": true,
+    "label": "IAT",
+    "name": "Intake Air Temperature",
+    "pid": {
+      "type": "mode1",
+      "command": "intakeTemp"
+    },
+    "formula": "A – 40",
+    "units": "°C",
+    "typicalRange": {
+      "min": -20,
+      "max": 80
+    },
+    "warningRange": {
+      "min": 80,
+      "max": 100
+    },
+    "dangerRange": {
+      "min": 100,
+      "max": 150
+    },
+    "notes": "Correlates with ambient and heat-soak.",
+    "kind": "gauge"
+  },
+  {
+    "id": "1A7A783B-D57B-49A8-8F2D-5901A51B5A26",
+    "enabled": true,
+    "label": "Voltage",
+    "name": "Control Module Voltage",
+    "pid": {
+      "type": "mode1",
+      "command": "controlModuleVoltage"
+    },
+    "formula": "((A*256)+B)/1000",
+    "units": "V",
+    "typicalRange": {
+      "min": 8,
+      "max": 16
+    },
+    "warningRange": {
+      "min": 0,
+      "max": 12
+    },
+    "dangerRange": {
+      "min": 15,
+      "max": 18
+    },
+    "notes": "Battery/alternator voltage",
+    "kind": "gauge"
+  },
+  {
+    "id": "8C8F796E-1D56-43C6-8809-543B6A2D4E89",
+    "enabled": true,
+    "label": "Coolant",
+    "name": "Engine Coolant Temperature",
+    "pid": {
+      "type": "mode1",
+      "command": "coolantTemp"
+    },
+    "formula": "A - 40",
+    "units": "°C",
+    "typicalRange": {
+      "min": -20,
+      "max": 98
+    },
+    "warningRange": {
+      "min": 98,
+      "max": 108
+    },
+    "dangerRange": {
+      "min": 108,
+      "max": 150
+    },
+    "notes": "Subtract 40 offset",
+    "kind": "gauge"
+  },
+  {
+    "id": "E3B4E3E7-5F2A-4B9C-8A6D-0F1C9A4B8C1D",
+    "enabled": true,
+    "label": "RPM",
+    "name": "Engine RPM",
+    "pid": {
+      "type": "mode1",
+      "command": "rpm"
+    },
+    "formula": "((A*256)+B)/4",
+    "units": "RPM",
+    "typicalRange": {
+      "min": 0,
+      "max": 8000
+    },
+    "warningRange": {
+      "min": 6000,
+      "max": 7500
+    },
+    "dangerRange": {
+      "min": 7500,
+      "max": 8500
+    },
+    "notes": "Main tachometer source",
+    "kind": "gauge"
+  },
+  {
+    "id": "F9B0B5A7-8C1D-4E9A-8F2B-4A7C1B3D8E5F",
+    "enabled": false,
+    "label": "AFR λ",
+    "name": "Commanded Equivalence Ratio (Lambda)",
+    "pid": {
+      "type": "mode1",
+      "command": "commandedEquivRatio"
+    },
+    "formula": "((A*256)+B)/32768",
+    "units": "λ",
+    "typicalRange": {
+      "min": 0.7,
+      "max": 1.3
+    },
+    "notes": "1.00 = stoich tick; AFR secondary scale handled elsewhere",
+    "kind": "gauge"
+  },
+  {
+    "id": "0D4C5B6E-2A8D-4F7C-9A1B-3E8D7C4A9B1D",
+    "enabled": false,
+    "label": "Speed",
+    "name": "Vehicle Speed",
+    "pid": {
+      "type": "mode1",
+      "command": "speed"
+    },
+    "formula": "A",
+    "units": "km/h",
+    "typicalRange": {
+      "min": 0,
+      "max": 240
+    },
+    "notes": "Conversion to mph handled elsewhere",
+    "kind": "gauge"
+  },
+  {
+    "id": "C8A7B3C1-4D9E-4A6B-8F1D-2C7A9B3E4D8C",
+    "enabled": false,
+    "label": "Oil Temp",
+    "name": "Engine Oil Temperature",
+    "pid": {
+      "type": "mode1",
+      "command": "engineOilTemp"
+    },
+    "formula": "A - 40",
+    "units": "°C",
+    "typicalRange": {
+      "min": -20,
+      "max": 98
+    },
+    "warningRange": {
+      "min": 98,
+      "max": 108
+    },
+    "dangerRange": {
+      "min": 108,
+      "max": 150
+    },
+    "notes": "Optional PID",
+    "kind": "gauge"
+  },
+  {
+    "id": "B9E8A4B1-3D7C-4E6A-8B1D-4C9A8B7E3D6C",
+    "enabled": false,
+    "label": "Fuel Pres",
+    "name": "Fuel Pressure",
+    "pid": {
+      "type": "mode1",
+      "command": "fuelPressure"
+    },
+    "formula": "A*3",
+    "units": "kPa",
+    "typicalRange": {
+      "min": 0,
+      "max": 765
+    },
+    "notes": "Legacy/gauge fuel pressure",
+    "kind": "gauge"
+  },
+  {
+    "id": "9C7B6A5D-1E3C-4F8A-9B2D-4E7A8B9C1D3E",
+    "enabled": false,
+    "label": "CatT B1S1",
+    "name": "Catalyst Temperature Bank 1 Sensor 1",
+    "pid": {
+      "type": "mode1",
+      "command": "catalystTempB1S1"
+    },
+    "formula": "((A*256)+B)/10",
+    "units": "°C",
+    "typicalRange": {
+      "min": 200,
+      "max": 900
+    },
+    "warningRange": {
+      "min": 900,
+      "max": 950
+    },
+    "dangerRange": {
+      "min": 950,
+      "max": 1000
+    },
+    "notes": "Pre-cat temp; linear thermometer",
+    "kind": "gauge"
+  },
+  {
+    "id": "A1B2C3D4-5E6F-4A7B-8C9D-0E1F2A3B4C5D",
+    "enabled": false,
+    "label": "Throttle",
+    "name": "Throttle Position",
+    "pid": {
+      "type": "mode1",
+      "command": "throttlePos"
+    },
+    "formula": "((A*256)+B)/10",
+    "units": "%",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "notes": "Accelerator plate position",
+    "kind": "gauge"
+  },
+  {
+    "id": "4D5E6F7A-8B9C-4D0E-8F1A-2B3C4D5E6F7A",
+    "enabled": false,
+    "label": "Thr Act",
+    "name": "Throttle Actuator Command",
+    "pid": {
+      "type": "mode1",
+      "command": "throttleActuator"
+    },
+    "formula": "A * 100 / 255",
+    "units": "%",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "notes": "ECU-commanded DBW throttle; compare vs TPS for tracking",
+    "kind": "gauge"
+  },
+  {
+    "id": "B8C9D0E1-F2A3-4B4C-8D6E-7F8A9B0C1D2E",
+    "enabled": false,
+    "label": "TPS B",
+    "name": "Throttle Position Sensor B",
+    "pid": {
+      "type": "mode1",
+      "command": "throttlePosB"
+    },
+    "formula": "A * 100 / 255",
+    "units": "%",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "notes": "Alternate TPS track B",
+    "kind": "gauge"
+  },
+  {
+    "id": "E1F2A3B4-C5D6-4E7F-8A9B-0C1D2E3F4A5B",
+    "enabled": false,
+    "label": "TPS C",
+    "name": "Throttle Position Sensor C",
+    "pid": {
+      "type": "mode1",
+      "command": "throttlePosC"
+    },
+    "formula": "A * 100 / 255",
+    "units": "%",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "notes": "Alternate TPS track C",
+    "kind": "gauge"
+  },
+  {
+    "id": "1A2B3C4D-5E6F-4A7B-8C9D-0E1F2A3B4C5D",
+    "enabled": false,
+    "label": "TPS D",
+    "name": "Throttle Position Sensor D",
+    "pid": {
+      "type": "mode1",
+      "command": "throttlePosD"
+    },
+    "formula": "A * 100 / 255",
+    "units": "%",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "notes": "Alternate TPS track D",
+    "kind": "gauge"
+  },
+  {
+    "id": "6F7A8B9C-0D1E-4F2A-8B3C-4D5E6F7A8B9C",
+    "enabled": false,
+    "label": "TPS E",
+    "name": "Throttle Position Sensor E",
+    "pid": {
+      "type": "mode1",
+      "command": "throttlePosE"
+    },
+    "formula": "A * 100 / 255",
+    "units": "%",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "notes": "Alternate TPS track E",
+    "kind": "gauge"
+  },
+  {
+    "id": "C9D0E1F2-A3B4-4C5D-8E6F-7A8B9C0D1E2F",
+    "enabled": false,
+    "label": "TPS F",
+    "name": "Throttle Position Sensor F",
+    "pid": {
+      "type": "mode1",
+      "command": "throttlePosF"
+    },
+    "formula": "A * 100 / 255",
+    "units": "%",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "notes": "Alternate TPS track F",
+    "kind": "gauge"
+  },
+  {
+    "id": "D0E1F2A3-B4C5-4D6E-8F7A-8B9C0D1E2F3A",
+    "enabled": false,
+    "label": "Ign Time",
+    "name": "Timing Advance",
+    "pid": {
+      "type": "mode1",
+      "command": "timingAdvance"
+    },
+    "formula": "(A/2) – 64",
+    "units": "° BTDC",
+    "typicalRange": {
+      "min": -10,
+      "max": 60
+    },
+    "notes": "Center gauge at 0°, bipolar −10° to +60°",
+    "kind": "gauge"
+  },
+  {
+    "id": "F1A2B3C4-D5E6-4F7A-8B9C-0D1E2F3A4B5C",
+    "enabled": false,
+    "label": "Amb Temp",
+    "name": "Ambient Air Temperature",
+    "pid": {
+      "type": "mode1",
+      "command": "ambientAirTemp"
+    },
+    "formula": "A – 40",
+    "units": "°C",
+    "typicalRange": {
+      "min": -40,
+      "max": 50
+    },
+    "notes": "Outside/ambient temperature",
+    "kind": "gauge"
+  },
+  {
+    "id": "A2B3C4D5-E6F7-4A8B-9C0D-1E2F3A4B5C6D",
+    "enabled": false,
+    "label": "Rel TPS",
+    "name": "Relative Throttle Position",
+    "pid": {
+      "type": "mode1",
+      "command": "relativeThrottlePos"
+    },
+    "formula": "A * 100/255",
+    "units": "%",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "notes": "Relative to learned min/max",
+    "kind": "gauge"
+  },
+  {
+    "id": "B3C4D5E6-F7A8-4B9C-8D1E-2F3A4B5C6D7E",
+    "enabled": false,
+    "label": "Eng Load",
+    "name": "Calculated Engine Load",
+    "pid": {
+      "type": "mode1",
+      "command": "engineLoad"
+    },
+    "formula": "A * 100/255",
+    "units": "%",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "notes": "Calculated load",
+    "kind": "gauge"
+  },
+  {
+    "id": "C4D5E6F7-A8B9-4C0D-9E1F-3A4B5C6D7E8F",
+    "enabled": false,
+    "label": "Abs Load",
+    "name": "Absolute Load Value",
+    "pid": {
+      "type": "mode1",
+      "command": "absoluteLoad"
+    },
+    "formula": "A * 100/255",
+    "units": "%",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "notes": "Absolute load value",
+    "kind": "gauge"
+  },
+  {
+    "id": "D5E6F7A8-B9C0-4D1E-AF2A-4B5C6D7E8F9A",
+    "enabled": false,
+    "label": "Fuel Lvl",
+    "name": "Fuel Level Input",
+    "pid": {
+      "type": "mode1",
+      "command": "fuelLevel"
+    },
+    "formula": "A * 100/255",
+    "units": "%",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "warningRange": {
+      "min": 0,
+      "max": 10
+    },
+    "dangerRange": {
+      "min": 0,
+      "max": 5
+    },
+    "notes": "Tank level",
+    "kind": "gauge"
+  },
+  {
+    "id": "E6F7A8B9-C0D1-4E2F-BF3A-5C6D7E8F9A0B",
+    "enabled": false,
+    "label": "Baro",
+    "name": "Barometric Pressure",
+    "pid": {
+      "type": "mode1",
+      "command": "barometricPressure"
+    },
+    "formula": "A",
+    "units": "kPa",
+    "typicalRange": {
+      "min": 80,
+      "max": 105
+    },
+    "notes": "Convert to inHg elsewhere if needed",
+    "kind": "gauge"
+  },
+  {
+    "id": "F7A8B9C0-D1E2-4F3A-CF4A-6D7E8F9A0B1C",
+    "enabled": false,
+    "label": "MAP",
+    "name": "Intake Manifold Absolute Pressure",
+    "pid": {
+      "type": "mode1",
+      "command": "intakePressure"
+    },
+    "formula": "A",
+    "units": "kPa",
+    "typicalRange": {
+      "min": 20,
+      "max": 250
+    },
+    "notes": "Boost can be derived vs baro",
+    "kind": "gauge"
+  },
+  {
+    "id": "08B9C0D1-E2F3-4A4B-DF5A-7E8F9A0B1C2D",
+    "enabled": false,
+    "label": "Rail P",
+    "name": "Fuel Rail Pressure (Absolute)",
+    "pid": {
+      "type": "mode1",
+      "command": "fuelRailPressureAbs"
+    },
+    "formula": "((A*256)+B) * 10",
+    "units": "kPa",
+    "typicalRange": {
+      "min": 0,
+      "max": 20000
+    },
+    "notes": "Display as MPa/PSI elsewhere if preferred",
+    "kind": "gauge"
+  },
+  {
+    "id": "19C0D1E2-F3A4-4B5C-EF6A-8F9A0B1C2D3E",
+    "enabled": false,
+    "label": "Rail P DI",
+    "name": "Fuel Rail Pressure (Direct Injection)",
+    "pid": {
+      "type": "mode1",
+      "command": "fuelRailPressureDirect"
+    },
+    "formula": "((A*256)+B) * 10",
+    "units": "kPa",
+    "typicalRange": {
+      "min": 0,
+      "max": 20000
+    },
+    "notes": "DI rail; convert to MPa/PSI elsewhere",
+    "kind": "gauge"
+  },
+  {
+    "id": "2A0D1E2F-3A4B-4C6D-FF7A-9A0B1C2D3E4F",
+    "enabled": false,
+    "label": "Rail P Vac",
+    "name": "Fuel Rail Pressure (Relative to Manifold Vacuum)",
+    "pid": {
+      "type": "mode1",
+      "command": "fuelRailPressureVac"
+    },
+    "formula": "((A*256)+B) * 0.079",
+    "units": "kPa",
+    "typicalRange": {
+      "min": 0,
+      "max": 700
+    },
+    "notes": "Relative to manifold vacuum",
+    "kind": "gauge"
+  },
+  {
+    "id": "3B1E2F3A-4B5C-4D7E-0F8A-0B1C2D3E4F5A",
+    "enabled": false,
+    "label": "MAF",
+    "name": "Mass Air Flow",
+    "pid": {
+      "type": "mode1",
+      "command": "maf"
+    },
+    "formula": "((A*256)+B)/100",
+    "units": "g/s",
+    "typicalRange": {
+      "min": 0,
+      "max": 300
+    },
+    "notes": "Wide range; linear bar reads well; scale by engine size",
+    "kind": "gauge"
+  },
+  {
+    "id": "4C2F3A4B-5C6D-4E8F-1F9A-1C2D3E4F5A6B",
+    "enabled": false,
+    "label": "FuelRate",
+    "name": "Fuel Rate",
+    "pid": {
+      "type": "mode1",
+      "command": "fuelRate"
+    },
+    "formula": "((A*256)+B)/20",
+    "units": "L/h",
+    "typicalRange": {
+      "min": 0,
+      "max": 50
+    },
+    "notes": "Typical 0–50 L/h; tank/diesel may go higher",
+    "kind": "gauge"
+  },
+  {
+    "id": "5D3A4B5C-6D7E-4F9A-2FAB-2D3E4F5A6B7C",
+    "enabled": false,
+    "label": "Rel Accel",
+    "name": "Relative Accelerator Pedal Position",
+    "pid": {
+      "type": "mode1",
+      "command": "relativeAccelPos"
+    },
+    "formula": "A * 100/255",
+    "units": "%",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "notes": "Pedal position relative to calibrated range",
+    "kind": "gauge"
+  },
+  {
+    "id": "6E4B5C6D-7E8F-4A0B-3FBC-3E4F5A6B7C8D",
+    "enabled": false,
+    "label": "CatT B2S1",
+    "name": "Catalyst Temperature Bank 2 Sensor 1",
+    "pid": {
+      "type": "mode1",
+      "command": "catalystTempB2S1"
+    },
+    "formula": "((A*256)+B)/10",
+    "units": "°C",
+    "typicalRange": {
+      "min": 200,
+      "max": 900
+    },
+    "warningRange": {
+      "min": 900,
+      "max": 950
+    },
+    "dangerRange": {
+      "min": 950,
+      "max": 1000
+    },
+    "notes": "Pre-cat temp; linear thermometer",
+    "kind": "gauge"
+  },
+  {
+    "id": "7F5C6D7E-8F9A-4B1C-4FCD-4F5A6B7C8D9E",
+    "enabled": false,
+    "label": "CatT B1S2",
+    "name": "Catalyst Temperature Bank 1 Sensor 2",
+    "pid": {
+      "type": "mode1",
+      "command": "catalystTempB1S2"
+    },
+    "formula": "((A*256)+B)/10",
+    "units": "°C",
+    "typicalRange": {
+      "min": 200,
+      "max": 900
+    },
+    "warningRange": {
+      "min": 900,
+      "max": 950
+    },
+    "dangerRange": {
+      "min": 950,
+      "max": 1000
+    },
+    "notes": "Post-cat temp; linear thermometer",
+    "kind": "gauge"
+  },
+  {
+    "id": "8A6D7E8F-9A0B-4C2D-5FDE-5A6B7C8D9E0F",
+    "enabled": false,
+    "label": "CatT B2S2",
+    "name": "Catalyst Temperature Bank 2 Sensor 2",
+    "pid": {
+      "type": "mode1",
+      "command": "catalystTempB2S2"
+    },
+    "formula": "((A*256)+B)/10",
+    "units": "°C",
+    "typicalRange": {
+      "min": 200,
+      "max": 900
+    },
+    "warningRange": {
+      "min": 900,
+      "max": 950
+    },
+    "dangerRange": {
+      "min": 950,
+      "max": 1000
+    },
+    "notes": "Post-cat temp; linear thermometer",
+    "kind": "gauge"
+  },
+  {
+    "id": "9B7E8F9A-0B1C-4D3E-6FEF-6B7C8D9E0F1A",
+    "enabled": false,
+    "label": "STFT B2",
+    "name": "Short Term Fuel Trim Bank 2",
+    "pid": {
+      "type": "mode1",
+      "command": "shortFuelTrim2"
+    },
+    "formula": "(A - 128) * 100 / 128",
+    "units": "%",
+    "typicalRange": {
+      "min": -25,
+      "max": 25
+    },
+    "notes": "Real-time fuel correction; V engines use Bank 2",
+    "kind": "gauge"
+  },
+  {
+    "id": "AC8F9A0B-1C2D-4E4F-7F0F-7C8D9E0F1A2B",
+    "enabled": false,
+    "label": "LTFT B2",
+    "name": "Long Term Fuel Trim Bank 2",
+    "pid": {
+      "type": "mode1",
+      "command": "longFuelTrim2"
+    },
+    "formula": "(A - 128) * 100 / 128",
+    "units": "%",
+    "typicalRange": {
+      "min": -25,
+      "max": 25
+    },
+    "notes": "Learned fuel correction; V engines use Bank 2",
+    "kind": "gauge"
+  },
+  {
+    "id": "BD9A0B1C-2D3E-4F5A-8F1F-8D9E0F1A2B3C",
+    "enabled": false,
+    "label": "O2V B2S1",
+    "name": "O2 Sensor Voltage Bank 2 Sensor 1",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Bank2Sensor1"
+    },
+    "formula": "A / 200",
+    "units": "V",
+    "typicalRange": {
+      "min": 0,
+      "max": 1
+    },
+    "notes": "Upstream O₂ sensor; narrowband typical 0–1 V",
+    "kind": "gauge"
+  },
+  {
+    "id": "CEA0B1C2-D3E4-4A6B-9F2F-9E0F1A2B3C4D",
+    "enabled": false,
+    "label": "O2V B2S2",
+    "name": "O2 Sensor Voltage Bank 2 Sensor 2",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Bank2Sensor2"
+    },
+    "formula": "A / 200",
+    "units": "V",
+    "typicalRange": {
+      "min": 0,
+      "max": 1
+    },
+    "notes": "Downstream O₂ sensor; narrowband typical 0–1 V",
+    "kind": "gauge"
+  },
+  {
+    "id": "DFB1C2D3-E4F5-4B7C-AF3F-0F1A2B3C4D5E",
+    "enabled": false,
+    "label": "LTFT B1",
+    "name": "Long Term Fuel Trim Bank 1",
+    "pid": {
+      "type": "mode1",
+      "command": "longFuelTrim1"
+    },
+    "formula": "(A - 128) * 100 / 128",
+    "units": "%",
+    "typicalRange": {
+      "min": -25,
+      "max": 25
+    },
+    "notes": "Learned fuel correction; Bank 1",
+    "kind": "gauge"
+  },
+  {
+    "id": "E0C2D3E4-F5A6-4C8D-BF4F-1A2B3C4D5E6F",
+    "enabled": false,
+    "label": "STFT B1",
+    "name": "Short Term Fuel Trim Bank 1",
+    "pid": {
+      "type": "mode1",
+      "command": "shortFuelTrim1"
+    },
+    "formula": "(A - 128) * 100 / 128",
+    "units": "%",
+    "typicalRange": {
+      "min": -25,
+      "max": 25
+    },
+    "notes": "Real-time fuel correction; Bank 1",
+    "kind": "gauge"
+  },
+  {
+    "id": "11D3E4F5-A6B7-4D9E-CF5F-2B3C4D5E6F7A",
+    "enabled": false,
+    "label": "WR I S7",
+    "name": "Wideband O2 Sensor Current Sensor 7",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Sensor7WRCurrent"
+    },
+    "formula": "((A*256)+B - 32768) / 256",
+    "units": "mA",
+    "typicalRange": {
+      "min": -10,
+      "max": 10
+    },
+    "notes": "Wideband current; verify scaling for your ECU",
+    "kind": "gauge"
+  },
+  {
+    "id": "22E4F5A6-B7C8-4E0F-DF6F-3C4D5E6F7A8B",
+    "enabled": false,
+    "label": "WR I S1",
+    "name": "Wideband O2 Sensor Current Sensor 1",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Sensor1WRCurrent"
+    },
+    "formula": "((A*256)+B - 32768) / 256",
+    "units": "mA",
+    "typicalRange": {
+      "min": -10,
+      "max": 10
+    },
+    "notes": "Wideband current; verify scaling for your ECU",
+    "kind": "gauge"
+  },
+  {
+    "id": "33F5A6B7-C8D9-4F1A-EF7F-4D5E6F7A8B9C",
+    "enabled": false,
+    "label": "WR I S2",
+    "name": "Wideband O2 Sensor Current Sensor 2",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Sensor2WRCurrent"
+    },
+    "formula": "((A*256)+B - 32768) / 256",
+    "units": "mA",
+    "typicalRange": {
+      "min": -10,
+      "max": 10
+    },
+    "notes": "Wideband current; verify scaling for your ECU",
+    "kind": "gauge"
+  },
+  {
+    "id": "44A6B7C8-D9E0-4A2B-FF8F-5E6F7A8B9C0D",
+    "enabled": false,
+    "label": "EVAP Cmd",
+    "name": "Commanded EVAP Purge",
+    "pid": {
+      "type": "mode1",
+      "command": "evaporativePurge"
+    },
+    "formula": "A * 100 / 255",
+    "units": "%",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "notes": "Purge valve duty cycle",
+    "kind": "gauge"
+  },
+  {
+    "id": "55B7C8D9-E0F1-4B3C-0F9F-6F7A8B9C0D1E",
+    "enabled": false,
+    "label": "O2V B1S1",
+    "name": "O2 Sensor Voltage Bank 1 Sensor 1",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Bank1Sensor1"
+    },
+    "formula": "A / 200",
+    "units": "V",
+    "typicalRange": {
+      "min": 0,
+      "max": 1
+    },
+    "notes": "Upstream O₂ sensor; narrowband typical 0–1 V",
+    "kind": "gauge"
+  },
+  {
+    "id": "66C8D9E0-F1A2-4C4D-1FAF-7A8B9C0D1E2F",
+    "enabled": false,
+    "label": "O2V B1S2",
+    "name": "O2 Sensor Voltage Bank 1 Sensor 2",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Bank1Sensor2"
+    },
+    "formula": "A / 200",
+    "units": "V",
+    "typicalRange": {
+      "min": 0,
+      "max": 1
+    },
+    "notes": "Downstream O₂ sensor; narrowband typical 0–1 V",
+    "kind": "gauge"
+  },
+  {
+    "id": "77D9E0F1-A2B3-4D5E-2FBF-8B9C0D1E2F3A",
+    "enabled": false,
+    "label": "O2V B1S3",
+    "name": "O2 Sensor Voltage Bank 1 Sensor 3",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Bank1Sensor3"
+    },
+    "formula": "A / 200",
+    "units": "V",
+    "typicalRange": {
+      "min": 0,
+      "max": 1
+    },
+    "notes": "Downstream O₂ sensor; narrowband typical 0–1 V",
+    "kind": "gauge"
+  },
+  {
+    "id": "88E0F1A2-B3C4-4E6F-3FCF-9C0D1E2F3A4B",
+    "enabled": false,
+    "label": "O2V B1S4",
+    "name": "O2 Sensor Voltage Bank 1 Sensor 4",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Bank1Sensor4"
+    },
+    "formula": "A / 200",
+    "units": "V",
+    "typicalRange": {
+      "min": 0,
+      "max": 1
+    },
+    "notes": "Downstream O₂ sensor; narrowband typical 0–1 V",
+    "kind": "gauge"
+  },
+  {
+    "id": "99F1A2B3-C4D5-4F7A-4FDF-0D1E2F3A4B5C",
+    "enabled": false,
+    "label": "O2V B2S3",
+    "name": "O2 Sensor Voltage Bank 2 Sensor 3",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Bank2Sensor3"
+    },
+    "formula": "A / 200",
+    "units": "V",
+    "typicalRange": {
+      "min": 0,
+      "max": 1
+    },
+    "notes": "Downstream O₂ sensor; narrowband typical 0–1 V",
+    "kind": "gauge"
+  },
+  {
+    "id": "AA02B3C4-D5E6-4A8B-5FEF-1E2F3A4B5C6D",
+    "enabled": false,
+    "label": "O2 Map",
+    "name": "O2 Sensors Present (Bitfield)",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Sensor"
+    },
+    "formula": "bitfield",
+    "units": "NA",
+    "typicalRange": {
+      "min": 0,
+      "max": 255
+    },
+    "notes": "Bitmask of O₂ sensors present; not a gauge",
+    "kind": "status"
+  },
+  {
+    "id": "BB13C4D5-E6F7-4B9C-6FFF-2F3A4B5C6D7E",
+    "enabled": false,
+    "label": "FuelType",
+    "name": "Fuel Type",
+    "pid": {
+      "type": "mode1",
+      "command": "fuelType"
+    },
+    "formula": "categorical",
+    "units": "NA",
+    "typicalRange": {
+      "min": 0,
+      "max": 255
+    },
+    "notes": "Categorical: gasoline, diesel, etc.",
+    "kind": "status"
+  },
+  {
+    "id": "CC24D5E6-F7A8-4C0D-7F0F-3A4B5C6D7E8F",
+    "enabled": false,
+    "label": "OBD Comp",
+    "name": "OBD Compliance",
+    "pid": {
+      "type": "mode1",
+      "command": "obdcompliance"
+    },
+    "formula": "categorical",
+    "units": "NA",
+    "typicalRange": {
+      "min": 0,
+      "max": 255
+    },
+    "notes": "OBD standard/version compliance",
+    "kind": "status"
+  },
+  {
+    "id": "DD35E6F7-A8B9-4D1E-8F1F-4B5C6D7E8F9A",
+    "enabled": false,
+    "label": "DrvCycle",
+    "name": "Monitor Status This Drive Cycle",
+    "pid": {
+      "type": "mode1",
+      "command": "statusDriveCycle"
+    },
+    "formula": "bitfield",
+    "units": "NA",
+    "typicalRange": {
+      "min": 0,
+      "max": 4294967295
+    },
+    "notes": "Monitors readiness for current drive cycle",
+    "kind": "status"
+  },
+  {
+    "id": "EE46F7A8-B9C0-4E2F-9F2F-5C6D7E8F9A0B",
+    "enabled": false,
+    "label": "FreezeDTC",
+    "name": "Freeze DTC",
+    "pid": {
+      "type": "mode1",
+      "command": "freezeDTC"
+    },
+    "formula": "DTC",
+    "units": "NA",
+    "typicalRange": {
+      "min": 0,
+      "max": 65535
+    },
+    "notes": "Stored DTC at time of freeze-frame capture",
+    "kind": "status"
+  },
+  {
+    "id": "FF57A8B9-C0D1-4F3A-AF3F-6D7E8F9A0B1C",
+    "enabled": false,
+    "label": "Sec Air",
+    "name": "Secondary Air Status",
+    "pid": {
+      "type": "mode1",
+      "command": "airStatus"
+    },
+    "formula": "categorical",
+    "units": "NA",
+    "typicalRange": {
+      "min": 0,
+      "max": 255
+    },
+    "notes": "Secondary air system status",
+    "kind": "status"
+  },
+  {
+    "id": "0068B9C0-D1E2-4A4B-BF4F-7E8F9A0B1C2D",
+    "enabled": false,
+    "label": "EVAP VP",
+    "name": "EVAP Vapor Pressure",
+    "pid": {
+      "type": "mode1",
+      "command": "evapVaporPressure"
+    },
+    "formula": "((A*256)+B)/4 (kPa)",
+    "units": "kPa",
+    "typicalRange": {
+      "min": -20,
+      "max": 20
+    },
+    "notes": "Reported in kPa via PID 0132",
+    "kind": "gauge"
+  },
+  {
+    "id": "1179C0D1-E2F3-4B5C-CF5F-8F9A0B1C2D3E",
+    "enabled": false,
+    "label": "EVAP VP Alt",
+    "name": "EVAP Vapor Pressure (Alt/Pa)",
+    "pid": {
+      "type": "mode1",
+      "command": "evapVaporPressureAlt"
+    },
+    "formula": "((A*256)+B) - 32767",
+    "units": "Pa",
+    "typicalRange": {
+      "min": -2000,
+      "max": 2000
+    },
+    "notes": "Alternate scaling (Pa) via PID 0154",
+    "kind": "gauge"
+  },
+  {
+    "id": "228A0D1E-2F3A-4C6D-DF6F-9A0B1C2D3E4F",
+    "enabled": false,
+    "label": "EVAP VP Abs",
+    "name": "EVAP Vapor Pressure (Absolute)",
+    "pid": {
+      "type": "mode1",
+      "command": "evapVaporPressureAbs"
+    },
+    "formula": "((A*256)+B)/200",
+    "units": "kPa",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "notes": "Absolute EVAP pressure via PID 0153",
+    "kind": "gauge"
+  },
+  {
+    "id": "339B1E2F-3A4B-4D7E-EF7F-0B1C2D3E4F5A",
+    "enabled": false,
+    "label": "GM Oil P",
+    "name": "GM Engine Oil Pressure",
+    "pid": {
+      "type": "GMmode22",
+      "command": "engineOilPressure"
+    },
+    "formula": "[psi]=A×0.578",
+    "units": "kPa",
+    "typicalRange": {
+      "min": 0,
+      "max": 800
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "44AC2F3A-4B5C-4E8F-FF8F-1C2D3E4F5A6B",
+    "enabled": false,
+    "label": "GM Oil T",
+    "name": "GM Engine Oil Temperature",
+    "pid": {
+      "type": "GMmode22",
+      "command": "engineOilTemp"
+    },
+    "formula": "A - 40",
+    "units": "°C",
+    "typicalRange": {
+      "min": -20,
+      "max": 98
+    },
+    "warningRange": {
+      "min": 98,
+      "max": 108
+    },
+    "dangerRange": {
+      "min": 108,
+      "max": 150
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "55BD3A4B-5C6D-4F9A-0F9F-2D3E4F5A6B7C",
+    "enabled": false,
+    "label": "GM AC HiP",
+    "name": "GM A/C High Side Pressure",
+    "pid": {
+      "type": "GMmode22",
+      "command": "ACHighPressure"
+    },
+    "formula": "PAC​[psig]=(A×1.83)−14.7",
+    "units": "kPa",
+    "typicalRange": {
+      "min": 0,
+      "max": 800
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "66CE4B5C-6D7E-4A0B-1FAF-3E4F5A6B7C8D",
+    "enabled": false,
+    "label": "GM TransT",
+    "name": "GM Transmission Fluid Temperature",
+    "pid": {
+      "type": "GMmode22",
+      "command": "transFluidTemp"
+    },
+    "formula": "A - 40",
+    "units": "°C",
+    "typicalRange": {
+      "min": -20,
+      "max": 98
+    },
+    "warningRange": {
+      "min": 98,
+      "max": 108
+    },
+    "dangerRange": {
+      "min": 108,
+      "max": 150
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "77DF5C6D-7E8F-4B1C-2FBF-4F5A6B7C8D9E",
+    "enabled": false,
+    "label": "Run Time",
+    "name": "Engine Run Time",
+    "pid": {
+      "type": "mode1",
+      "command": "runTime"
+    },
+    "formula": "((A*256)+B) s",
+    "units": "s",
+    "typicalRange": {
+      "min": 0,
+      "max": 65535
+    },
+    "notes": "Seconds since engine start",
+    "kind": "gauge"
+  },
+  {
+    "id": "88E06D7E-8F9A-4C2D-3FCF-5A6B7C8D9E0F",
+    "enabled": false,
+    "label": "Dist MIL",
+    "name": "Distance with MIL On",
+    "pid": {
+      "type": "mode1",
+      "command": "distanceWMIL"
+    },
+    "formula": "((A*256)+B) km",
+    "units": "km",
+    "typicalRange": {
+      "min": 0,
+      "max": 65535
+    },
+    "notes": "Distance travelled while MIL was on",
+    "kind": "gauge"
+  },
+  {
+    "id": "99F17E8F-9A0B-4D3E-4FDF-6B7C8D9E0F1A",
+    "enabled": false,
+    "label": "WR V S1",
+    "name": "Wideband O2 Lambda Voltage Sensor 1",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Sensor1WRVolatage"
+    },
+    "formula": "((A*256)+B) * 8 / 65535",
+    "units": "V",
+    "typicalRange": {
+      "min": 0,
+      "max": 5
+    },
+    "notes": "Wideband controller voltage",
+    "kind": "gauge"
+  },
+  {
+    "id": "AA028F9A-0B1C-4E4F-5FEF-7C8D9E0F1A2B",
+    "enabled": false,
+    "label": "WR V S2",
+    "name": "Wideband O2 Lambda Voltage Sensor 2",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Sensor2WRVolatage"
+    },
+    "formula": "((A*256)+B) * 8 / 65535",
+    "units": "V",
+    "typicalRange": {
+      "min": 0,
+      "max": 5
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "BB139A0B-1C2D-4F5A-6FFF-8D9E0F1A2B3C",
+    "enabled": false,
+    "label": "WR V S3",
+    "name": "Wideband O2 Lambda Voltage Sensor 3",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Sensor3WRVolatage"
+    },
+    "formula": "((A*256)+B) * 8 / 65535",
+    "units": "V",
+    "typicalRange": {
+      "min": 0,
+      "max": 5
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "CC24A0B1-C2D3-4A6B-7F0F-9E0F1A2B3C4D",
+    "enabled": false,
+    "label": "WR V S4",
+    "name": "Wideband O2 Lambda Voltage Sensor 4",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Sensor4WRVolatage"
+    },
+    "formula": "((A*256)+B) * 8 / 65535",
+    "units": "V",
+    "typicalRange": {
+      "min": 0,
+      "max": 5
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "DD35B1C2-D3E4-4B7C-8F1F-0F1A2B3C4D5E",
+    "enabled": false,
+    "label": "WR V S5",
+    "name": "Wideband O2 Lambda Voltage Sensor 5",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Sensor5WRVolatage"
+    },
+    "formula": "((A*256)+B) * 8 / 65535",
+    "units": "V",
+    "typicalRange": {
+      "min": 0,
+      "max": 5
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "EE46C2D3-E4F5-4C8D-9F2F-1A2B3C4D5E6F",
+    "enabled": false,
+    "label": "WR V S6",
+    "name": "Wideband O2 Lambda Voltage Sensor 6",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Sensor6WRVolatage"
+    },
+    "formula": "((A*256)+B) * 8 / 65535",
+    "units": "V",
+    "typicalRange": {
+      "min": 0,
+      "max": 5
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "FF57D3E4-F5A6-4D9E-AF3F-2B3C4D5E6F7A",
+    "enabled": false,
+    "label": "WR V S7",
+    "name": "Wideband O2 Lambda Voltage Sensor 7",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Sensor7WRVolatage"
+    },
+    "formula": "((A*256)+B) * 8 / 65535",
+    "units": "V",
+    "typicalRange": {
+      "min": 0,
+      "max": 5
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "0068E4F5-A6B7-4E0F-BF4F-3C4D5E6F7A8B",
+    "enabled": false,
+    "label": "WR V S8",
+    "name": "Wideband O2 Lambda Voltage Sensor 8",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Sensor8WRVolatage"
+    },
+    "formula": "((A*256)+B) * 8 / 65535",
+    "units": "V",
+    "typicalRange": {
+      "min": 0,
+      "max": 5
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "1179F5A6-B7C8-4F1A-CF5F-4D5E6F7A8B9C",
+    "enabled": false,
+    "label": "Cmd EGR",
+    "name": "Commanded EGR",
+    "pid": {
+      "type": "mode1",
+      "command": "commandedEGR"
+    },
+    "formula": "A * 100 / 255",
+    "units": "%",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "notes": "EGR duty command",
+    "kind": "gauge"
+  },
+  {
+    "id": "228A06B7-C8D9-4A2B-DF6F-5E6F7A8B9C0D",
+    "enabled": false,
+    "label": "EGR Err",
+    "name": "EGR Error",
+    "pid": {
+      "type": "mode1",
+      "command": "EGRError"
+    },
+    "formula": "(A - 128) * 100 / 128",
+    "units": "%",
+    "typicalRange": {
+      "min": -100,
+      "max": 100
+    },
+    "notes": "Centered percent error",
+    "kind": "gauge"
+  },
+  {
+    "id": "339B17C8-D9E0-4B3C-EF7F-6F7A8B9C0D1E",
+    "enabled": false,
+    "label": "Warm-ups",
+    "name": "Warm-ups Since DTC Cleared",
+    "pid": {
+      "type": "mode1",
+      "command": "warmUpsSinceDTCCleared"
+    },
+    "formula": "A",
+    "units": "count",
+    "typicalRange": {
+      "min": 0,
+      "max": 255
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "44AC28D9-E0F1-4C4D-FF8F-7A8B9C0D1E2F",
+    "enabled": false,
+    "label": "Dist DTC Clr",
+    "name": "Distance Since DTC Cleared",
+    "pid": {
+      "type": "mode1",
+      "command": "distanceSinceDTCCleared"
+    },
+    "formula": "((A*256)+B) km",
+    "units": "km",
+    "typicalRange": {
+      "min": 0,
+      "max": 65535
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "55BD39E0-F1A2-4D5E-0F9F-8B9C0D1E2F3A",
+    "enabled": false,
+    "label": "WR I S3",
+    "name": "Wideband O2 Sensor Current Sensor 3",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Sensor3WRCurrent"
+    },
+    "formula": "(A-128)*(2/128)",
+    "units": "mA",
+    "typicalRange": {
+      "min": -10,
+      "max": 10
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "66CE4A0F-1A2B-4E6F-1FAF-9C0D1E2F3A4B",
+    "enabled": false,
+    "label": "WR I S4",
+    "name": "Wideband O2 Sensor Current Sensor 4",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Sensor4WRCurrent"
+    },
+    "formula": "(A-128)*(2/128)",
+    "units": "mA",
+    "typicalRange": {
+      "min": -10,
+      "max": 10
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "77DF5B1A-2B3C-4F7A-2FBF-0D1E2F3A4B5C",
+    "enabled": false,
+    "label": "WR I S5",
+    "name": "Wideband O2 Sensor Current Sensor 5",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Sensor5WRCurrent"
+    },
+    "formula": "(A-128)*(2/128)",
+    "units": "mA",
+    "typicalRange": {
+      "min": -10,
+      "max": 10
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "88E06C2B-3C4D-4A8B-3FCF-1E2F3A4B5C6D",
+    "enabled": false,
+    "label": "WR I S6",
+    "name": "Wideband O2 Sensor Current Sensor 6",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Sensor6WRCurrent"
+    },
+    "formula": "(A-128)*(2/128)",
+    "units": "mA",
+    "typicalRange": {
+      "min": -10,
+      "max": 10
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "99F17D3C-4D5E-4B9C-4FDF-2F3A4B5C6D7E",
+    "enabled": false,
+    "label": "WR I S8",
+    "name": "Wideband O2 Sensor Current Sensor 8",
+    "pid": {
+      "type": "mode1",
+      "command": "O2Sensor8WRCurrent"
+    },
+    "formula": "(A-128)*(2/128)",
+    "units": "mA",
+    "typicalRange": {
+      "min": -10,
+      "max": 10
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "AA028E4D-5E6F-4C0D-5FEF-3A4B5C6D7E8F",
+    "enabled": false,
+    "label": "MIL Time",
+    "name": "Run Time with MIL On",
+    "pid": {
+      "type": "mode1",
+      "command": "runTimeMIL"
+    },
+    "formula": "((A*256)+B) s",
+    "units": "s",
+    "typicalRange": {
+      "min": 0,
+      "max": 65535
+    },
+    "notes": "Seconds with MIL illuminated",
+    "kind": "gauge"
+  },
+  {
+    "id": "BB139F5E-6F7A-4D1E-6FFF-4B5C6D7E8F9A",
+    "enabled": false,
+    "label": "DTC Clear",
+    "name": "Time Since DTC Cleared",
+    "pid": {
+      "type": "mode1",
+      "command": "timeSinceDTCCleared"
+    },
+    "formula": "((A*256)+B) s",
+    "units": "s",
+    "typicalRange": {
+      "min": 0,
+      "max": 65535
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "CC24A06F-7A8B-4E2F-7F0F-5C6D7E8F9A0B",
+    "enabled": false,
+    "label": "Max MAF",
+    "name": "Maximum MAF Since Clear",
+    "pid": {
+      "type": "mode1",
+      "command": "maxMAF"
+    },
+    "formula": "A * 10",
+    "units": "g/s",
+    "typicalRange": {
+      "min": 0,
+      "max": 655
+    },
+    "notes": "Max airflow since DTC clear",
+    "kind": "gauge"
+  },
+  {
+    "id": "DD35B17A-8B9C-4F3A-8F1F-6D7E8F9A0B1C",
+    "enabled": false,
+    "label": "Ethanol %",
+    "name": "Ethanol Fuel Percentage",
+    "pid": {
+      "type": "mode1",
+      "command": "ethanoPercent"
+    },
+    "formula": "A * 100/255",
+    "units": "%",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "kind": "gauge"
+  },
+  {
+    "id": "EE46C28B-9C0D-4A4B-9F2F-7E8F9A0B1C2D",
+    "enabled": false,
+    "label": "Hybrid SOC",
+    "name": "Hybrid Battery Remaining Life",
+    "pid": {
+      "type": "mode1",
+      "command": "hybridBatteryLife"
+    },
+    "formula": "A * 100/255",
+    "units": "%",
+    "typicalRange": {
+      "min": 0,
+      "max": 100
+    },
+    "warningRange": {
+      "min": 0,
+      "max": 10
+    },
+    "dangerRange": {
+      "min": 0,
+      "max": 5
+    },
+    "notes": "State of charge estimate",
+    "kind": "gauge"
+  },
+  {
+    "id": "FF57D39C-0D1E-4B5C-AF3F-8F9A0B1C2D3E",
+    "enabled": false,
+    "label": "Inj Time",
+    "name": "Fuel Injection Timing",
+    "pid": {
+      "type": "mode1",
+      "command": "fuelInjectionTiming"
+    },
+    "formula": "((A*256)+B - 26880)/128",
+    "units": "° BTDC",
+    "typicalRange": {
+      "min": -50,
+      "max": 50
+    },
+    "notes": "Degrees BTDC/ATDC",
+    "kind": "gauge"
+  }
+]

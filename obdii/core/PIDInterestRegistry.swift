@@ -32,24 +32,7 @@ final class PIDInterestRegistry: ObservableObject {
         recompute()
     }
 
-    func add(pids: Set<OBDCommand>, for token: UUID) {
-        var current = byToken[token] ?? []
-        current.formUnion(pids)
-        byToken[token] = current
-        recompute()
-    }
-
-    func remove(pids: Set<OBDCommand>, for token: UUID) {
-        guard var current = byToken[token] else { return }
-        current.subtract(pids)
-        if current.isEmpty {
-            byToken.removeValue(forKey: token)
-        } else {
-            byToken[token] = current
-        }
-        recompute()
-    }
-
+   
     // Enqueue the clear on the main queue so it runs after current work.
     func clear(token: UUID) {
         DispatchQueue.main.async { [weak self] in

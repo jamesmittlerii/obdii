@@ -31,8 +31,9 @@ final class PIDStore: ObservableObject {
     private static let disabledGaugesOrderKey = "PIDStore.disabledGaugesOrder"
 
     private init() {
-        // Start from the library defaults
-        var initial = OBDPIDLibrary.standard
+        // Load from JSON file (falls back to hardcoded if missing/invalid)
+        var initial = OBDPIDLibrary.loadFromJSON()
+
 
         // Restore saved enabled flags keyed by command string
         if let data = UserDefaults.standard.data(forKey: PIDStore.enabledKey),
