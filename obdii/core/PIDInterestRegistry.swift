@@ -50,9 +50,13 @@ final class PIDInterestRegistry: ObservableObject {
         recompute()
     }
 
+    // Enqueue the clear on the main queue so it runs after current work.
     func clear(token: UUID) {
-        byToken.removeValue(forKey: token)
-        recompute()
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.byToken.removeValue(forKey: token)
+            self.recompute()
+        }
     }
 
     private func recompute() {
@@ -60,7 +64,6 @@ final class PIDInterestRegistry: ObservableObject {
             acc.formUnion(next)
         }
         if union != interested {
-            // Log the change with human-readable names
             let names = union
                 .map { PIDInterestRegistry.displayName(for: $0) }
                 .sorted()
@@ -70,12 +73,9 @@ final class PIDInterestRegistry: ObservableObject {
         }
     }
 
-    // MARK: - Logging helpers
-
     private static func displayName(for command: OBDCommand) -> String {
         switch command {
         case .mode1(let pid):
-            // Try to give a friendly short label when possible
             switch pid {
             case .status: return "Mode01 Status (0101)"
             case .fuelStatus: return "Mode01 Fuel Status (0103)"

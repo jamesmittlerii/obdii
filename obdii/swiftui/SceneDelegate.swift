@@ -4,8 +4,7 @@
  * Jim Mittler
  * 14 November 2025
  
- 
-Scene to disable running on ipad (not current used)
+Main Scene delegate (entry point) for Phone UI
  
  _Italic text__
  __Bold text__
@@ -57,7 +56,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 }
 
 /// Simple placeholder screen shown on iPad in RELEASE builds.
-/// Replace with your own implementation if desired.
 final class UnsupportedDeviceViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()

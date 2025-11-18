@@ -289,14 +289,6 @@ class OBDConnectionManager: ObservableObject {
         obdInfo("All PID stats reset (min/max/sampleCount).", category: .service)
     }
 
-    private func resetStats(for pid: OBDCommand) {
-        guard var existing = pidStats[pid] else { return }
-        existing.min = existing.latest.value
-        existing.max = existing.latest.value
-        existing.sampleCount = 1
-        pidStats[pid] = existing
-        obdInfo("PID stats reset for \(String(describing: pid)).", category: .service)
-    }
 
     func stats(for pid: OBDCommand) -> PIDStats? {
         pidStats[pid]

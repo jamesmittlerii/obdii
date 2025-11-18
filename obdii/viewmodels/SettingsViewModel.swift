@@ -15,9 +15,8 @@ View Model for showing/setting various settings. Used by CarPlay and SwiftUI
 
 import Foundation
 import Combine
-import SwiftUI
-import SwiftOBD2
 import Observation
+import SwiftOBD2
 
 @MainActor
 @Observable
@@ -221,4 +220,3 @@ class SettingsViewModel : BaseViewModel {
         onChanged?()
     }
 }
-

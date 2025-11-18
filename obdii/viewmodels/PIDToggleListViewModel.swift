@@ -83,12 +83,18 @@ final class PIDToggleListViewModel {
 
     // Intents
     func toggle(at index: Int, to isOn: Bool) {
-        // Ensure mirror is current and get the PID
+        // Ensure mirror is current and validate index after syncing
         syncFromStore()
+        guard pids.indices.contains(index) else { return }
+
         let pid = pids[index]
-        store.toggle(pid)
-        // Update local mirror after mutation
-        pids = store.pids
+
+        // Only flip if the desired state differs from current
+        if pid.enabled != isOn {
+            store.toggle(pid)
+            // Update local mirror after mutation
+            pids = store.pids
+        }
     }
 
     // we allow reordering so send that back to the store to handle

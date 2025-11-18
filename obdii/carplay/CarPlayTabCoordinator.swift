@@ -13,7 +13,6 @@ CarPlay class to keep track of selected tab to save in settings
  
  */
 import CarPlay
-import UIKit
 import SwiftUI
 
 final class CarPlayTabCoordinator: NSObject, CPTabBarTemplateDelegate {
@@ -22,9 +21,6 @@ final class CarPlayTabCoordinator: NSObject, CPTabBarTemplateDelegate {
     @AppStorage("selectedCarPlayTab") var selectedIndex: Int = 0
 
 
-    override init() {
-        super.init()
-    }
 
     func tabBarTemplate(_ tabBarTemplate: CPTabBarTemplate, didSelect template: CPTemplate) {
         if let index = tabBarTemplate.templates.firstIndex(of: template) {

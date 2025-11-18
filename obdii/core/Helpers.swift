@@ -55,29 +55,6 @@ func tintedSymbol(named name: String, severity: CodeSeverity) -> UIImage? {
     return img.withTintColor(severityColor(severity), renderingMode: .alwaysOriginal)
 }
 
-func severitySectionTitle(_ severity: CodeSeverity) -> String {
-    switch severity {
-    case .critical: return "Critical"
-    case .high:     return "High Severity"
-    case .moderate: return "Moderate"
-    case .low:      return "Low"
-    }
-}
-
-
-func severitySymbolName(for severity: CodeSeverity) -> String {
-    switch severity {
-    case .critical:
-        return "exclamationmark.octagon.fill"
-    case .high:
-        return "exclamationmark.triangle.fill"
-    case .moderate:
-        return "exclamationmark.circle.fill"
-    case .low:
-        return "info.circle.fill"
-    }
-}
-
 
  func imageName(for severity: CodeSeverity) -> String {
     switch severity {

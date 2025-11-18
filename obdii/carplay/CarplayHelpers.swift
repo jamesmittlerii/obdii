@@ -5,7 +5,7 @@
  * 14 November 2025
  
  
-Swift UI specific helpers
+Helper to draw gauge on Carplay
  
  _Italic text__
  __Bold text__
