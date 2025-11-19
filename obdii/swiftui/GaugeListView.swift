@@ -1,33 +1,13 @@
-/**
- 
- * __Final Project__
- * Jim Mittler
- * 14 November 2025
- 
- 
-Swift UI view for showing a textual list of gauges
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
- */
-
 import SwiftUI
 import SwiftOBD2
 
 struct GaugeListView: View {
-    @ObservedObject var connectionManager: OBDConnectionManager
-    @State private var viewModel: GaugesViewModel
 
-    // Demand-driven polling token
-    @State private var interestToken: UUID = PIDInterestRegistry.shared.makeToken()
+    @ObservedObject private var connectionManager = OBDConnectionManager.shared
+    @State private var viewModel = GaugesViewModel()
+    @State private var interestToken = PIDInterestRegistry.shared.makeToken()
 
-    init() {
-        self.connectionManager = OBDConnectionManager.shared
-        _viewModel = State(wrappedValue: GaugesViewModel())
-    }
-    
+    // Used to detect changes in the list of PIDs we should subscribe to.
     private var tileIdentities: [TileIdentity] {
         viewModel.tiles.map { TileIdentity(id: $0.id, name: $0.pid.name) }
     }
@@ -36,55 +16,65 @@ struct GaugeListView: View {
         List {
             Section(header: Text("Gauges")) {
                 ForEach(viewModel.tiles) { tile in
-                    NavigationLink(destination: GaugeDetailView(pid: tile.pid, connectionManager: connectionManager)) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(tile.pid.name)
-                                    .font(.headline)
-                                Text(tile.pid.displayRange)
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                            }
-                            Spacer()
-                            Text(currentValueText(for: tile))
-                                .font(.title3.monospacedDigit())
-                                .foregroundColor(currentValueColor(for: tile))
-                                .accessibilityLabel("\(tile.pid.name) value")
-                        }
-                        .contentShape(Rectangle())
+                    NavigationLink {
+                        GaugeDetailView(pid: tile.pid)
+                    } label: {
+                        tileRow(tile)
                     }
                 }
             }
         }
         .navigationTitle("Live Gauges")
+        .onAppear { updateInterest() }
+        .onDisappear { PIDInterestRegistry.shared.clear(token: interestToken) }
         .onChange(of: tileIdentities) {
             updateInterest()
         }
-        .onAppear {
-            updateInterest()
-        }
-        .onDisappear {
-            PIDInterestRegistry.shared.clear(token: interestToken)
-        }
     }
 
+    // MARK: - UI Row
+
+    private func tileRow(_ tile: GaugesViewModel.Tile) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(tile.pid.name)
+                    .font(.headline)
+
+                Text(tile.pid.displayRange)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Text(currentValueText(for: tile))
+                .font(.title3.monospacedDigit())
+                .foregroundStyle(currentValueColor(for: tile))
+                .accessibilityLabel("\(tile.pid.name) value")
+        }
+        .contentShape(Rectangle())
+    }
+
+    // MARK: - Demand-driven PID interest
+
     private func updateInterest() {
-        // Register interest for all gauge tiles currently in the list
         let commands: Set<OBDCommand> = Set(viewModel.tiles.map { $0.pid.pid })
         PIDInterestRegistry.shared.replace(pids: commands, for: interestToken)
     }
 
-    private func currentValueText(for: GaugesViewModel.Tile) -> String {
-        if let m = `for`.measurement {
-            return `for`.pid.formatted(measurement: m, includeUnits: true)
+    // MARK: - Value Formatting
+
+    private func currentValueText(for tile: GaugesViewModel.Tile) -> String {
+        if let m = tile.measurement {
+            return tile.pid.formatted(measurement: m, includeUnits: true)
         } else {
-            return "— \(`for`.pid.displayUnits)"
+            return "— \(tile.pid.displayUnits)"
         }
     }
 
-    private func currentValueColor(for: GaugesViewModel.Tile) -> Color {
-        if let m = `for`.measurement {
-            return `for`.pid.color(for: m.value)
+    private func currentValueColor(for tile: GaugesViewModel.Tile) -> Color {
+        if let m = tile.measurement {
+            return tile.pid.color(for: m.value)
         } else {
             return .secondary
         }
@@ -92,8 +82,7 @@ struct GaugeListView: View {
 }
 
 #Preview {
-    NavigationView {
+    NavigationStack {
         GaugeListView()
     }
 }
-

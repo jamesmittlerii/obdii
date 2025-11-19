@@ -1,94 +1,86 @@
-/**
- 
- * __Final Project__
- * Jim Mittler
- * 14 November 2025
- 
- 
-Class to manage our settings and persist via @AppStorage
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
- */
-
+import Foundation
 import SwiftUI
-import SwiftOBD2
 import Combine
+import SwiftOBD2
 
-class ConfigData: ObservableObject {
+@MainActor
+final class ConfigData: ObservableObject {
+
     static let shared = ConfigData()
 
-    @AppStorage("units") var unitsInternal: MeasurementUnit =  (Locale.current.measurementSystem == .metric) ? .metric : .imperial
+    // MARK: - AppStorage backing
+
     @AppStorage("wifiHost") var wifiHost: String = "192.168.0.10"
     @AppStorage("wifiPort") var wifiPort: Int = 35000
     @AppStorage("autoConnectToOBD") var autoConnectToOBD: Bool = true
 
     @AppStorage("connectionType") private var storedConnectionType: String = ConnectionType.bluetooth.rawValue
+    @AppStorage("units") private var storedUnitsRaw: String = MeasurementUnit.metric.rawValue
+
+    // MARK: - Published mirrors
 
     @Published var publishedConnectionType: String
-
-    // Mirror publisher for units so other components can subscribe cleanly
     @Published var units: MeasurementUnit
 
     private var cancellables = Set<AnyCancellable>()
 
+    // MARK: - Init
+
     private init() {
+
         //
-        // ✅ DO NOT ACCESS @AppStorage here for connection type beyond reading its raw value.
+        // ❗️FIRST: Initialize all stored properties WITHOUT touching self.*
         //
-        let raw = UserDefaults.standard.string(forKey: "connectionType")
+        let initialConnectionRaw = UserDefaults.standard.string(forKey: "connectionType")
             ?? ConnectionType.bluetooth.rawValue
 
-        // Initialize published properties
-        self.publishedConnectionType = raw
-        self.units = UserDefaults.standard.string(forKey: "units")
-            .flatMap { MeasurementUnit(rawValue: $0) } ?? .metric
+        let initialUnits = MeasurementUnit(
+            rawValue: UserDefaults.standard.string(forKey: "units")
+                ?? MeasurementUnit.metric.rawValue
+        ) ?? .metric
 
-        // Sync initial values outward
-        ConfigurationService.shared.connectionType =
-            ConnectionType(rawValue: raw) ?? .bluetooth
+        //
+        // ❗️NOW it's safe to assign to @Published properties.
+        //
+        self.publishedConnectionType = initialConnectionRaw
+        self.units = initialUnits
 
-        // Keep publishedConnectionType -> @AppStorage and service in sync
+        //
+        // ❗️Only now is it legal to access `self` properties.
+        //
+        superInitAndBind()
+    }
+
+    /// Splitting logic out avoids touching `self` before initialization completes.
+    private func superInitAndBind() {
+        // MARK: - Sync connectionType
         $publishedConnectionType
             .dropFirst()
-            .sink { [weak self] newValue in
+            .sink { [weak self] newRaw in
                 guard let self else { return }
-                self.storedConnectionType = newValue
+                self.storedConnectionType = newRaw
                 ConfigurationService.shared.connectionType =
-                    ConnectionType(rawValue: newValue) ?? .bluetooth
+                    ConnectionType(rawValue: newRaw) ?? .bluetooth
             }
             .store(in: &cancellables)
 
-        // Keep unitsPublished <-> @AppStorage("units") in sync both ways
-
-        // When unitsPublished changes, write to @AppStorage
+        // MARK: - Sync units
         $units
             .dropFirst()
             .sink { [weak self] newUnits in
-                self?.unitsInternal = newUnits
+                self?.storedUnitsRaw = newUnits.rawValue
             }
             .store(in: &cancellables)
-
-        // When @AppStorage units changes externally, mirror to unitsPublished
-        // Note: @AppStorage is not a publisher; observe via objectWillChange from this object
-        // or add a small timer/notification. Simpler: mirror on accessors:
-        // Provide a setter to update unitsPublished when units is set externally.
-        // Since other code writes ConfigData.shared.units directly, add a didSet-like bridge below.
     }
 
-    // Convenience enum accessor
+    // MARK: - API
+
     var connectionType: ConnectionType {
         get { ConnectionType(rawValue: publishedConnectionType) ?? .bluetooth }
         set { publishedConnectionType = newValue.rawValue }
     }
-    
+
     func setUnits(_ newUnits: MeasurementUnit) {
-        // Update both storage and published mirror
-        self.unitsInternal = newUnits
-        self.units = newUnits
+        units = newUnits
     }
 }
-
-

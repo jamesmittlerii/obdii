@@ -1,18 +1,3 @@
-/**
- 
- * __Final Project__
- * Jim Mittler
- * 14 November 2025
- 
- 
-Swift UI view for an individual DTC
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
- */
-
 import SwiftUI
 import SwiftOBD2
 
@@ -21,38 +6,64 @@ struct DTCDetailView: View {
 
     var body: some View {
         List {
-            Section(header: Text("Overview")) {
-                LabeledContent("Code", value: code.code)
-                LabeledContent("Title", value: code.title)
-                LabeledContent("Severity", value: code.severity.rawValue)
-            }
+            overviewSection
+            descriptionSection
+            causesSection
+            remediesSection
+        }
+        .navigationTitle(code.code)
+        .navigationBarTitleDisplayMode(.inline)
+    }
 
-            Section(header: Text("Description")) {
-                Text(code.description)
-            }
+    // MARK: - Sections
 
+    private var overviewSection: some View {
+        Section(header: Text("Overview")) {
+            LabeledContent("Code", value: code.code)
+            LabeledContent("Title", value: code.title)
+            LabeledContent("Severity", value: code.severity.rawValue)
+        }
+    }
+
+    private var descriptionSection: some View {
+        Section(header: Text("Description")) {
+            Text(code.description)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var causesSection: some View {
+        Group {
             if !code.causes.isEmpty {
                 Section(header: Text("Potential Causes")) {
                     ForEach(code.causes, id: \.self) { cause in
                         Text("• \(cause)")
-                    }
-                }
-            }
-
-            if !code.remedies.isEmpty {
-                Section(header: Text("Possible Remedies")) {
-                    ForEach(code.remedies, id: \.self) { remedy in
-                        Text("• \(remedy)")
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
         }
-        .navigationTitle(code.code)
+    }
+
+    private var remediesSection: some View {
+        Group {
+            if !code.remedies.isEmpty {
+                Section(header: Text("Possible Remedies")) {
+                    ForEach(code.remedies, id: \.self) { remedy in
+                        Text("• \(remedy)")
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+        }
     }
 }
 
 #Preview {
-    // Use a real entry from the public dictionary if available
-    let sample = troubleCodeDictionary["P0300"] ?? troubleCodeDictionary.values.first!
-    NavigationStack { DTCDetailView(code: sample) }
+    let sample = troubleCodeDictionary["P0300"]
+        ?? troubleCodeDictionary.values.first!
+
+    NavigationStack {
+        DTCDetailView(code: sample)
+    }
 }

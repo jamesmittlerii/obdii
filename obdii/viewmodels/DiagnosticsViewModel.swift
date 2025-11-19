@@ -1,19 +1,3 @@
-/**
- 
- * __Final Project__
- * Jim Mittler
- * 14 November 2025
- 
- 
-View Model for showing the Diagnostic Trouble Codes. Used by CarPlay and SwiftUI
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
- */
-
-
 import Foundation
 import Combine
 import SwiftOBD2
@@ -21,16 +5,17 @@ import Observation
 
 @MainActor
 @Observable
-final class DiagnosticsViewModel : BaseViewModel{
+final class DiagnosticsViewModel: BaseViewModel {
+
     struct Section: Equatable {
         let title: String
         let severity: CodeSeverity
         let items: [TroubleCodeMetadata]
     }
 
-    // Optional source mirror: nil = waiting, [] = loaded but empty
-    private(set) var codes: [TroubleCodeMetadata]? = nil
+    // MARK: - Published State
 
+    private(set) var codes: [TroubleCodeMetadata]? = nil
     private(set) var sections: [Section] = [] {
         didSet {
             if oldValue != sections {
@@ -40,27 +25,32 @@ final class DiagnosticsViewModel : BaseViewModel{
     }
     private(set) var isEmpty: Bool = true
 
-    private var cancellable: AnyCancellable?
+    // MARK: - Combine
+
+    private var cancellables = Set<AnyCancellable>()
+
+    // MARK: - Init
 
     override init() {
         super.init()
 
-        let manager = OBDConnectionManager.shared
-        cancellable = manager.$troubleCodes
+        OBDConnectionManager.shared.$troubleCodes
             .removeDuplicates()
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] codes in
-                guard let self else { return }
+            .sink { [unowned self] codes in
                 self.codes = codes
                 self.rebuildSections(from: codes)
             }
+            .store(in: &cancellables)
     }
 
+    // MARK: - Section Construction
+
     private func rebuildSections(from codes: [TroubleCodeMetadata]?) {
-        // Waiting state
+
+        // Waiting for initial data
         guard let codes = codes else {
             sections = []
-            isEmpty = false // Not "empty" yet; we're waiting
+            isEmpty = false
             return
         }
 
@@ -74,19 +64,25 @@ final class DiagnosticsViewModel : BaseViewModel{
         let grouped = Dictionary(grouping: codes, by: { $0.severity })
         let order: [CodeSeverity] = [.critical, .high, .moderate, .low]
 
-        sections = order.compactMap { severity in
+        let builtSections = order.compactMap { severity -> Section? in
             guard let list = grouped[severity], !list.isEmpty else { return nil }
             return Section(
-                title: title(for: severity),
+                title: severity.displayTitle,
                 severity: severity,
                 items: list
             )
         }
-        isEmpty = sections.isEmpty
-    }
 
-    private func title(for severity: CodeSeverity) -> String {
-        switch severity {
+        sections = builtSections
+        isEmpty = builtSections.isEmpty
+    }
+}
+
+// MARK: - CodeSeverity → Display Logic
+
+private extension CodeSeverity {
+    var displayTitle: String {
+        switch self {
         case .critical: return "Critical"
         case .high:     return "High"
         case .moderate: return "Moderate"
@@ -94,4 +90,3 @@ final class DiagnosticsViewModel : BaseViewModel{
         }
     }
 }
-

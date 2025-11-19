@@ -1,18 +1,3 @@
-/**
- 
- * __Final Project__
- * Jim Mittler
- * 14 November 2025
- 
- 
-View Model for showing the Fuel/O2 sensor statuses. Used by CarPlay and SwiftUI
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
- */
-
 import Combine
 import SwiftOBD2
 import Foundation
@@ -20,46 +5,59 @@ import Observation
 
 @MainActor
 @Observable
-final class FuelStatusViewModel : BaseViewModel{
-    // Callback for controllers (CarPlay, etc.) to observe changes, mirroring DiagnosticsViewModel
-    //var onChanged: (() -> Void)?
+final class FuelStatusViewModel: BaseViewModel {
 
-    // Optional container:
-    // nil = not yet received any data
-    // [] or only nils = received, but effectively empty
+    // MARK: - Published state
+    
+    /// nil = waiting for first update
+    /// non-nil = data received (may contain nils for missing banks)
     private(set) var status: [StatusCodeMetadata?]? = nil {
         didSet {
-            // Notify observers when the status array changes
-            onChanged?()
+            if oldValue != status {  // avoid duplicate updates
+                onChanged?()
+            }
         }
     }
 
-    private var cancellable: AnyCancellable?
+    // MARK: - Combine
+    private var cancellables = Set<AnyCancellable>()
+
+    // MARK: - Init
 
     override init() {
         super.init()
-        let manager = OBDConnectionManager.shared
-        cancellable = manager.$fuelStatus
+
+        OBDConnectionManager.shared.$fuelStatus
             .removeDuplicates()
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] newValue in
-                self?.status = newValue
+            .sink { [unowned self] newValue in
+                self.status = newValue
             }
+            .store(in: &cancellables)
     }
 
+    // MARK: - Accessors
+
+    /// Fuel system status for Bank 1
     var bank1: StatusCodeMetadata? {
-        guard let status, status.indices.contains(0) else { return nil }
-        return status[0]
+        status?[safe: 0] ?? nil
     }
 
+    /// Fuel system status for Bank 2
     var bank2: StatusCodeMetadata? {
-        guard let status, status.indices.contains(1) else { return nil }
-        return status[1]
+        status?[safe: 1] ?? nil
     }
 
+    /// True if any bank contains a non-nil status value
     var hasAnyStatus: Bool {
-        guard let status else { return false } // treat "not yet received" as no status for this flag
+        guard let status else { return false }
         return status.contains { $0 != nil }
     }
 }
 
+// MARK: - Safe indexing helper
+
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
+}

@@ -17,7 +17,7 @@ import SwiftUI
 import SwiftOBD2
 
 // Shared gauge ring renderer usable from SwiftUI (Image(uiImage:)) and CarPlay (UIImage)
-func drawGaugeImage(for pid: OBDPID, measurement: MeasurementResult?, size: CGSize) -> UIImage {
+@MainActor func drawGaugeImage(for pid: OBDPID, measurement: MeasurementResult?, size: CGSize) -> UIImage {
     func measurementUnit(from unit: Unit) -> MeasurementUnit {
         switch unit {
         case is UnitTemperature:

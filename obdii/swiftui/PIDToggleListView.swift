@@ -1,27 +1,14 @@
-/**
- 
- * __Final Project__
- * Jim Mittler
- * 14 November 2025
- 
- 
-Swift UI view for enable/disable PIDs
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
- */
-
 import SwiftUI
 
 struct PIDToggleListView: View {
-    // Use @State with @Observable view model
+
+    // Stable view model instance
     @State private var viewModel = PIDToggleListViewModel()
-    // Control programmatic presentation of the search UI
+
+    // Controls presentation of search UI
     @State private var isSearchPresented: Bool = false
 
-    // Break up complex expressions to help the type checker
+    // Break up for type checker clarity
     private var enabledItems: [OBDPID] { viewModel.filteredEnabled }
     private var disabledItems: [OBDPID] { viewModel.filteredDisabled }
 
@@ -29,7 +16,7 @@ struct PIDToggleListView: View {
         Group {
             if isSearchPresented {
                 listView
-                    .id("search-on") // force rebuild so nav drawer syncs
+                    .id("search-on") // force rebuild to sync presentation state
                     .searchable(
                         text: $viewModel.searchText,
                         isPresented: $isSearchPresented,
@@ -38,7 +25,7 @@ struct PIDToggleListView: View {
                     )
             } else {
                 listView
-                    .id("search-off") // force rebuild so drawer fully disappears
+                    .id("search-off") // removes drawer instantly
             }
         }
         .toolbar {
@@ -54,20 +41,23 @@ struct PIDToggleListView: View {
         .textInputAutocapitalization(.never)
         .disableAutocorrection(true)
         .onSubmit(of: .search) {
-            viewModel.searchText = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+            viewModel.searchText = viewModel.searchText
+                .trimmingCharacters(in: .whitespacesAndNewlines)
         }
-        // iOS 17+ two-parameter onChange overload
         .onChange(of: isSearchPresented) { _, presented in
-            // When search is dismissed (Cancel), clear query so full list returns
+            // When "Cancel" is hit, restore full list
             if !presented {
                 viewModel.searchText = ""
             }
         }
     }
 
-    // Extracted list to avoid duplicating content when conditionally applying .searchable
+    // MARK: - Core List View
+
     private var listView: some View {
         List {
+
+            // Enabled Section
             if !enabledItems.isEmpty {
                 Section(header: Text("Enabled")) {
                     ForEach(enabledItems, id: \.id) { pid in
@@ -76,12 +66,13 @@ struct PIDToggleListView: View {
                             isOn: toggleBinding(for: pid)
                         )
                     }
-                    .onMove { source, destination in
-                        viewModel.moveEnabled(fromOffsets: source, toOffset: destination)
+                    .onMove { source, dest in
+                        viewModel.moveEnabled(fromOffsets: source, toOffset: dest)
                     }
                 }
             }
 
+            // Disabled Section
             if !disabledItems.isEmpty {
                 Section(header: Text("Disabled")) {
                     ForEach(disabledItems, id: \.id) { pid in
@@ -93,6 +84,7 @@ struct PIDToggleListView: View {
                 }
             }
 
+            // Empty search state
             if enabledItems.isEmpty && disabledItems.isEmpty && !viewModel.searchText.isEmpty {
                 Section {
                     Text("No results for “\(viewModel.searchText)”")
@@ -103,7 +95,8 @@ struct PIDToggleListView: View {
         .listStyle(.insetGrouped)
     }
 
-    // Extracting this binding reduces type-checking complexity inside the ViewBuilder.
+    // MARK: - Bindings
+
     private func toggleBinding(for pid: OBDPID) -> Binding<Bool> {
         Binding<Bool>(
             get: { pid.enabled },

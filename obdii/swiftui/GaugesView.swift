@@ -1,18 +1,3 @@
-/**
- 
- * __Final Project__
- * Jim Mittler
- * 14 November 2025
- 
- 
-Swift UI view for a grid of gauges
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
- */
-
 import SwiftUI
 import Combine
 import SwiftOBD2
@@ -20,21 +5,19 @@ import UIKit
 
 @MainActor
 struct GaugesView: View {
-    @State private var viewModel: GaugesViewModel
+
+    // Stable observable view model instance
+    @State private var viewModel: GaugesViewModel = GaugesViewModel()
 
     // Demand-driven polling token
     @State private var interestToken: UUID = PIDInterestRegistry.shared.makeToken()
 
-    init() {
-        _viewModel = State(wrappedValue: GaugesViewModel())
-    }
-
-    // Adaptive grid: 2–4 columns depending on width
+    // Adaptive layout: 2–4 columns depending on device width
     private let columns = [
         GridItem(.adaptive(minimum: 160, maximum: 240), spacing: 16, alignment: .top)
     ]
 
-    // Identity of tiles that should trigger interest updates (ignores live measurements)
+    // Identity list ignoring measurements
     private var tileIdentities: [TileIdentity] {
         viewModel.tiles.map { TileIdentity(id: $0.id, name: $0.pid.name) }
     }
@@ -44,7 +27,7 @@ struct GaugesView: View {
             LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(viewModel.tiles) { tile in
                     NavigationLink {
-                        GaugeDetailView(pid: tile.pid, connectionManager: .shared)
+                        GaugeDetailView(pid: tile.pid)
                     } label: {
                         GaugeTile(pid: tile.pid, measurement: tile.measurement)
                     }
@@ -54,39 +37,43 @@ struct GaugesView: View {
             }
             .padding()
         }
-        // Only react when the tile identities (names/count/order) change, not measurements
-        .onChange(of: tileIdentities) {
-            updateInterest()
-        }
         .onAppear {
             updateInterest()
         }
         .onDisappear {
             PIDInterestRegistry.shared.clear(token: interestToken)
         }
+        .onChange(of: tileIdentities) {
+            updateInterest()
+        }
     }
 
     private func updateInterest() {
-        // Register interest for all gauge tiles currently in the grid
+        // Demand-driven PID activation
         let commands: Set<OBDCommand> = Set(viewModel.tiles.map { $0.pid.pid })
         PIDInterestRegistry.shared.replace(pids: commands, for: interestToken)
     }
 }
 
-// Minimal equatable identity for tiles (ignores measurements)
+// MARK: - Tile Identity (ignores current sample values)
+
 struct TileIdentity: Equatable {
     let id: UUID
     let name: String
 }
+
+// MARK: - Gauge Tile UI
 
 private struct GaugeTile: View {
     let pid: OBDPID
     let measurement: MeasurementResult?
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 8) {
+
             RingGaugeView(pid: pid, measurement: measurement)
                 .frame(width: 120, height: 120)
+
             Text(pid.label)
                 .font(.headline)
                 .lineLimit(1)
@@ -105,4 +92,3 @@ private struct GaugeTile: View {
         GaugesView()
     }
 }
-

@@ -1,18 +1,3 @@
-/**
- 
- * __Final Project__
- * Jim Mittler
- * 14 November 2025
- 
- 
-View Model for showing and updating the selected PIDs. Used by SwiftUI
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
- */
-
 import Foundation
 import Observation
 import SwiftOBD2
@@ -20,25 +5,28 @@ import SwiftOBD2
 @MainActor
 @Observable
 final class PIDToggleListViewModel {
-    // Mirror of the store PIDs for simple view binding (derived from store)
-    // Keep a local cache if you want to avoid recomputing filters frequently
-    var pids: [OBDPID] = []
 
-    // Search text for filtering
+    // MARK: - Published State
+
+    /// Local mirror of the store’s PID list (copied for sorting/filtering UI).
+    private(set) var pids: [OBDPID] = []
+
+    /// Raw search string from the UI.
     var searchText: String = ""
+
+    // MARK: - Dependencies
 
     private let store: PIDStore
 
-    // Designated initializer without default argument to avoid nonisolated default evaluation
+    // MARK: - Init
+
     init() {
-        self.store = PIDStore.shared
-        // Initialize local mirror
-        self.pids = store.pids
+        self.store = .shared
+        self.pids = store.pids      // seed mirror
     }
 
-    
+    // MARK: - Section Helpers
 
-    // Computed helpers for sections
     var enabledIndices: [Int] {
         pids.indices.filter { pids[$0].enabled && pids[$0].kind == .gauge }
     }
@@ -47,66 +35,66 @@ final class PIDToggleListViewModel {
         pids.indices.filter { !pids[$0].enabled && pids[$0].kind == .gauge }
     }
 
-    // Filtered projections for the view
+    // MARK: - Filtered Lists for UI
+
     var filteredEnabled: [OBDPID] {
-        // Keep our mirror in sync with the store when accessed
         syncFromStore()
         let base = pids.filter { $0.enabled && $0.kind == .gauge }
-        let q = normalizedQuery
-        guard !q.isEmpty else { return base }
-        return base.filter { matchesQuery($0, q) }
+        return applySearch(base)
     }
 
     var filteredDisabled: [OBDPID] {
-        // Keep our mirror in sync with the store when accessed
         syncFromStore()
         let base = pids.filter { !$0.enabled && $0.kind == .gauge }
-        let q = normalizedQuery
-        guard !q.isEmpty else { return base }
-        return base.filter { matchesQuery($0, q) }
+        return applySearch(base)
     }
 
+    // MARK: - Search Helpers
+
     private var normalizedQuery: String {
-        searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        searchText
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+    }
+
+    private func applySearch(_ list: [OBDPID]) -> [OBDPID] {
+        let q = normalizedQuery
+        guard !q.isEmpty else { return list }
+        return list.filter { matchesQuery($0, q) }
     }
 
     private func matchesQuery(_ pid: OBDPID, _ q: String) -> Bool {
-        if q.isEmpty { return true }
-        // Search label, name, notes, and command string if available
+        // Search label, name, notes, and PID command
         if pid.label.lowercased().contains(q) { return true }
         if pid.name.lowercased().contains(q) { return true }
-        if let notes = pid.notes?.lowercased(), notes.contains(q) { return true }
-        let command = pid.pid.properties.command.lowercased()
-        if command.contains(q) { return true }
+        if pid.notes?.lowercased().contains(q) == true { return true }
+        if pid.pid.properties.command.lowercased().contains(q) { return true }
         return false
     }
 
-    // Intents
+    // MARK: - Intents (User Actions)
+
     func toggle(at index: Int, to isOn: Bool) {
-        // Ensure mirror is current and validate index after syncing
         syncFromStore()
         guard pids.indices.contains(index) else { return }
 
         let pid = pids[index]
 
-        // Only flip if the desired state differs from current
-        if pid.enabled != isOn {
-            store.toggle(pid)
-            // Update local mirror after mutation
-            pids = store.pids
-        }
-    }
+        guard pid.enabled != isOn else { return }
 
-    // we allow reordering so send that back to the store to handle
-    func moveEnabled(fromOffsets indices: IndexSet, toOffset newOffset: Int) {
-        // Ensure mirror is current
-        syncFromStore()
-        store.moveEnabled(fromOffsets: indices, toOffset: newOffset)
-        // Update local mirror after mutation
+        store.toggle(pid)
         pids = store.pids
     }
 
-    // Keep our local pids in sync with the store when accessed
+    func moveEnabled(fromOffsets offsets: IndexSet, toOffset newOffset: Int) {
+        syncFromStore()
+        store.moveEnabled(fromOffsets: offsets, toOffset: newOffset)
+        pids = store.pids
+    }
+
+    // MARK: - Mirror Synchronization
+
+    /// Refresh the local PID mirror when the store changes.
     private func syncFromStore() {
         if pids != store.pids {
             pids = store.pids

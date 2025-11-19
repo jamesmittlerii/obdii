@@ -3,73 +3,86 @@
  * __Final Project__
  * Jim Mittler
  * 14 November 2025
- 
-Main Scene delegate (entry point) for Phone UI
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
+ *
+ * Main Scene delegate (entry point) for Phone UI
+ *
  */
 
 import UIKit
 
+// MARK: - Device Helpers
+
+/// Reads the device model identifier, e.g. "iPhone15,3", "iPad14,1".
 func deviceModelIdentifier() -> String {
     var systemInfo = utsname()
     uname(&systemInfo)
-    return String(bytes: Data(bytes: &systemInfo.machine,
-                              count: Int(_SYS_NAMELEN)),
-                  encoding: .ascii)?
-        .trimmingCharacters(in: .controlCharacters) ?? "unknown"
+
+    return withUnsafePointer(to: &systemInfo.machine) { ptr in
+        ptr.withMemoryRebound(to: CChar.self, capacity: Int(_SYS_NAMELEN)) {
+            String(cString: $0).trimmingCharacters(in: .controlCharacters)
+        }
+    }
 }
 
+/// Check for real iPad hardware (useful when iPadOS simulates iPhone UI idioms).
 func isRunningOniPadHardware() -> Bool {
-    return deviceModelIdentifier().starts(with: "iPad")
+    deviceModelIdentifier().hasPrefix("iPad")
 }
+
+// MARK: - SceneDelegate
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
-
     var window: UIWindow?
 
-    func scene(_ scene: UIScene,
-               willConnectTo session: UISceneSession,
-               options connectionOptions: UIScene.ConnectionOptions) {
-
+    func scene(
+        _ scene: UIScene,
+        willConnectTo session: UISceneSession,
+        options connectionOptions: UIScene.ConnectionOptions
+    ) {
         guard let windowScene = scene as? UIWindowScene else { return }
 
         let window = UIWindow(windowScene: windowScene)
 
-#if false
+        // MARK: iPad Check (disabled in debug)
+        #if false
         if UIDevice.current.userInterfaceIdiom == .pad || isRunningOniPadHardware() {
             window.rootViewController = UnsupportedDeviceViewController()
             self.window = window
             window.makeKeyAndVisible()
             return
         }
-#endif
+        #endif
 
-
-        // Normal root for supported devices (e.g., iPhone)
+        // MARK: Normal phone UI
         window.rootViewController = ViewController()
         self.window = window
         window.makeKeyAndVisible()
     }
 }
 
-/// Simple placeholder screen shown on iPad in RELEASE builds.
+// MARK: - Unsupported Device Placeholder
+
+/// Displayed on iPad if iPad usage is blocked (used for release scenarios only).
 final class UnsupportedDeviceViewController: UIViewController {
+
+    private let message: String =
+        "This CarPlay-enabled app is not supported on iPad."
+
     override func viewDidLoad() {
         super.viewDidLoad()
+
         view.backgroundColor = .systemBackground
 
         let label = UILabel()
-        label.text = "This CarPlay enabled app is not supported on iPad."
+        label.text = message
+        label.font = .preferredFont(forTextStyle: .body)
         label.textAlignment = .center
         label.numberOfLines = 0
         label.textColor = .label
         label.translatesAutoresizingMaskIntoConstraints = false
 
         view.addSubview(label)
+
         NSLayoutConstraint.activate([
             label.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
             label.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),

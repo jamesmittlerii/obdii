@@ -1,18 +1,3 @@
-/**
- 
- * __Final Project__
- * Jim Mittler
- * 14 November 2025
- 
- 
-View Model for showing the a collection of enabled/selected Gauges. Used by CarPlay and SwiftUI
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
- */
-
 import Foundation
 import Combine
 import SwiftOBD2
@@ -20,68 +5,84 @@ import Observation
 
 @MainActor
 @Observable
-final class GaugesViewModel : BaseViewModel{
+final class GaugesViewModel: BaseViewModel {
+
     struct Tile: Identifiable, Equatable {
         let id: UUID
         let pid: OBDPID
         let measurement: MeasurementResult?
     }
 
-    // Non-SwiftUI observation hook for controllers (CarPlay, etc.)
-    //var onChanged: (() -> Void)?
+    // MARK: - Published State
 
-    // Observation tracks mutations to this var.
     private(set) var tiles: [Tile] = [] {
         didSet {
-            // Notify non-SwiftUI observers
             if oldValue != tiles {
                 onChanged?()
             }
         }
     }
 
+    // MARK: - Dependencies
+
     private let connectionManager: OBDConnectionManager
     private let pidStore: PIDStore
     private var cancellables = Set<AnyCancellable>()
 
-    // Cache the latest inputs so we can rebuild on units changes
+    // Cache for unit-change rebuilds
     private var lastPids: [OBDPID] = []
     private var lastStats: [OBDCommand: OBDConnectionManager.PIDStats] = [:]
 
-    // Designated initializer (no default args that touch main-actor singletons)
+    // MARK: - Init
+
     override init() {
-        self.connectionManager = OBDConnectionManager.shared
-        self.pidStore = PIDStore.shared
+        self.connectionManager = .shared
+        self.pidStore = .shared
+
         super.init()
 
-        // Rebuild tiles whenever enabled PIDs or live stats change
+        bindPIDAndStats()
+        bindUnits()
+    }
+
+    // MARK: - Combine Bindings
+
+    /// Rebuild tiles when the enabled PIDs list OR live stats change.
+    private func bindPIDAndStats() {
         Publishers.CombineLatest(pidStore.$pids, connectionManager.$pidStats)
-            .throttle(for: .seconds(1), scheduler: DispatchQueue.main, latest: true)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] pids, stats in
-                guard let self else { return }
+            .throttle(for: .seconds(1), scheduler: RunLoop.main, latest: true)
+            .sink { [unowned self] pids, stats in
                 self.lastPids = pids
                 self.lastStats = stats
                 self.rebuildTiles(pids: pids, stats: stats)
             }
             .store(in: &cancellables)
+    }
 
-        // Also rebuild when units change so display strings update
+    /// Rebuild tiles when measurement units change (metric ↔ imperial).
+    private func bindUnits() {
         ConfigData.shared.$units
             .removeDuplicates()
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                guard let self else { return }
+            .sink { [unowned self] _ in
                 self.rebuildTiles(pids: self.lastPids, stats: self.lastStats)
             }
             .store(in: &cancellables)
     }
 
-    private func rebuildTiles(pids: [OBDPID], stats: [OBDCommand: OBDConnectionManager.PIDStats]) {
+    // MARK: - Tile Construction
+
+    private func rebuildTiles(
+        pids: [OBDPID],
+        stats: [OBDCommand: OBDConnectionManager.PIDStats]
+    ) {
         let enabled = pids.filter { $0.enabled && $0.kind == .gauge }
+
         tiles = enabled.map { pid in
-            let measurement = stats[pid.pid]?.latest
-            return Tile(id: pid.id, pid: pid, measurement: measurement)
+            Tile(
+                id: pid.id,
+                pid: pid,
+                measurement: stats[pid.pid]?.latest
+            )
         }
     }
 }

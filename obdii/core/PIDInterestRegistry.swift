@@ -1,80 +1,91 @@
-/**
- 
- * __Final Project__
- * Jim Mittler
- * 14 November 2025
- 
- 
-Demand-driven PID interest registry: tracks which OBD commands the UI currently needs.
- 
- */
-
 import Foundation
 import Combine
 import SwiftOBD2
 
 @MainActor
 final class PIDInterestRegistry: ObservableObject {
+
     static let shared = PIDInterestRegistry()
 
-    // Current union set of interested commands
+    /// The union of all PIDs currently requested by all active tokens.
     @Published private(set) var interested: Set<OBDCommand> = []
 
-    // Per-token ownership of commands
+    /// For each UI owner (identified by UUID), which PIDs it needs.
     private var byToken: [UUID: Set<OBDCommand>] = [:]
 
     private init() {}
 
-    func makeToken() -> UUID { UUID() }
+    // MARK: - Token Management
 
+    /// Creates a new owner token. Call `replace(pids:for:)` afterward to register interest.
+    func makeToken() -> UUID {
+        let token = UUID()
+        byToken[token] = []      // Initialize with empty set for safety
+        return token
+    }
+
+    /// Replaces the entire PID set for a given token.
     func replace(pids: Set<OBDCommand>, for token: UUID) {
         byToken[token] = pids
         recompute()
     }
 
-   
-    // Enqueue the clear on the main queue so it runs after current work.
+    /// Clears a token's interest. Safe to call multiple times.
     func clear(token: UUID) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            self.byToken.removeValue(forKey: token)
-            self.recompute()
-        }
+        byToken[token] = nil
+        recompute()
     }
 
+    // MARK: - Internal
+
+    /// Computes the union of all active tokens' PIDs.
     private func recompute() {
-        let union = byToken.values.reduce(into: Set<OBDCommand>()) { acc, next in
-            acc.formUnion(next)
-        }
-        if union != interested {
-            let names = union
-                .map { PIDInterestRegistry.displayName(for: $0) }
-                .sorted()
-                .joined(separator: ", ")
-            obdDebug("PIDInterestRegistry: interested set changed to {\(names)}", category: .service)
-            interested = union
-        }
+        let newUnion = byToken.values.reduce(into: Set<OBDCommand>()) { $0.formUnion($1) }
+
+        guard newUnion != interested else { return }
+
+        interested = newUnion
+        logInterestChange(newUnion)
     }
 
-    private static func displayName(for command: OBDCommand) -> String {
-        switch command {
+    // MARK: - Logging
+
+    private func logInterestChange(_ set: Set<OBDCommand>) {
+        guard !set.isEmpty else {
+            obdDebug("PIDInterestRegistry: now empty", category: .service)
+            return
+        }
+
+        let names = set
+            .map(Self.displayName(for:))
+            .sorted()
+            .joined(separator: ", ")
+
+        obdDebug("PIDInterestRegistry: interested set = { \(names) }", category: .service)
+    }
+
+    // MARK: - Display Helpers
+
+    private static func displayName(for cmd: OBDCommand) -> String {
+        switch cmd {
+
         case .mode1(let pid):
             switch pid {
-            case .status: return "Mode01 Status (0101)"
-            case .fuelStatus: return "Mode01 Fuel Status (0103)"
-            case .rpm: return "Mode01 RPM (010C)"
-            case .speed: return "Mode01 Speed (010D)"
-            default:
-                return "Mode01 \(pid)"
+            case .status:      return "Mode01 Status (0101)"
+            case .fuelStatus:  return "Mode01 Fuel Status (0103)"
+            case .rpm:         return "Mode01 RPM (010C)"
+            case .speed:       return "Mode01 Speed (010D)"
+            default:           return "Mode01 \(pid)"
             }
-        case .mode3(let m3):
-            switch m3 {
-            case .GET_DTC: return "Mode03 DTCs"
-            }
-        case .GMmode22(let gm):
-            return "GM Mode22 \(gm)"
+
+        case .mode3(.GET_DTC):
+            return "Mode03 DTCs"
+
+        case .GMmode22(let pid):
+            return "GM Mode22 \(pid)"
+
         default:
-            return String(describing: command)
+            return String(describing: cmd)
         }
     }
 }

@@ -1,18 +1,3 @@
-/**
- 
- * __Final Project__
- * Jim Mittler
- * 14 November 2025
- 
- 
-Swift UI view tab view - text or gauges for the PIDs
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
- */
-
 import SwiftUI
 import SwiftOBD2
 
@@ -25,58 +10,61 @@ enum GaugesDisplayMode: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .gauges: return "Gauges"
-        case .list: return "List"
+        case .list:   return "List"
         }
     }
 }
 
 struct GaugesContainerView: View {
-    // Persist the selected mode across runs
-    @AppStorage("gaugesDisplayMode") private var storedMode: String = GaugesDisplayMode.gauges.rawValue
 
-    // Bridge stored string <-> enum for Picker
+    // Persisted UI state
+    @AppStorage("gaugesDisplayMode")
+    private var storedMode: String = GaugesDisplayMode.gauges.rawValue
+
+    // Global connection manager reference (no need to pass in)
+    @ObservedObject private var connectionManager = OBDConnectionManager.shared
+
     private var modeBinding: Binding<GaugesDisplayMode> {
-        Binding<GaugesDisplayMode>(
+        Binding(
             get: { GaugesDisplayMode(rawValue: storedMode) ?? .gauges },
             set: { storedMode = $0.rawValue }
         )
     }
 
-    @ObservedObject var connectionManager: OBDConnectionManager
-
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
+
+            // Display mode picker
             Picker("Display Mode", selection: modeBinding) {
-                ForEach(GaugesDisplayMode.allCases) { m in
-                    Text(m.title).tag(m)
+                ForEach(GaugesDisplayMode.allCases) { mode in
+                    Text(mode.title).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
-            .padding([.horizontal, .top])
+            .padding(.horizontal)
+            .padding(.top)
 
+            // Main content area
             Group {
                 switch GaugesDisplayMode(rawValue: storedMode) ?? .gauges {
                 case .gauges:
                     GaugesView()
                 case .list:
                     GaugeListView()
-                 }
+                }
             }
         }
-        .navigationTitle(titleForMode(GaugesDisplayMode(rawValue: storedMode) ?? .gauges))
+        .navigationTitle(titleForCurrentMode)
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func titleForMode(_ mode: GaugesDisplayMode) -> String {
-        switch mode {
-        case .gauges: return "Gauges"
-        case .list: return "List"
-        }
+    private var titleForCurrentMode: String {
+        (GaugesDisplayMode(rawValue: storedMode) ?? .gauges).title
     }
 }
 
 #Preview {
-    NavigationView {
-        GaugesContainerView(connectionManager: .shared)
+    NavigationStack {
+        GaugesContainerView()
     }
 }

@@ -3,14 +3,9 @@
  * __Final Project__
  * Jim Mittler
  * 14 November 2025
- 
- 
-Swift UI view managing the settings. Default tab when starting the app.
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
+ *
+ * SwiftUI Settings screen (default tab).
+ *
  */
 
 import SwiftUI
@@ -21,40 +16,43 @@ import UIKit
 #endif
 
 struct SettingsView: View {
-    // With @Observable view model, store it in @State and use @Bindable in body for bindings.
+
+    // MARK: - View Model
     @State private var viewModel = SettingsViewModel()
 
+    // MARK: - Share sheet / UIKit-only state
     #if canImport(UIKit)
-    // Share sheet state (iOS only)
     @State private var isPresentingShare = false
     @State private var shareItems: [Any] = []
     @State private var isGeneratingLogs = false
     @State private var shareError: String?
     #endif
 
-    // Runtime detection: iOS app running on macOS (Designed for iPad) or Mac Catalyst
+    // MARK: - Mac Runtime Detection
     private var runningOnMac: Bool {
         #if targetEnvironment(macCatalyst)
-            return true
+        return true
         #else
-            return ProcessInfo.processInfo.isiOSAppOnMac
-        
+        return ProcessInfo.processInfo.isiOSAppOnMac
         #endif
     }
 
+    // MARK: - Body
+
     var body: some View {
-        // Bindable projection for Observation bindings ($viewModel.property)
         @Bindable var viewModel = viewModel
 
         NavigationStack {
             Form {
+
+                // MARK: Gauges
                 Section {
                     NavigationLink("Gauges") {
                         PIDToggleListView()
                     }
                 }
 
-                // Single Units control (segmented)
+                // MARK: Units
                 Section(header: Text("Units")) {
                     Picker("Units", selection: $viewModel.units) {
                         Text("Metric").tag(MeasurementUnit.metric)
@@ -63,6 +61,7 @@ struct SettingsView: View {
                     .pickerStyle(.segmented)
                 }
 
+                // MARK: Connection
                 Section(header: Text("Connection")) {
                     HStack {
                         Text("Status")
@@ -81,6 +80,7 @@ struct SettingsView: View {
                     connectDisconnectButton()
                 }
 
+                // MARK: Connection details (Wi-Fi)
                 if viewModel.connectionType == .wifi {
                     Section(header: Text("Connection Details")) {
                         HStack {
@@ -96,19 +96,22 @@ struct SettingsView: View {
                         HStack {
                             Text("Port")
                             Spacer()
-                            TextField("e.g., 35000", value: $viewModel.wifiPort, formatter: viewModel.numberFormatter)
+                            TextField("e.g., 35000",
+                                      value: $viewModel.wifiPort,
+                                      formatter: viewModel.numberFormatter)
                                 .keyboardType(.numberPad)
                                 .multilineTextAlignment(.trailing)
                         }
                     }
                 }
 
+                // MARK: Diagnostics (Share Logs)
                 Section(header: Text("Diagnostics")) {
                     #if canImport(UIKit)
                     Button {
-                        // If running on macOS (Designed for iPad or Catalyst), do nothing.
-                        if runningOnMac { return }
-                        Task { await shareLogs_iOS() }
+                        if !runningOnMac {
+                            Task { await shareLogs_iOS() }
+                        }
                     } label: {
                         if isGeneratingLogs {
                             HStack {
@@ -120,56 +123,58 @@ struct SettingsView: View {
                         }
                     }
                     .disabled(isGeneratingLogs || runningOnMac)
-                    .alert("Could not prepare logs", isPresented: .constant(shareError != nil), actions: {
+                    .alert("Could not prepare logs",
+                           isPresented: .constant(shareError != nil)) {
                         Button("OK") { shareError = nil }
-                    }, message: {
+                    } message: {
                         Text(shareError ?? "")
-                    })
-                    #else
-                    Button {
-                        // Non-UIKit platforms: unavailable
-                    } label: {
-                        Text("Share Logs")
                     }
-                    .disabled(true)
-                    .foregroundColor(.secondary)
-                    .accessibilityHidden(true)
+                    #else
+                    Button("Share Logs") { }
+                        .disabled(true)
+                        .foregroundColor(.secondary)
+                        .accessibilityHidden(true)
                     #endif
                 }
-                Section(header: Text("About")){
+
+                // MARK: About
+                Section(header: Text("About")) {
                     HStack {
-                        Text(aboutDetailString()).multilineTextAlignment(.trailing)
+                        Text(aboutDetailString())
+                            .multilineTextAlignment(.trailing)
                     }
                 }
             }
             .navigationTitle("Settings")
             #if canImport(UIKit)
-            .sheet(isPresented: $isPresentingShare, onDismiss: {
-                shareItems = []
-            }, content: {
+            .sheet(isPresented: $isPresentingShare) {
                 ShareSheet(activityItems: shareItems)
-            })
+                    .onDisappear { shareItems = [] }
+            }
             #endif
         }
     }
+
+    // MARK: - Status Text
 
     @ViewBuilder
     private func statusTextView() -> some View {
         switch viewModel.connectionState {
         case .disconnected:
-            Text("Disconnected")
-                .foregroundColor(.gray)
+            Text("Disconnected").foregroundColor(.gray)
+
         case .connecting:
-            Text("Connecting...")
-                .foregroundColor(.orange)
+            Text("Connecting…").foregroundColor(.orange)
+
         case .connected:
-            Text("Connected")
-                .foregroundColor(.green)
-        case .failed(_):
-            Text("Failed")
-                .foregroundColor(.red)
+            Text("Connected").foregroundColor(.green)
+
+        case .failed:
+            Text("Failed").foregroundColor(.red)
         }
     }
+
+    // MARK: - Connect / Disconnect button
 
     @ViewBuilder
     private func connectDisconnectButton() -> some View {
@@ -179,11 +184,13 @@ struct SettingsView: View {
                 switch viewModel.connectionState {
                 case .disconnected, .failed:
                     Text("Connect")
+
                 case .connecting:
                     HStack {
-                        Text("Connecting...")
+                        Text("Connecting…")
                         ProgressView().padding(.leading, 2)
                     }
+
                 case .connected:
                     Text("Disconnect")
                 }
@@ -193,19 +200,20 @@ struct SettingsView: View {
         }
     }
 
-    //  Share Logs (UIKit)
+    // MARK: - UIKit Log Sharing
 
     #if canImport(UIKit)
-    private func sanitizedFilename(from raw: String) -> String {
-        // Allow alphanumerics, space, dash, underscore, and dot; replace others with "-"
-        let allowed = CharacterSet.alphanumerics.union(.whitespaces).union(CharacterSet(charactersIn: "-_."))
-        let replaced = raw.unicodeScalars.map { allowed.contains($0) ? Character($0) : "-" }
-        // Collapse repeated dashes and trim spaces
-        let interim = String(replaced)
+    private func sanitizedFilename(from name: String) -> String {
+        let allowed = CharacterSet.alphanumerics
+            .union(.whitespaces)
+            .union(CharacterSet(charactersIn: "-_."))
+        let cleanedScalars = name.unicodeScalars.map {
+            allowed.contains($0) ? Character($0) : "-"
+        }
+        let interim = String(cleanedScalars)
             .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
             .replacingOccurrences(of: "-{2,}", with: "-", options: .regularExpression)
-        .trimmingCharacters(in: .whitespacesAndNewlines)
-        // Avoid empty names
+            .trimmingCharacters(in: .whitespacesAndNewlines)
         return interim.isEmpty ? "App" : interim
     }
 
@@ -214,12 +222,12 @@ struct SettingsView: View {
         defer { isGeneratingLogs = false }
 
         do {
-            let data = try await collectLogs(since: -300) // last 5 minutes
-            let base = aboutDetailString()
-            let safeBase = sanitizedFilename(from: base)
-            let suggested = "\(safeBase)-logs.json"
-            let tempURL = try writeToTemporaryFile(data: data, suggestedName: suggested)
-            shareItems = [tempURL]
+            // collect last 5 minutes
+            let data = try await collectLogs(since: -300)
+            let safeBase = sanitizedFilename(from: aboutDetailString())
+            let fileName = "\(safeBase)-logs.json"
+            let url = try writeToTemporaryFile(data: data, suggestedName: fileName)
+            shareItems = [url]
             isPresentingShare = true
         } catch {
             shareError = error.localizedDescription
@@ -227,29 +235,25 @@ struct SettingsView: View {
     }
     #endif
 
-    //  Common helper
-
+    // MARK: - File Writing (Shared)
     private func writeToTemporaryFile(data: Data, suggestedName: String) throws -> URL {
-        let tempDir = FileManager.default.temporaryDirectory
-        let fileURL = tempDir.appendingPathComponent(suggestedName)
-        try data.write(to: fileURL, options: .atomic)
-        return fileURL
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(suggestedName)
+        try data.write(to: url, options: .atomic)
+        return url
     }
 }
 
 #if canImport(UIKit)
-//  UIKit Share Sheet Wrapper
-
 struct ShareSheet: UIViewControllerRepresentable {
     let activityItems: [Any]
-    var applicationActivities: [UIActivity]? = nil
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        let controller = UIActivityViewController(activityItems: activityItems, applicationActivities: applicationActivities)
-        return controller
+        UIActivityViewController(
+            activityItems: activityItems,
+            applicationActivities: nil
+        )
     }
-
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) { }
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 #endif
 

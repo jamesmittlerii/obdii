@@ -1,35 +1,23 @@
-/**
- 
- * __Final Project__
- * Jim Mittler
- * 14 November 2025
- 
- 
-Swift UI view for the MIL status
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
- */
 import SwiftUI
 import Combine
 import SwiftOBD2
 
-
-
 struct MILStatusView: View {
-    // Use @State to keep a stable reference; matches the pattern used by FuelStatusView
+
+    // Stable view model instance
     @State private var viewModel = MILStatusViewModel()
-    // Demand-driven interest token for this view
+
+    // Demand-driven PID interest
     @State private var interestToken: UUID = PIDInterestRegistry.shared.makeToken()
 
     var body: some View {
         NavigationStack {
             List {
+
+                // MARK: - MIL Summary Section
                 Section(header: Text("Malfunction Indicator Lamp")) {
-                    // Waiting state before first payload
                     if viewModel.status == nil {
+                        // Waiting for first payload
                         HStack(spacing: 12) {
                             ProgressView()
                                 .progressViewStyle(.circular)
@@ -37,21 +25,25 @@ struct MILStatusView: View {
                                 .foregroundStyle(.secondary)
                         }
                         .accessibilityLabel("Waiting for data")
+
                     } else if viewModel.hasStatus {
                         HStack(spacing: 12) {
                             Image(systemName: "wrench.and.screwdriver")
                                 .foregroundStyle(.orange)
                                 .imageScale(.large)
+
                             Text(viewModel.headerText)
                                 .font(.headline)
                         }
                         .accessibilityLabel(viewModel.headerText)
+
                     } else {
                         Label("No MIL Status", systemImage: "info.circle")
                             .foregroundStyle(.secondary)
                     }
                 }
 
+                // MARK: - Readiness Section
                 if viewModel.status != nil {
                     Section(header: Text("Readiness Monitors")) {
                         ForEach(viewModel.sortedSupportedMonitors, id: \.name) { monitor in
@@ -59,8 +51,11 @@ struct MILStatusView: View {
                                 Image(systemName: "gauge")
                                     .foregroundStyle(.blue)
                                     .imageScale(.medium)
+
                                 Text(monitor.name)
+
                                 Spacer()
+
                                 Text(monitor.readyText)
                                     .foregroundStyle(.secondary)
                             }
@@ -72,11 +67,9 @@ struct MILStatusView: View {
             .navigationTitle("MIL Status")
         }
         .onAppear {
-            // Request streaming for MIL/status while this view is visible
             PIDInterestRegistry.shared.replace(pids: [.mode1(.status)], for: interestToken)
         }
         .onDisappear {
-            // Clear our interest when leaving
             PIDInterestRegistry.shared.clear(token: interestToken)
         }
     }
@@ -94,4 +87,3 @@ private extension ReadinessMonitor {
 #Preview {
     MILStatusView()
 }
-

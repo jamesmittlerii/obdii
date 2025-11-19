@@ -1,78 +1,90 @@
-/**
- 
- * __Final Project__
- * Jim Mittler
- * 14 November 2025
- 
- 
-Swift UI view for the individual gauge detail (textual)
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
- */
-
 import SwiftUI
 import SwiftOBD2
 import Combine
 import Observation
 
 struct GaugeDetailView: View {
-    // With @Observable view models, store them in @State to keep a stable instance
-    @State private var viewModel: GaugeDetailViewModel
-    // Demand-driven polling token
-    @State private var interestToken: UUID = PIDInterestRegistry.shared.makeToken()
 
-    init(pid: OBDPID, connectionManager: OBDConnectionManager) {
+    @State private var viewModel: GaugeDetailViewModel
+    @State private var interestToken = PIDInterestRegistry.shared.makeToken()
+
+    init(pid: OBDPID) {
         _viewModel = State(initialValue: GaugeDetailViewModel(pid: pid))
     }
-    
+
+    // MARK: - Demand-driven PID interest
     private func updateInterest() {
-        // Register interest for this gauge's command
-        let commands: Set<OBDCommand> = [viewModel.pid.pid]
-        PIDInterestRegistry.shared.replace(pids: commands, for: interestToken)
+        PIDInterestRegistry.shared.replace(
+            pids: [viewModel.pid.pid],
+            for: interestToken
+        )
     }
+
+    // MARK: - Body
 
     var body: some View {
         List {
-            Section(header: Text("Current")) {
-                if let s = viewModel.stats {
-                    Text(viewModel.pid.formatted(measurement: s.latest, includeUnits: true))
-                } else {
-                    Text("— \(viewModel.pid.displayUnits)")
-                        .foregroundColor(.secondary)
-                }
-            }
+            currentSection
+            statsSection
+            maxRangeSection
+        }
+        .navigationTitle(viewModel.pid.name)
+        .onAppear { updateInterest() }
+        .onDisappear { PIDInterestRegistry.shared.clear(token: interestToken) }
+    }
 
+    // MARK: - Sections
+
+    private var currentSection: some View {
+        Section(header: Text("Current")) {
+            if let stats = viewModel.stats {
+                Text(
+                    viewModel.pid.formatted(
+                        measurement: stats.latest,
+                        includeUnits: true
+                    )
+                )
+            } else {
+                Text("— \(viewModel.pid.displayUnits)")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var statsSection: some View {
+        Group {
             if let s = viewModel.stats {
                 Section(header: Text("Statistics")) {
-                    Text("Min: \(viewModel.pid.formatted(measurement: MeasurementResult(value: s.min, unit: s.latest.unit), includeUnits: true))")
-                    Text("Max: \(viewModel.pid.formatted(measurement: MeasurementResult(value: s.max, unit: s.latest.unit), includeUnits: true))")
+                    let unit = s.latest.unit
+                    Text("Min: \(formatted(value: s.min, unit: unit))")
+                    Text("Max: \(formatted(value: s.max, unit: unit))")
                     Text("Samples: \(s.sampleCount)")
                 }
             }
-
-            Section(header: Text("Maximum Range")) {
-                Text(viewModel.pid.displayRange)
-            }
-        }
-        .navigationTitle(viewModel.pid.name)
-        .onAppear {
-            updateInterest()
-        }
-        .onDisappear {
-            PIDInterestRegistry.shared.clear(token: interestToken)
         }
     }
-}
 
-#Preview {
-    NavigationView {
-        GaugeDetailView(
-            pid: PIDStore.shared.enabledGauges.first ?? PIDStore.shared.pids.first!,
-            connectionManager: OBDConnectionManager.shared
+    private var maxRangeSection: some View {
+        Section(header: Text("Maximum Range")) {
+            Text(viewModel.pid.displayRange)
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func formatted(value: Double, unit: Unit) -> String {
+        viewModel.pid.formatted(
+            measurement: MeasurementResult(value: value, unit: unit),
+            includeUnits: true
         )
     }
 }
 
+#Preview {
+    NavigationStack {
+        GaugeDetailView(
+            pid: PIDStore.shared.enabledGauges.first
+            ?? PIDStore.shared.pids.first!
+        )
+    }
+}

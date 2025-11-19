@@ -1,51 +1,48 @@
-/**
- 
- * __Final Project__
- * Jim Mittler
- * 14 November 2025
- 
- 
-Swift UI view the root tabs - select any of the available main views
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
- */
-
 import SwiftUI
 
 struct RootTabView: View {
     var body: some View {
         TabView {
+
+            // MARK: - Settings
             SettingsView()
                 .tabItem {
                     Label("Settings", systemImage: "gear")
                 }
 
+            // MARK: - Gauges (Grid/List)
             NavigationStack {
-                GaugesContainerView(connectionManager: .shared)
+                GaugesContainerView()
             }
             .tabItem {
                 Label("Gauges", systemImage: "gauge")
             }
 
-            FuelStatusView()
-                .tabItem {
-                    Label("Fuel", systemImage: "fuelpump.fill")
-                }
+            // MARK: - Fuel System Status
+            NavigationStack {
+                FuelStatusView()
+            }
+            .tabItem {
+                Label("Fuel", systemImage: "fuelpump.fill")
+            }
 
-            MILStatusView()
-                .tabItem {
-                    Label("MIL", systemImage: "engine.combustion.fill")
-                }
+            // MARK: - MIL Status
+            NavigationStack {
+                MILStatusView()
+            }
+            .tabItem {
+                Label("MIL", systemImage: "engine.combustion.fill")
+            }
 
-            DiagnosticsView()
-                .tabItem {
-                    Label("DTCs", systemImage: "wrench.and.screwdriver")
-                }
+            // MARK: - Diagnostic Trouble Codes
+            NavigationStack {
+                DiagnosticsView()
+            }
+            .tabItem {
+                Label("DTCs", systemImage: "wrench.and.screwdriver")
+            }
         }
-        // Force the standard tab bar style on all devices to ensure icons are visible.
+        // Ensures icons appear on iPad just like iPhone
         .tabViewStyle(.automatic)
     }
 }
