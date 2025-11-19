@@ -20,7 +20,7 @@ import Combine
 class ConfigData: ObservableObject {
     static let shared = ConfigData()
 
-    @AppStorage("units") var units: MeasurementUnit =  (Locale.current.measurementSystem == .metric) ? .metric : .imperial
+    @AppStorage("units") var unitsInternal: MeasurementUnit =  (Locale.current.measurementSystem == .metric) ? .metric : .imperial
     @AppStorage("wifiHost") var wifiHost: String = "192.168.0.10"
     @AppStorage("wifiPort") var wifiPort: Int = 35000
     @AppStorage("autoConnectToOBD") var autoConnectToOBD: Bool = true
@@ -30,7 +30,7 @@ class ConfigData: ObservableObject {
     @Published var publishedConnectionType: String
 
     // Mirror publisher for units so other components can subscribe cleanly
-    @Published var unitsPublished: MeasurementUnit
+    @Published var units: MeasurementUnit
 
     private var cancellables = Set<AnyCancellable>()
 
@@ -43,7 +43,7 @@ class ConfigData: ObservableObject {
 
         // Initialize published properties
         self.publishedConnectionType = raw
-        self.unitsPublished = UserDefaults.standard.string(forKey: "units")
+        self.units = UserDefaults.standard.string(forKey: "units")
             .flatMap { MeasurementUnit(rawValue: $0) } ?? .metric
 
         // Sync initial values outward
@@ -64,10 +64,10 @@ class ConfigData: ObservableObject {
         // Keep unitsPublished <-> @AppStorage("units") in sync both ways
 
         // When unitsPublished changes, write to @AppStorage
-        $unitsPublished
+        $units
             .dropFirst()
             .sink { [weak self] newUnits in
-                self?.units = newUnits
+                self?.unitsInternal = newUnits
             }
             .store(in: &cancellables)
 
@@ -83,18 +83,12 @@ class ConfigData: ObservableObject {
         get { ConnectionType(rawValue: publishedConnectionType) ?? .bluetooth }
         set { publishedConnectionType = newValue.rawValue }
     }
-}
-
-extension ConfigData {
-    // Bridge units property so external writes update unitsPublished too
-    // Wrap with computed property for external access if needed elsewhere.
-    // Existing code accesses ConfigData.shared.units directly; to keep that working,
-    // you can add these helpers or ensure all writes also update unitsPublished.
-    // For minimal change, provide explicit setters:
-
+    
     func setUnits(_ newUnits: MeasurementUnit) {
         // Update both storage and published mirror
+        self.unitsInternal = newUnits
         self.units = newUnits
-        self.unitsPublished = newUnits
     }
 }
+
+

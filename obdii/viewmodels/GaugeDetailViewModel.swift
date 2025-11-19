@@ -71,7 +71,7 @@ final class GaugeDetailViewModel : BaseViewModel{
             .store(in: &cancellables)
 
         // Also listen to units changes so the view can re-render formatting even if stats didn’t change
-        ConfigData.shared.$unitsPublished
+        ConfigData.shared.$units
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self else { return }

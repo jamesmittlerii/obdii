@@ -158,7 +158,7 @@ class OBDConnectionManager: ObservableObject {
             .store(in: &cancellables)
 
         // Observe units changes and restart stream with the same interest set
-        ConfigData.shared.$unitsPublished
+        ConfigData.shared.$units
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in

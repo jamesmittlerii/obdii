@@ -67,7 +67,7 @@ final class GaugesViewModel : BaseViewModel{
             .store(in: &cancellables)
 
         // Also rebuild when units change so display strings update
-        ConfigData.shared.$unitsPublished
+        ConfigData.shared.$units
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in

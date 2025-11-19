@@ -124,7 +124,7 @@ class SettingsViewModel : BaseViewModel {
         self.autoConnectToOBD = configData.autoConnectToOBD
         self.connectionType = configData.connectionType
         self.connectionState = connectionManager.connectionState
-        self.units = configData.unitsPublished
+        self.units = configData.units
 
         super.init()
         
@@ -167,7 +167,7 @@ class SettingsViewModel : BaseViewModel {
             .store(in: &cancellables)
 
         // Mirror ConfigData unitsPublished to our units
-        configData.$unitsPublished
+        configData.$units
             .removeDuplicates()
             .receive(on: RunLoop.main)
             .sink { [weak self] newUnits in
