@@ -1,3 +1,15 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * ViewModel for PID toggle/reorder list
+ *
+ * Mirrors PIDStore's PIDs for UI display, supports search filtering by label,
+ * name, notes, and command. Provides filtered enabled/disabled lists for
+ * sections. Delegates toggle and reordering actions to PIDStore while keeping
+ * local mirror synchronized.
+ */
 import Foundation
 import Observation
 import SwiftOBD2

@@ -1,3 +1,15 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * SwiftUI view for enabling/disabling gauge PIDs
+ *
+ * Displays all available PIDs in Enabled and Disabled sections.
+ * Users can toggle PIDs on/off and reorder enabled gauges via drag-and-drop.
+ * Includes search functionality to filter PIDs by name, label, or command.
+ * Changes persist automatically through the PIDStore.
+ */
 import SwiftUI
 
 struct PIDToggleListView: View {

@@ -1,3 +1,15 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * ViewModel for fuel system status display
+ *
+ * Subscribes to OBDConnectionManager for fuel status updates covering Bank 1
+ * and Bank 2. Provides accessors for each bank and checks if any status exists.
+ * Handles nil (waiting), empty, and populated states. Inherits from BaseViewModel
+ * for CarPlay integration.
+ */
 import Combine
 import SwiftOBD2
 import Foundation

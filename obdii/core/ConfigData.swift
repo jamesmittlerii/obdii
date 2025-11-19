@@ -1,3 +1,15 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * Global configuration data singleton
+ *
+ * Manages app-wide settings including Wi-Fi connection details, auto-connect
+ * preferences, connection type, and measurement units (metric/imperial).
+ * Uses @AppStorage for persistence and publishes changes via Combine for
+ * reactive UI updates across the app.
+ */
 import Foundation
 import SwiftUI
 import Combine

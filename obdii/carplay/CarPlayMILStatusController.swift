@@ -1,16 +1,18 @@
 /**
- 
  * __Final Project__
  * Jim Mittler
- * 14 November 2025
- 
- 
-CarPlay template for MIL status (CEL)
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
+ * 19 November 2025
+ *
+ * CarPlay template for MIL (Malfunction Indicator Lamp) Status
+ *
+ * Displays Check Engine Light (CEL) status including:
+ * - MIL on/off state
+ * - Number of active DTCs
+ * - Readiness monitor status (emissions system component readiness)
+ *
+ * Readiness monitors indicate whether various emissions-related systems
+ * (e.g., catalytic converter, oxygen sensor, EVAP system) have completed
+ * their self-diagnostic checks since the last code clear.
  */
 
 
@@ -93,7 +95,5 @@ class CarPlayMILStatusController: CarPlayBaseTemplateController<MILStatusViewMod
     override func performRefresh() {
         refreshSection()
     }
-
-    //  Helpers
 }
 

@@ -1,3 +1,14 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * Application-wide helper functions
+ *
+ * Provides utility functions for symbol/image generation, severity color mapping,
+ * diagnostic log collection from OSLog, and app version/build info formatting.
+ * Used throughout the app by both SwiftUI views and CarPlay controllers.
+ */
 import Foundation
 import OSLog
 import SwiftOBD2

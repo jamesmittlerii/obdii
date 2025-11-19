@@ -1,16 +1,15 @@
 /**
- 
  * __Final Project__
  * Jim Mittler
- * 14 November 2025
- 
- 
-CarPlay template for DTCs
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
+ * 19 November 2025
+ *
+ * CarPlay template for Diagnostic Trouble Codes (DTCs)
+ *
+ * Displays active diagnostic trouble codes retrieved from the vehicle's OBD-II system.
+ * DTCs are organized by severity (Low, Moderate, High, Critical) with detailed information
+ * including code, title, description, potential causes, and possible remedies.
+ *
+ * Tapping a DTC presents a detailed information template with full diagnostic data.
  */
 
 import CarPlay
@@ -83,7 +82,7 @@ class CarPlayDiagnosticsController: CarPlayBaseTemplateController<DiagnosticsVie
         template.updateSections(sections)
     }
 
-    /// Creates the root template for the Settings tab.
+    /// Creates the root template for the DTCs tab.
     override func makeRootTemplate() -> CPListTemplate {
         let sections = buildSections()
         let template = CPListTemplate(title: "DTCs", sections: sections)
@@ -124,7 +123,5 @@ class CarPlayDiagnosticsController: CarPlayBaseTemplateController<DiagnosticsVie
     override func performRefresh() {
         refreshSection()
     }
-
-    //  Helpers
 }
 

@@ -1,3 +1,15 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * ViewModel for live gauge tiles display
+ *
+ * Combines enabled PIDs from PIDStore with live measurements from
+ * OBDConnectionManager to build gauge tiles. Throttles updates to 1 second
+ * for performance. Rebuilds tiles when units change (metric ↔ imperial).
+ * Inherits from BaseViewModel for CarPlay integration.
+ */
 import Foundation
 import Combine
 import SwiftOBD2

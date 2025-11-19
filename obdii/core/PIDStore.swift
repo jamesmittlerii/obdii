@@ -1,3 +1,15 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * PID storage and ordering manager singleton
+ *
+ * Loads all PIDs from JSON, manages enabled/disabled state, and persists
+ * user preferences including gauge ordering. Supports drag-and-drop reordering
+ * of enabled gauges. Maintains separate ordering for enabled and disabled gauges.
+ * Uses UserDefaults for persistent storage across app sessions.
+ */
 import Foundation
 import Combine
 

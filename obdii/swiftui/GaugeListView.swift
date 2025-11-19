@@ -1,3 +1,15 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * SwiftUI list view for live gauges
+ *
+ * Alternative list-based presentation of enabled gauges showing current values.
+ * Each row displays gauge name, value range, and current reading with color coding.
+ * Uses demand-driven polling for visible gauge data.
+ * Tapping a row navigates to detailed statistics.
+ */
 import SwiftUI
 import SwiftOBD2
 

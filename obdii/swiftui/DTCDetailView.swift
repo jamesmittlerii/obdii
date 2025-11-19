@@ -1,3 +1,14 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * SwiftUI detail view for a diagnostic trouble code
+ *
+ * Displays comprehensive information about a selected DTC including
+ * code, title, severity, description, potential causes, and possible remedies.
+ * Organized into sections for easy readability and troubleshooting.
+ */
 import SwiftUI
 import SwiftOBD2
 

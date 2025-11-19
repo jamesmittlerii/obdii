@@ -1,16 +1,20 @@
 /**
- 
  * __Final Project__
  * Jim Mittler
- * 14 November 2025
- 
- 
-CarPlay template for Gauges
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
+ * 19 November 2025
+ *
+ * CarPlay template for live gauge display
+ *
+ * Displays enabled gauges as visual ring gauges in a horizontal scrollable row.
+ * Each gauge shows the current value, units, and a visual indicator colored
+ * by the value's range (typical/warning/danger).
+ *
+ * Tapping a gauge opens a detail view (CarPlayGaugeDetailController) showing
+ * statistics and additional information for that specific PID.
+ *
+ * The controller manages a nested detail controller and ensures proper template
+ * lifecycle management and PID interest registration for both the main list
+ * and any active detail views.
  */
 
 import CarPlay
@@ -22,7 +26,8 @@ import UIKit   // For UIImage
 @MainActor
 class CarPlayGaugesController: CarPlayBaseTemplateController<GaugesViewModel> {
     
-    // Detail screen controller (manages template and live updates)
+    /// Nested controller for displaying detail view of a single gauge.
+    /// Retained to manage its template lifecycle and automatic cleanup when dismissed.
     private var detailController: CarPlayGaugeDetailController?
 
    
@@ -125,11 +130,9 @@ class CarPlayGaugesController: CarPlayBaseTemplateController<GaugesViewModel> {
     }
 
     override func performRefresh() {
-        // Update the UI for any tiles change
         refreshSection()
-        // Also (re)register interest for whatever tiles are currently visible.
-        // This ensures newly added gauges start streaming immediately while the tab is visible.
         
+        // Re-register interest to ensure newly enabled gauges start streaming immediately
         if isVisible {
             registerVisiblePIDs()
         }

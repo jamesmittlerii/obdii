@@ -1,3 +1,15 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * SwiftUI view for MIL (Malfunction Indicator Lamp) status
+ *
+ * Displays Check Engine Light status including whether MIL is on/off,
+ * DTC count, and readiness monitor status for emissions systems.
+ * Shows waiting state while loading and organized sections for MIL
+ * summary and individual readiness monitors.
+ */
 import SwiftUI
 import Combine
 import SwiftOBD2

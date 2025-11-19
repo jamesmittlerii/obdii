@@ -1,3 +1,15 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * ViewModel for diagnostic trouble codes display
+ *
+ * Subscribes to OBDConnectionManager for DTC updates and organizes them
+ * into severity-based sections (Critical, High, Moderate, Low).
+ * Handles waiting state (nil) vs loaded state (possibly empty array).
+ * Inherits from BaseViewModel for CarPlay integration.
+ */
 import Foundation
 import Combine
 import SwiftOBD2

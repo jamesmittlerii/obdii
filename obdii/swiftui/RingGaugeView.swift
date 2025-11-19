@@ -1,3 +1,15 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * SwiftUI ring gauge visualization component
+ *
+ * Renders a circular arc gauge showing current value with color-coded progress.
+ * Displays value and units in center, with progress arc colored based on
+ * typical/warning/danger ranges. Adapts to metric/imperial units automatically.
+ * Used throughout the app for visualizing live PID data.
+ */
 import SwiftUI
 import SwiftOBD2
 

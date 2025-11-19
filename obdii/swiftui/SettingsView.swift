@@ -2,7 +2,7 @@
  
  * __Final Project__
  * Jim Mittler
- * 14 November 2025
+ * 19 November 2025
  *
  * SwiftUI Settings screen (default tab).
  *

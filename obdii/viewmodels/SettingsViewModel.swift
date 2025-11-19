@@ -1,3 +1,15 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * ViewModel for application settings screen
+ *
+ * Manages Wi-Fi connection details, connection type, auto-connect preference,
+ * and measurement units. Provides two-way bindings with ConfigData and
+ * OBDConnectionManager. Debounces Wi-Fi host/port changes to avoid frequent
+ * reconnections. Handles connect/disconnect button tap logic.
+ */
 import Foundation
 import Combine
 import Observation

@@ -1,20 +1,24 @@
 /**
- 
  * __Final Project__
  * Jim Mittler
- * 14 November 2025
- 
- 
-base class for our tab templates
- 
- We were having issues with the templates refreshing from the subscriptions even when not selected.
- 
- CarPlay is not as easy as SwiftUI - we have to manually determine if our tab is highlighted and disable refresh otherwise.
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
+ * 19 November 2025
+ *
+ * Base class for CarPlay tab templates
+ *
+ * This base controller provides:
+ * - Template lifecycle management (creation, visibility tracking)
+ * - View model integration with automatic refresh on changes
+ * - Demand-driven PID polling via PIDInterestRegistry tokens
+ * - Visibility-aware refresh behavior (only updates when tab is active)
+ *
+ * CarPlay requires manual visibility tracking unlike SwiftUI. This class ensures
+ * templates only refresh and request PID data when their tab is actively visible,
+ * preventing unnecessary updates and resource usage.
+ *
+ * Subclasses should override:
+ * - `makeRootTemplate()` - Create the initial template for this tab
+ * - `performRefresh()` - Update the template when data changes
+ * - `registerVisiblePIDs()` - Specify which PIDs to poll when visible
  */
 
 

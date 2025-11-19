@@ -1,3 +1,14 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * Root tab view for the phone UI
+ *
+ * Displays the main tab interface with five tabs:
+ * Settings, Gauges, Fuel System Status, MIL Status, and Diagnostic Codes.
+ * Each tab contains a SwiftUI NavigationStack for drill-down navigation.
+ */
 import SwiftUI
 
 struct RootTabView: View {

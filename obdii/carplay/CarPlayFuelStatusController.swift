@@ -1,16 +1,15 @@
 /**
- 
  * __Final Project__
  * Jim Mittler
- * 14 November 2025
- 
- 
-CarPlay template for Fuel/O2 sensor data
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
+ * 19 November 2025
+ *
+ * CarPlay template for Fuel System Status
+ *
+ * Displays the current fuel system status for Bank 1 and Bank 2 (if applicable).
+ * Shows status codes indicating whether the fuel system is in open loop, closed loop,
+ * or other operational states.
+ *
+ * Uses a snapshot pattern to avoid unnecessary UI updates when data hasn't changed.
  */
 
 import CarPlay
@@ -99,7 +98,5 @@ class CarPlayFuelStatusController: CarPlayBaseTemplateController<FuelStatusViewM
     override func performRefresh() {
         refreshSection()
     }
-
-    //  Helpers
 }
 

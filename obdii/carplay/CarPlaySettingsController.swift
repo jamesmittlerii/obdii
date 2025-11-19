@@ -1,16 +1,17 @@
 /**
- 
  * __Final Project__
  * Jim Mittler
- * 14 November 2025
- 
- 
-CarPlay template for showing the settings
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
+ * 19 November 2025
+ *
+ * CarPlay template for application settings
+ *
+ * Displays:
+ * - Connection details (type: Demo/WiFi/Bluetooth, host/device name)
+ * - Connection status (disconnected/connecting/connected/failed)
+ * - Units preference (Metric/Imperial) with tap-to-toggle functionality
+ * - About information (app name, version, build number)
+ *
+ * Settings are persisted via ConfigData and SettingsViewModel.
  */
 
 import CarPlay
@@ -21,10 +22,8 @@ import Network
 
 @MainActor
 class CarPlaySettingsController: CarPlayBaseTemplateController<SettingsViewModel> {
-    private var currentListTemplate: CPListTemplate?
     
-    
-     init() {
+    init() {
         super.init(viewModel: SettingsViewModel())
     }
 
@@ -105,7 +104,7 @@ class CarPlaySettingsController: CarPlayBaseTemplateController<SettingsViewModel
     }
 
     private func refreshSection() {
-        guard let template = currentListTemplate else { return }
+        guard let template = currentTemplate as? CPListTemplate else { return }
         let section = buildSection()
         template.updateSections([section])
     }
@@ -117,7 +116,6 @@ class CarPlaySettingsController: CarPlayBaseTemplateController<SettingsViewModel
         template.tabTitle = "Settings"
         template.tabImage = UIImage(systemName: "gear")
         self.currentTemplate = template
-        self.currentListTemplate = template
         return template
     }
 

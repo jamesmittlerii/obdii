@@ -1,3 +1,15 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * ViewModel for MIL (Malfunction Indicator Lamp) status
+ *
+ * Subscribes to OBDConnectionManager for MIL/Check Engine Light status updates.
+ * Provides formatted header text, readiness monitor sorting by ready/not ready,
+ * and handles nil vs populated states. Inherits from BaseViewModel for CarPlay
+ * integration.
+ */
 import Foundation
 import SwiftOBD2
 import Observation

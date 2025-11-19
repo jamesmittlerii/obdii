@@ -1,3 +1,15 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * Main OBD-II connection manager singleton
+ *
+ * Manages vehicle communication via SwiftOBD2 library, connection lifecycle,
+ * and continuous PID data streaming. Integrates with PIDInterestRegistry for
+ * demand-driven polling. Publishes connection state, diagnostic codes, fuel
+ * status, MIL status, and per-PID statistics. Supports Bluetooth and Wi-Fi adapters.
+ */
 import Foundation
 import SwiftOBD2
 import Combine

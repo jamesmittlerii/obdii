@@ -1,3 +1,15 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * Demand-driven PID interest tracking registry
+ *
+ * Manages which PIDs are currently needed by active UI views/controllers.
+ * Each view registers a unique token and declares its required PIDs.
+ * The registry computes the union of all interests and publishes changes,
+ * allowing OBDConnectionManager to poll only what's actually visible.
+ */
 import Foundation
 import Combine
 import SwiftOBD2
@@ -31,9 +43,17 @@ final class PIDInterestRegistry: ObservableObject {
     }
 
     /// Clears a token's interest. Safe to call multiple times.
+    /// Yields one turn to allow immediate handoff from another view to register first.
     func clear(token: UUID) {
-        byToken[token] = nil
-        recompute()
+        Task { [weak self] in
+            // Let any immediately-following replace() calls run first on the main actor.
+            await Task.yield()
+            await MainActor.run {
+                guard let self else { return }
+                self.byToken[token] = nil
+                self.recompute()
+            }
+        }
     }
 
     // MARK: - Internal

@@ -1,3 +1,15 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * SwiftUI grid view for live gauge tiles
+ *
+ * Displays enabled gauges in an adaptive grid (2-4 columns based on width).
+ * Each tile shows a ring gauge visualization with current value and units.
+ * Uses demand-driven polling to request only visible gauge data.
+ * Tapping a tile navigates to detailed statistics view.
+ */
 import SwiftUI
 import Combine
 import SwiftOBD2

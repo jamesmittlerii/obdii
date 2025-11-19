@@ -1,16 +1,15 @@
 /**
- 
  * __Final Project__
  * Jim Mittler
- * 14 November 2025
- 
- 
-Helper to draw gauge on Carplay
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
+ * 19 November 2025
+ *
+ * CarPlay gauge rendering helpers
+ *
+ * Provides shared rendering functions for creating visual gauge representations
+ * used in CarPlay templates. The main function `drawGaugeImage()` creates a
+ * ring-style gauge with color-coded progress indication based on PID value ranges.
+ *
+ * Note: File naming is "Carplay" (not "CarPlay") for historical reasons.
  */
 
 import SwiftUI

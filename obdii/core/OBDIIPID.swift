@@ -1,3 +1,16 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * PID data model and library loader
+ *
+ * Defines the OBDPID struct with metadata (ranges, units, formulas), ValueRange
+ * for min/max bounds, and UnitConversion for metric/imperial conversion.
+ * Provides formatting, color coding, and display helpers. Loads all PIDs from
+ * OBDPIDs.json file via OBDPIDLibrary.loadFromJSON().
+ */
+
 //
 //  OBDPID Library + Unit Conversion + ValueRange
 //  Cleaned + Production-Ready

@@ -1,16 +1,19 @@
 /**
- 
  * __Final Project__
  * Jim Mittler
- * 14 November 2025
- 
- 
-CarPlay template for PID details
- 
- _Italic text__
- __Bold text__
- ~~Strikethrough text~~
- 
+ * 19 November 2025
+ *
+ * CarPlay detail view for a single PID (gauge)
+ *
+ * Displays detailed statistics for a single parameter, including:
+ * - Current value with units
+ * - Minimum and maximum observed values
+ * - Sample count
+ * - Typical operating range
+ *
+ * This controller is created dynamically when a user taps on a gauge tile
+ * in the main gauges view. It registers interest for only the specific PID
+ * being displayed to minimize data polling overhead.
  */
 
 import Foundation

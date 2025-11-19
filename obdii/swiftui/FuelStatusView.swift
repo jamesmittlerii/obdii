@@ -1,3 +1,15 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * SwiftUI view for fuel system status
+ *
+ * Displays the current fuel control status for Bank 1 and Bank 2.
+ * Shows status codes indicating whether fuel systems are in open loop,
+ * closed loop, or other operational states. Includes waiting state for
+ * initial data load and empty state if no status codes are available.
+ */
 import SwiftUI
 import Combine
 import SwiftOBD2

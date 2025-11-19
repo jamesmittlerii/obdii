@@ -1,3 +1,15 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * ViewModel for single gauge detail view
+ *
+ * Tracks statistics for a specific PID including current value, min/max observed,
+ * and sample count. Subscribes to OBDConnectionManager's pidStats publisher.
+ * Refreshes when units change. Deduplicates updates to prevent unnecessary
+ * UI refreshes. Inherits from BaseViewModel for CarPlay integration.
+ */
 import SwiftUI
 import SwiftOBD2
 import Combine

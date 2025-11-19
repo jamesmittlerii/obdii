@@ -1,3 +1,14 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * SwiftUI container for gauges display mode selection
+ *
+ * Provides a segmented picker to switch between Grid and List viewing modes.
+ * Persists user's preferred display mode across app sessions via @AppStorage.
+ * Wraps GaugesView (grid) and GaugeListView (list) alternatives.
+ */
 import SwiftUI
 import SwiftOBD2
 

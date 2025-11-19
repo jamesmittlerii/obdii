@@ -1,3 +1,14 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * SwiftUI detail view for a single gauge/PID
+ *
+ * Displays comprehensive statistics for a selected parameter including
+ * current value, minimum/maximum observed, sample count, and typical range.
+ * Uses demand-driven polling to request only this specific PID data.
+ */
 import SwiftUI
 import SwiftOBD2
 import Combine

@@ -1,3 +1,15 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * SwiftUI view for diagnostic trouble codes (DTCs)
+ *
+ * Displays active DTCs retrieved from the vehicle, organized by severity.
+ * Shows a waiting state while loading, an empty state if no codes exist,
+ * or grouped sections of codes when available. Tapping a code navigates
+ * to a detailed view with causes and remedies.
+ */
 import SwiftUI
 import SwiftOBD2
 
