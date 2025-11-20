@@ -18,12 +18,23 @@ import Combine
 final class PIDInterestRegistryTests: XCTestCase {
     
     var registry: PIDInterestRegistry!
+    var testTokens: [UUID] = []
     
     override func setUp() async throws {
         registry = PIDInterestRegistry.shared
+        testTokens = []
     }
     
     override func tearDown() async throws {
+        // Clear all tokens created during this test
+        for token in testTokens {
+            registry.clear(token: token)
+        }
+        
+        // Wait for async clear operations to complete
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 sec
+        
+        testTokens.removeAll()
         registry = nil
     }
     
@@ -37,7 +48,9 @@ final class PIDInterestRegistryTests: XCTestCase {
     
     func testMakeToken() {
         let token1 = registry.makeToken()
+        testTokens.append(token1)
         let token2 = registry.makeToken()
+        testTokens.append(token2)
         
         XCTAssertNotEqual(token1, token2, "Each token should be unique")
     }
@@ -46,6 +59,7 @@ final class PIDInterestRegistryTests: XCTestCase {
     
     func testReplacePIDsForToken() {
         let token = registry.makeToken()
+        testTokens.append(token)
         let pids: Set<OBDCommand> = [.mode1(.rpm), .mode1(.speed)]
         
         registry.replace(pids: pids, for: token)
@@ -58,6 +72,7 @@ final class PIDInterestRegistryTests: XCTestCase {
     
     func testReplaceOverwritesPreviousPIDs() {
         let token = registry.makeToken()
+        testTokens.append(token)
         
         // First set
         registry.replace(pids: [.mode1(.rpm)], for: token)
@@ -71,6 +86,7 @@ final class PIDInterestRegistryTests: XCTestCase {
     
     func testReplaceWithEmptySet() {
         let token = registry.makeToken()
+        testTokens.append(token)
         
         registry.replace(pids: [.mode1(.rpm)], for: token)
         XCTAssertTrue(registry.interested.contains(.mode1(.rpm)))
@@ -84,7 +100,9 @@ final class PIDInterestRegistryTests: XCTestCase {
     
     func testMultipleTokensCanRegisterSamePID() {
         let token1 = registry.makeToken()
+        testTokens.append(token1)
         let token2 = registry.makeToken()
+        testTokens.append(token2)
         
         registry.replace(pids: [.mode1(.rpm)], for: token1)
         registry.replace(pids: [.mode1(.rpm)], for: token2)
@@ -95,7 +113,9 @@ final class PIDInterestRegistryTests: XCTestCase {
     
     func testMultipleTokensWithDifferentPIDs() {
         let token1 = registry.makeToken()
+        testTokens.append(token1)
         let token2 = registry.makeToken()
+        testTokens.append(token2)
         
         registry.replace(pids: [.mode1(.rpm)], for: token1)
         registry.replace(pids: [.mode1(.speed)], for: token2)
@@ -110,6 +130,7 @@ final class PIDInterestRegistryTests: XCTestCase {
     
     func testClearToken() async {
         let token = registry.makeToken()
+        testTokens.append(token)
         
         registry.replace(pids: [.mode1(.rpm)], for: token)
         XCTAssertTrue(registry.interested.contains(.mode1(.rpm)))
@@ -125,7 +146,9 @@ final class PIDInterestRegistryTests: XCTestCase {
     
     func testClearTokenDoesNotAffectOtherTokens() async {
         let token1 = registry.makeToken()
+        testTokens.append(token1)
         let token2 = registry.makeToken()
+        testTokens.append(token2)
         
         registry.replace(pids: [.mode1(.rpm)], for: token1)
         registry.replace(pids: [.mode1(.speed)], for: token2)
@@ -141,7 +164,9 @@ final class PIDInterestRegistryTests: XCTestCase {
     
     func testClearSharedPID() async {
         let token1 = registry.makeToken()
+        testTokens.append(token1)
         let token2 = registry.makeToken()
+        testTokens.append(token2)
         
         // Both tokens register RPM
         registry.replace(pids: [.mode1(.rpm)], for: token1)
@@ -162,7 +187,9 @@ final class PIDInterestRegistryTests: XCTestCase {
     
     func testInterestedPIDsUnion() {
         let token1 = registry.makeToken()
+        testTokens.append(token1)
         let token2 = registry.makeToken()
+        testTokens.append(token2)
         
         registry.replace(pids: [.mode1(.rpm), .mode1(.coolantTemp)], for: token1)
         registry.replace(pids: [.mode1(.speed), .mode1(.rpm)], for: token2)
@@ -179,6 +206,7 @@ final class PIDInterestRegistryTests: XCTestCase {
     func testInterestedIsPublished() {
         var changeCount = 0
         let token = registry.makeToken()
+        testTokens.append(token)
         
         let cancellable = registry.$interested.sink { _ in
             changeCount += 1
