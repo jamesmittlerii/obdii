@@ -55,10 +55,59 @@
 		D44B5A132ECF729700801658 /* testObdiiViewModels.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = testObdiiViewModels.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		D44B5A4B2ECF73D300801658 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				testObdiiViewModels/DiagnosticsViewModelTests.swift,
+				testObdiiViewModels/FuelStatusViewModelTests.swift,
+				testObdiiViewModels/GaugeDetailViewModelTests.swift,
+				testObdiiViewModels/GaugesViewModelTests.swift,
+				testObdiiViewModels/MILStatusViewModelTests.swift,
+				testObdiiViewModels/PIDToggleListViewModelTests.swift,
+				testObdiiViewModels/SettingsViewModelTests.swift,
+				testObdiiViews/DiagnosticViewTests.swift,
+				testObdiiViews/FuelStatusViewTests.swift,
+				testObdiiViews/GaugeDetailViewTests.swift,
+				testObdiiViews/GaugesViewTests.swift,
+				testObdiiViews/MILStatusViewTests.swift,
+				testObdiiViews/PIDToggleListViewTests.swift,
+				testObdiiViews/RootTabViewTests.swift,
+				testObdiiViews/SettingsViewTests.swift,
+			);
+			target = D44B59D62ECF70B900801658 /* testObdiiCore */;
+		};
+		D44B5A4C2ECF73D300801658 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				testObdiiViews/DiagnosticViewTests.swift,
+				testObdiiViews/FuelStatusViewTests.swift,
+				testObdiiViews/GaugeDetailViewTests.swift,
+				testObdiiViews/GaugesViewTests.swift,
+				testObdiiViews/MILStatusViewTests.swift,
+				testObdiiViews/PIDToggleListViewTests.swift,
+				testObdiiViews/RootTabViewTests.swift,
+				testObdiiViews/SettingsViewTests.swift,
+			);
+			target = D44B59EF2ECF716900801658 /* testObdiiViews */;
+		};
+		D44B5A5C2ECF73D600801658 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				testObdiiViewModels/DiagnosticsViewModelTests.swift,
+				testObdiiViewModels/FuelStatusViewModelTests.swift,
+				testObdiiViewModels/GaugeDetailViewModelTests.swift,
+				testObdiiViewModels/GaugesViewModelTests.swift,
+				testObdiiViewModels/MILStatusViewModelTests.swift,
+				testObdiiViewModels/PIDToggleListViewModelTests.swift,
+				testObdiiViewModels/SettingsViewModelTests.swift,
+			);
+			target = D44B5A122ECF729700801658 /* testObdiiViewModels */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		D44B59D82ECF70B900801658 /* testObdiiCore */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = testObdiiCore; sourceTree = "<group>"; };
-		D44B59F12ECF716900801658 /* testObdiiViews */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = testObdiiViews; sourceTree = "<group>"; };
-		D44B5A142ECF729700801658 /* testObdiiViewModels */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = testObdiiViewModels; sourceTree = "<group>"; };
+		D44B5A2E2ECF73C900801658 /* test */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (D44B5A4B2ECF73D300801658 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, D44B5A4C2ECF73D300801658 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, D44B5A5C2ECF73D600801658 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = test; sourceTree = "<group>"; };
 		D4D4D58B2EC7823E00D4623D /* core */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = core; sourceTree = "<group>"; };
 		D4D4D6862EC7A85900D4623D /* viewmodels */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = viewmodels; sourceTree = "<group>"; };
 		D4FE92C02EC541E000C061D7 /* carplay */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = carplay; sourceTree = "<group>"; };
@@ -106,10 +155,8 @@
 		CBAD9E8A24A3E3DD00989CA4 = {
 			isa = PBXGroup;
 			children = (
+				D44B5A2E2ECF73C900801658 /* test */,
 				CBAD9E9524A3E3DD00989CA4 /* obdii */,
-				D44B59D82ECF70B900801658 /* testObdiiCore */,
-				D44B59F12ECF716900801658 /* testObdiiViews */,
-				D44B5A142ECF729700801658 /* testObdiiViewModels */,
 				CBAD9E9424A3E3DD00989CA4 /* Products */,
 				CBAD9EC624A3E3EB00989CA4 /* Frameworks */,
 			);
@@ -190,7 +237,7 @@
 				D44B59DC2ECF70B900801658 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				D44B59D82ECF70B900801658 /* testObdiiCore */,
+				D44B5A2E2ECF73C900801658 /* test */,
 			);
 			name = testObdiiCore;
 			packageProductDependencies = (
@@ -213,9 +260,6 @@
 			dependencies = (
 				D44B59F52ECF716900801658 /* PBXTargetDependency */,
 			);
-			fileSystemSynchronizedGroups = (
-				D44B59F12ECF716900801658 /* testObdiiViews */,
-			);
 			name = testObdiiViews;
 			packageProductDependencies = (
 				D44B59F92ECF717500801658 /* SwiftOBD2 */,
@@ -237,9 +281,6 @@
 			);
 			dependencies = (
 				D44B5A182ECF729700801658 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				D44B5A142ECF729700801658 /* testObdiiViewModels */,
 			);
 			name = testObdiiViewModels;
 			packageProductDependencies = (
