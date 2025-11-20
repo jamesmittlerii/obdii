@@ -23,7 +23,8 @@ final class SettingsViewModel: BaseViewModel {
 
     var wifiHost: String {
         didSet {
-            debounceApply(&hostDebounceTask) { [unowned self] in
+            debounceApply(&hostDebounceTask) { [weak self] in
+                guard let self = self else { return }
                 applyWiFiHostChange(wifiHost)
             }
         }
@@ -31,7 +32,8 @@ final class SettingsViewModel: BaseViewModel {
 
     var wifiPort: Int {
         didSet {
-            debounceApply(&portDebounceTask) { [unowned self] in
+            debounceApply(&portDebounceTask) { [weak self] in
+                guard let self = self else { return }
                 applyWiFiPortChange(wifiPort)
             }
         }

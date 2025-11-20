@@ -13,14 +13,6 @@
 		CBAD9EC824A3E3EB00989CA4 /* CarPlay.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CBAD9EC724A3E3EB00989CA4 /* CarPlay.framework */; };
 		D447FDCB2ECE96E1001EBAD2 /* SwiftOBD2 in Frameworks */ = {isa = PBXBuildFile; productRef = D447FDCA2ECE96E1001EBAD2 /* SwiftOBD2 */; };
 		D447FDCD2ECE96EA001EBAD2 /* ViewInspector in Frameworks */ = {isa = PBXBuildFile; productRef = D447FDCC2ECE96EA001EBAD2 /* ViewInspector */; };
-		D447FDCE2ECE97F4001EBAD2 /* DiagnosticViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D447FDC82ECE94BD001EBAD2 /* DiagnosticViewTests.swift */; };
-		D45BF7F42ECEA26100F39FF7 /* RootTabViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45BF7F22ECEA26100F39FF7 /* RootTabViewTests.swift */; };
-		D45BF7F52ECEA26100F39FF7 /* GaugesViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45BF7EF2ECEA26100F39FF7 /* GaugesViewTests.swift */; };
-		D45BF7F62ECEA26100F39FF7 /* GaugeDetailViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45BF7EE2ECEA26100F39FF7 /* GaugeDetailViewTests.swift */; };
-		D45BF7F72ECEA26100F39FF7 /* PIDToggleListViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45BF7F12ECEA26100F39FF7 /* PIDToggleListViewTests.swift */; };
-		D45BF7F82ECEA26100F39FF7 /* FuelStatusViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45BF7ED2ECEA26100F39FF7 /* FuelStatusViewTests.swift */; };
-		D45BF7F92ECEA26100F39FF7 /* MILStatusViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45BF7F02ECEA26100F39FF7 /* MILStatusViewTests.swift */; };
-		D45BF7FA2ECEA26100F39FF7 /* SettingsViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45BF7F32ECEA26100F39FF7 /* SettingsViewTests.swift */; };
 		D4D7C4932EBEBE0D00393ADF /* SwiftOBD2 in Frameworks */ = {isa = PBXBuildFile; productRef = D4D7C4922EBEBE0D00393ADF /* SwiftOBD2 */; };
 /* End PBXBuildFile section */
 
@@ -44,17 +36,11 @@
 		CBAD9EAF24A3E3DE00989CA4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		CBAD9EC724A3E3EB00989CA4 /* CarPlay.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CarPlay.framework; path = System/Library/Frameworks/CarPlay.framework; sourceTree = SDKROOT; };
 		CBAD9ECB24A3E73800989CA4 /* obdii.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = obdii.entitlements; sourceTree = "<group>"; };
-		D447FDC82ECE94BD001EBAD2 /* DiagnosticViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticViewTests.swift; sourceTree = "<group>"; };
-		D45BF7ED2ECEA26100F39FF7 /* FuelStatusViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FuelStatusViewTests.swift; sourceTree = "<group>"; };
-		D45BF7EE2ECEA26100F39FF7 /* GaugeDetailViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GaugeDetailViewTests.swift; sourceTree = "<group>"; };
-		D45BF7EF2ECEA26100F39FF7 /* GaugesViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GaugesViewTests.swift; sourceTree = "<group>"; };
-		D45BF7F02ECEA26100F39FF7 /* MILStatusViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MILStatusViewTests.swift; sourceTree = "<group>"; };
-		D45BF7F12ECEA26100F39FF7 /* PIDToggleListViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PIDToggleListViewTests.swift; sourceTree = "<group>"; };
-		D45BF7F22ECEA26100F39FF7 /* RootTabViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootTabViewTests.swift; sourceTree = "<group>"; };
-		D45BF7F32ECEA26100F39FF7 /* SettingsViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		D45BF7FB2ECEAFFD00F39FF7 /* views */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = views; sourceTree = "<group>"; };
+		D45BF7FC2ECEB16C00F39FF7 /* viewmodels */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = viewmodels; sourceTree = "<group>"; };
 		D4D4D58B2EC7823E00D4623D /* core */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = core; sourceTree = "<group>"; };
 		D4D4D6862EC7A85900D4623D /* viewmodels */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = viewmodels; sourceTree = "<group>"; };
 		D4FE92C02EC541E000C061D7 /* carplay */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = carplay; sourceTree = "<group>"; };
@@ -121,15 +107,9 @@
 		CBAD9EAC24A3E3DE00989CA4 /* obdiiTests */ = {
 			isa = PBXGroup;
 			children = (
-				D45BF7ED2ECEA26100F39FF7 /* FuelStatusViewTests.swift */,
-				D45BF7EE2ECEA26100F39FF7 /* GaugeDetailViewTests.swift */,
-				D45BF7EF2ECEA26100F39FF7 /* GaugesViewTests.swift */,
-				D45BF7F02ECEA26100F39FF7 /* MILStatusViewTests.swift */,
-				D45BF7F12ECEA26100F39FF7 /* PIDToggleListViewTests.swift */,
-				D45BF7F22ECEA26100F39FF7 /* RootTabViewTests.swift */,
-				D45BF7F32ECEA26100F39FF7 /* SettingsViewTests.swift */,
+				D45BF7FC2ECEB16C00F39FF7 /* viewmodels */,
+				D45BF7FB2ECEAFFD00F39FF7 /* views */,
 				CBAD9EAF24A3E3DE00989CA4 /* Info.plist */,
-				D447FDC82ECE94BD001EBAD2 /* DiagnosticViewTests.swift */,
 			);
 			path = obdiiTests;
 			sourceTree = "<group>";
@@ -180,6 +160,10 @@
 			);
 			dependencies = (
 				CBAD9EAB24A3E3DE00989CA4 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				D45BF7FB2ECEAFFD00F39FF7 /* views */,
+				D45BF7FC2ECEB16C00F39FF7 /* viewmodels */,
 			);
 			name = obdiiTests;
 			productName = obdiiTests;
@@ -260,14 +244,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D447FDCE2ECE97F4001EBAD2 /* DiagnosticViewTests.swift in Sources */,
-				D45BF7F42ECEA26100F39FF7 /* RootTabViewTests.swift in Sources */,
-				D45BF7F52ECEA26100F39FF7 /* GaugesViewTests.swift in Sources */,
-				D45BF7F62ECEA26100F39FF7 /* GaugeDetailViewTests.swift in Sources */,
-				D45BF7F72ECEA26100F39FF7 /* PIDToggleListViewTests.swift in Sources */,
-				D45BF7F82ECEA26100F39FF7 /* FuelStatusViewTests.swift in Sources */,
-				D45BF7F92ECEA26100F39FF7 /* MILStatusViewTests.swift in Sources */,
-				D45BF7FA2ECEA26100F39FF7 /* SettingsViewTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -503,6 +479,9 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.rheosoft.obdiiTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/obdii.app/obdii";
@@ -524,6 +503,9 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.rheosoft.obdiiTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/obdii.app/obdii";
