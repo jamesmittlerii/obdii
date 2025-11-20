@@ -40,6 +40,39 @@
                ReferencedContainer = "container:obdii.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "D48C4E382ECF628F00D14230"
+               BuildableName = "testViewModels.xctest"
+               BlueprintName = "testViewModels"
+               ReferencedContainer = "container:obdii.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "D48C4E452ECF62A900D14230"
+               BuildableName = "testCore.xctest"
+               BlueprintName = "testCore"
+               ReferencedContainer = "container:obdii.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "D48C4E522ECF62BA00D14230"
+               BuildableName = "testViews.xctest"
+               BlueprintName = "testViews"
+               ReferencedContainer = "container:obdii.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

@@ -174,7 +174,7 @@ final class PIDToggleListViewModelTests: XCTestCase {
     
     // MARK: - Reordering Tests
     
-    func xxtestMoveEnabledPIDs() throws {
+    func testMoveEnabledPIDs() throws {
         let initialEnabledCount = viewModel.filteredEnabled.count
         
         if initialEnabledCount >= 2 {

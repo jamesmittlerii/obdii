@@ -143,7 +143,7 @@ struct OBDPID: Identifiable, Hashable, Codable {
         pid: OBDCommand,
         formula: String? = nil,
         units: String,
-        typicalRange: ValueRange,
+        typicalRange: ValueRange? = nil,
         warningRange: ValueRange? = nil,
         dangerRange: ValueRange? = nil,
         notes: String? = nil,
