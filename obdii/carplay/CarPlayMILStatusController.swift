@@ -57,12 +57,7 @@ class CarPlayMILStatusController: CarPlayBaseTemplateController<MILStatusViewMod
         
         // Readiness monitors: use the same sorting/grouping logic as the SwiftUI ViewModel
         for monitor in viewModel.sortedSupportedMonitors {
-            let detail: String
-            if let ready = monitor.ready {
-                detail = ready ? "Ready" : "Not Ready"
-            } else {
-                detail = "—"
-            }
+            let detail = monitor.ready ? "Ready" : "Not Ready"
             items.append(makeItem(monitor.name, detailText: detail))
         }
 
@@ -96,4 +91,3 @@ class CarPlayMILStatusController: CarPlayBaseTemplateController<MILStatusViewMod
         refreshSection()
     }
 }
-

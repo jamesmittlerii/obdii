@@ -41,7 +41,7 @@ struct MILStatusView: View {
                     } else if viewModel.hasStatus {
                         HStack(spacing: 12) {
                             Image(systemName: "wrench.and.screwdriver")
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(viewModel.status!.milOn ? .orange : .blue )
                                 .imageScale(.large)
 
                             Text(viewModel.headerText)
@@ -61,7 +61,7 @@ struct MILStatusView: View {
                         ForEach(viewModel.sortedSupportedMonitors, id: \.name) { monitor in
                             HStack(spacing: 12) {
                                 Image(systemName: "gauge")
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(monitor.ready ? .blue : .orange)
                                     .imageScale(.medium)
 
                                 Text(monitor.name)
@@ -89,10 +89,8 @@ struct MILStatusView: View {
 
 private extension ReadinessMonitor {
     var readyText: String {
-        if let ready {
-            return ready ? "Ready" : "Not Ready"
-        }
-        return "—"
+        // ready is a non-optional Bool per the compiler error.
+        return ready ? "Ready" : "Not Ready"
     }
 }
 

@@ -166,6 +166,8 @@ final class OBDConnectionManager: ObservableObject {
                 guard let self else { return }
 
                 // Prune stats for PIDs that are no longer of interest
+                
+                /*
                 if !pidStats.isEmpty {
                     let before = pidStats.count
                     pidStats = pidStats.filter { interestedSet.contains($0.key) }
@@ -173,7 +175,7 @@ final class OBDConnectionManager: ObservableObject {
                     if before != after {
                         obdInfo("Pruned uninterested PIDs from pidStats: \(before - after) removed.", category: .service)
                     }
-                }
+                }*/
 
                 // If connected, restart continuous updates with the new interest set
                 if connectionState == .connected {
@@ -376,6 +378,8 @@ final class OBDConnectionManager: ObservableObject {
         }
 
         // Prune pidStats for PIDs no longer in the enabled set
+        
+        /*
         if !pidStats.isEmpty {
             let before = pidStats.count
             pidStats = pidStats.filter { enabledNow.contains($0.key) }
@@ -383,7 +387,7 @@ final class OBDConnectionManager: ObservableObject {
             if before != after {
                 obdInfo("Pruned non-interested/unsupported PIDs from pidStats: \(before - after) removed.", category: .service)
             }
-        }
+        }*/
 
         // Replace only the stream subscription
         streamCancellables.removeAll()
