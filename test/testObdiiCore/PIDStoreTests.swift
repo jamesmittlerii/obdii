@@ -79,10 +79,9 @@ final class PIDStoreTests: XCTestCase {
     
     // MARK: - Toggle Tests
     
-    func testTogglePID() {
+    func testTogglePID() throws {
         guard let firstGauge = store.pids.first(where: { $0.kind == .gauge }) else {
-            XCTSkip("No gauge PID available for testing")
-            return
+            throw XCTSkip("No gauge PID available for testing")
         }
         
         let initialState = firstGauge.enabled
@@ -120,10 +119,9 @@ final class PIDStoreTests: XCTestCase {
     
     // MARK: - PID Lookup Tests
     
-    func testFindPIDByID() {
+    func testFindPIDByID() throws {
         guard let firstPID = store.pids.first else {
-            XCTSkip("No PIDs available")
-            return
+            throw XCTSkip("No PIDs available")
         }
         
         let found = store.pids.first { $0.id == firstPID.id }
@@ -131,10 +129,9 @@ final class PIDStoreTests: XCTestCase {
         XCTAssertEqual(found?.id, firstPID.id)
     }
     
-    func testFindPIDByCommand() {
+    func testFindPIDByCommand() throws {
         guard let rpmPID = store.pids.first(where: { $0.pid == .mode1(.rpm) }) else {
-            XCTSkip("RPM PID not found")
-            return
+            throw XCTSkip("RPM PID not found")
         }
         
         XCTAssertEqual(rpmPID.pid, .mode1(.rpm), "Should find RPM PID")
