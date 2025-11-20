@@ -45,7 +45,7 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "D48C4E382ECF628F00D14230"
+               BlueprintIdentifier = "D45435CE2ECF6ED70028C7A2"
                BuildableName = "testViewModels.xctest"
                BlueprintName = "testViewModels"
                ReferencedContainer = "container:obdii.xcodeproj">
@@ -56,7 +56,7 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "D48C4E452ECF62A900D14230"
+               BlueprintIdentifier = "D45435B22ECF6E120028C7A2"
                BuildableName = "testCore.xctest"
                BlueprintName = "testCore"
                ReferencedContainer = "container:obdii.xcodeproj">
@@ -70,6 +70,17 @@
                BlueprintIdentifier = "D48C4E522ECF62BA00D14230"
                BuildableName = "testViews.xctest"
                BlueprintName = "testViews"
+               ReferencedContainer = "container:obdii.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "D44B59D62ECF70B900801658"
+               BuildableName = "testObdiiCore.xctest"
+               BlueprintName = "testObdiiCore"
                ReferencedContainer = "container:obdii.xcodeproj">
             </BuildableReference>
          </TestableReference>

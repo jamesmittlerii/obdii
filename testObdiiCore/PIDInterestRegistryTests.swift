@@ -11,6 +11,7 @@
 
 import XCTest
 import SwiftOBD2
+import Combine
 @testable import obdii
 
 @MainActor
