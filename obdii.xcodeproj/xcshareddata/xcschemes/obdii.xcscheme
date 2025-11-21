@@ -106,6 +106,17 @@
                ReferencedContainer = "container:obdii.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "D4C6967C2ECFECFF000AD42A"
+               BuildableName = "testObdiiCarPlay.xctest"
+               BlueprintName = "testObdiiCarPlay"
+               ReferencedContainer = "container:obdii.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

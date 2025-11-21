@@ -15,6 +15,9 @@
 		D44B59FC2ECF717500801658 /* ViewInspector in Frameworks */ = {isa = PBXBuildFile; productRef = D44B59FB2ECF717500801658 /* ViewInspector */; };
 		D44B5A0E2ECF720900801658 /* SwiftOBD2 in Frameworks */ = {isa = PBXBuildFile; productRef = D44B5A0D2ECF720900801658 /* SwiftOBD2 */; };
 		D44B5A1D2ECF72A500801658 /* SwiftOBD2 in Frameworks */ = {isa = PBXBuildFile; productRef = D44B5A1C2ECF72A500801658 /* SwiftOBD2 */; };
+		D4C696712ECFE98F000AD42A /* ViewInspector in Frameworks */ = {isa = PBXBuildFile; productRef = D4C696702ECFE98F000AD42A /* ViewInspector */; };
+		D4C696872ECFED39000AD42A /* SwiftOBD2 in Frameworks */ = {isa = PBXBuildFile; productRef = D4C696862ECFED39000AD42A /* SwiftOBD2 */; };
+		D4C696892ECFED39000AD42A /* ViewInspector in Frameworks */ = {isa = PBXBuildFile; productRef = D4C696882ECFED39000AD42A /* ViewInspector */; };
 		D4D7C4932EBEBE0D00393ADF /* SwiftOBD2 in Frameworks */ = {isa = PBXBuildFile; productRef = D4D7C4922EBEBE0D00393ADF /* SwiftOBD2 */; };
 /* End PBXBuildFile section */
 
@@ -40,6 +43,13 @@
 			remoteGlobalIDString = CBAD9E9224A3E3DD00989CA4;
 			remoteInfo = obdii;
 		};
+		D4C696812ECFECFF000AD42A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CBAD9E8B24A3E3DD00989CA4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CBAD9E9224A3E3DD00989CA4;
+			remoteInfo = obdii;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
@@ -53,12 +63,14 @@
 		D44B59D72ECF70B900801658 /* testObdiiCore.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = testObdiiCore.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D44B59F02ECF716900801658 /* testObdiiViews.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = testObdiiViews.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D44B5A132ECF729700801658 /* testObdiiViewModels.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = testObdiiViewModels.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D4C6967D2ECFECFF000AD42A /* testObdiiCarPlay.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = testObdiiCarPlay.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
 		D44B5A4B2ECF73D300801658 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				testObdiiCarPlay/CarPlayHelpersTest.swift,
 				testObdiiViewModels/DiagnosticsViewModelTests.swift,
 				testObdiiViewModels/FuelStatusViewModelTests.swift,
 				testObdiiViewModels/GaugeDetailViewModelTests.swift,
@@ -67,11 +79,13 @@
 				testObdiiViewModels/PIDToggleListViewModelTests.swift,
 				testObdiiViewModels/SettingsViewModelTests.swift,
 				testObdiiViews/DiagnosticViewTests.swift,
+				testObdiiViews/DTCDetailViewTests.swift,
 				testObdiiViews/FuelStatusViewTests.swift,
 				testObdiiViews/GaugeDetailViewTests.swift,
 				testObdiiViews/GaugesViewTests.swift,
 				testObdiiViews/MILStatusViewTests.swift,
 				testObdiiViews/PIDToggleListViewTests.swift,
+				testObdiiViews/RingGaugeViewTests.swift,
 				testObdiiViews/RootTabViewTests.swift,
 				testObdiiViews/SettingsViewTests.swift,
 			);
@@ -81,11 +95,13 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				testObdiiViews/DiagnosticViewTests.swift,
+				testObdiiViews/DTCDetailViewTests.swift,
 				testObdiiViews/FuelStatusViewTests.swift,
 				testObdiiViews/GaugeDetailViewTests.swift,
 				testObdiiViews/GaugesViewTests.swift,
 				testObdiiViews/MILStatusViewTests.swift,
 				testObdiiViews/PIDToggleListViewTests.swift,
+				testObdiiViews/RingGaugeViewTests.swift,
 				testObdiiViews/RootTabViewTests.swift,
 				testObdiiViews/SettingsViewTests.swift,
 			);
@@ -104,10 +120,17 @@
 			);
 			target = D44B5A122ECF729700801658 /* testObdiiViewModels */;
 		};
+		D4C6968D2ECFEDDD000AD42A /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				testObdiiCarPlay/CarPlayHelpersTest.swift,
+			);
+			target = D4C6967C2ECFECFF000AD42A /* testObdiiCarPlay */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		D44B5A2E2ECF73C900801658 /* test */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (D44B5A4B2ECF73D300801658 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, D44B5A4C2ECF73D300801658 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, D44B5A5C2ECF73D600801658 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = test; sourceTree = "<group>"; };
+		D44B5A2E2ECF73C900801658 /* test */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (D44B5A4B2ECF73D300801658 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, D44B5A4C2ECF73D300801658 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, D44B5A5C2ECF73D600801658 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, D4C6968D2ECFEDDD000AD42A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = test; sourceTree = "<group>"; };
 		D4D4D58B2EC7823E00D4623D /* core */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = core; sourceTree = "<group>"; };
 		D4D4D6862EC7A85900D4623D /* viewmodels */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = viewmodels; sourceTree = "<group>"; };
 		D4FE92C02EC541E000C061D7 /* carplay */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = carplay; sourceTree = "<group>"; };
@@ -129,6 +152,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D44B5A0E2ECF720900801658 /* SwiftOBD2 in Frameworks */,
+				D4C696712ECFE98F000AD42A /* ViewInspector in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -146,6 +170,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				D44B5A1D2ECF72A500801658 /* SwiftOBD2 in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D4C6967A2ECFECFF000AD42A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D4C696872ECFED39000AD42A /* SwiftOBD2 in Frameworks */,
+				D4C696892ECFED39000AD42A /* ViewInspector in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -169,6 +202,7 @@
 				D44B59D72ECF70B900801658 /* testObdiiCore.xctest */,
 				D44B59F02ECF716900801658 /* testObdiiViews.xctest */,
 				D44B5A132ECF729700801658 /* testObdiiViewModels.xctest */,
+				D4C6967D2ECFECFF000AD42A /* testObdiiCarPlay.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -242,6 +276,7 @@
 			name = testObdiiCore;
 			packageProductDependencies = (
 				D44B5A0D2ECF720900801658 /* SwiftOBD2 */,
+				D4C696702ECFE98F000AD42A /* ViewInspector */,
 			);
 			productName = testObdiiCore;
 			productReference = D44B59D72ECF70B900801658 /* testObdiiCore.xctest */;
@@ -290,6 +325,28 @@
 			productReference = D44B5A132ECF729700801658 /* testObdiiViewModels.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		D4C6967C2ECFECFF000AD42A /* testObdiiCarPlay */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D4C696832ECFECFF000AD42A /* Build configuration list for PBXNativeTarget "testObdiiCarPlay" */;
+			buildPhases = (
+				D4C696792ECFECFF000AD42A /* Sources */,
+				D4C6967A2ECFECFF000AD42A /* Frameworks */,
+				D4C6967B2ECFECFF000AD42A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D4C696822ECFECFF000AD42A /* PBXTargetDependency */,
+			);
+			name = testObdiiCarPlay;
+			packageProductDependencies = (
+				D4C696862ECFED39000AD42A /* SwiftOBD2 */,
+				D4C696882ECFED39000AD42A /* ViewInspector */,
+			);
+			productName = testObdiiCarPlay;
+			productReference = D4C6967D2ECFECFF000AD42A /* testObdiiCarPlay.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -312,6 +369,10 @@
 						TestTargetID = CBAD9E9224A3E3DD00989CA4;
 					};
 					D44B5A122ECF729700801658 = {
+						CreatedOnToolsVersion = 26.1.1;
+						TestTargetID = CBAD9E9224A3E3DD00989CA4;
+					};
+					D4C6967C2ECFECFF000AD42A = {
 						CreatedOnToolsVersion = 26.1.1;
 						TestTargetID = CBAD9E9224A3E3DD00989CA4;
 					};
@@ -338,6 +399,7 @@
 				D44B59D62ECF70B900801658 /* testObdiiCore */,
 				D44B59EF2ECF716900801658 /* testObdiiViews */,
 				D44B5A122ECF729700801658 /* testObdiiViewModels */,
+				D4C6967C2ECFECFF000AD42A /* testObdiiCarPlay */,
 			);
 		};
 /* End PBXProject section */
@@ -368,6 +430,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		D44B5A112ECF729700801658 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D4C6967B2ECFECFF000AD42A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -405,6 +474,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D4C696792ECFECFF000AD42A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -422,6 +498,11 @@
 			isa = PBXTargetDependency;
 			target = CBAD9E9224A3E3DD00989CA4 /* obdii */;
 			targetProxy = D44B5A172ECF729700801658 /* PBXContainerItemProxy */;
+		};
+		D4C696822ECFECFF000AD42A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CBAD9E9224A3E3DD00989CA4 /* obdii */;
+			targetProxy = D4C696812ECFECFF000AD42A /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -648,6 +729,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.rheosoft.testObdiiCore;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -674,6 +758,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.rheosoft.testObdiiCore;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
@@ -699,6 +786,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.rheosoft.testObdiiViews;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -725,6 +815,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.rheosoft.testObdiiViews;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
@@ -750,6 +843,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.rheosoft.testObdiiViewModels;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -776,6 +872,66 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.rheosoft.testObdiiViewModels;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/obdii.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/obdii";
+			};
+			name = Release;
+		};
+		D4C696842ECFECFF000AD42A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L97LVVC8Y4;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rheosoft.testObdiiCarPlay;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/obdii.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/obdii";
+			};
+			name = Debug;
+		};
+		D4C696852ECFECFF000AD42A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L97LVVC8Y4;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rheosoft.testObdiiCarPlay;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
@@ -833,6 +989,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		D4C696832ECFECFF000AD42A /* Build configuration list for PBXNativeTarget "testObdiiCarPlay" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D4C696842ECFECFF000AD42A /* Debug */,
+				D4C696852ECFECFF000AD42A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -874,6 +1039,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D4D7C4912EBEBE0D00393ADF /* XCRemoteSwiftPackageReference "SwiftOBD2" */;
 			productName = SwiftOBD2;
+		};
+		D4C696702ECFE98F000AD42A /* ViewInspector */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D447FDC52ECE948D001EBAD2 /* XCRemoteSwiftPackageReference "ViewInspector" */;
+			productName = ViewInspector;
+		};
+		D4C696862ECFED39000AD42A /* SwiftOBD2 */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D4D7C4912EBEBE0D00393ADF /* XCRemoteSwiftPackageReference "SwiftOBD2" */;
+			productName = SwiftOBD2;
+		};
+		D4C696882ECFED39000AD42A /* ViewInspector */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D447FDC52ECE948D001EBAD2 /* XCRemoteSwiftPackageReference "ViewInspector" */;
+			productName = ViewInspector;
 		};
 		D4D7C4922EBEBE0D00393ADF /* SwiftOBD2 */ = {
 			isa = XCSwiftPackageProductDependency;
