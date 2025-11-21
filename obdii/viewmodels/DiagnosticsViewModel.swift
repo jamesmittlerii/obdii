@@ -27,14 +27,14 @@ final class DiagnosticsViewModel: BaseViewModel {
 
     // MARK: - Published State
 
-    private(set) var codes: [TroubleCodeMetadata]? = nil
-    private(set) var sections: [Section] = [] {
+    private(set) var codes: [TroubleCodeMetadata]? = nil {
         didSet {
-            if oldValue != sections {
+            if oldValue != codes {
                 onChanged?()
             }
         }
     }
+    private(set) var sections: [Section] = []
     private(set) var isEmpty: Bool = true
 
     // MARK: - Combine
@@ -49,8 +49,9 @@ final class DiagnosticsViewModel: BaseViewModel {
         OBDConnectionManager.shared.$troubleCodes
             .removeDuplicates()
             .sink { [unowned self] codes in
-                self.codes = codes
                 self.rebuildSections(from: codes)
+                self.codes = codes
+                
             }
             .store(in: &cancellables)
     }

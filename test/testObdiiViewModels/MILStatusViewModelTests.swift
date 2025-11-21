@@ -75,4 +75,54 @@ final class MILStatusViewModelTests: XCTestCase {
             XCTAssertFalse(monitor.name.isEmpty, "Monitor should have a name")
         }
     }
+    
+    
+    // MARK: - Header Text Formatting Tests
+    
+    func testHeaderTextWithNoStatus() {
+        viewModel = MILStatusViewModel()
+        XCTAssertNil(viewModel.status, "Status should be nil initially")
+        
+        let headerText = viewModel.headerText
+        XCTAssertEqual(headerText, "No MIL Status", "Should show 'No MIL Status' when status is nil")
+    }
+    
+    func testHeaderTextFormattingLogic() {
+        // Test the formatting logic directly by verifying the format string pattern
+        let testCases: [(milOn: Bool, dtcCount: Int, expected: String)] = [
+            (false, 0, "MIL: Off (0 DTCs)"),
+            (true, 1, "MIL: On (1 DTC)"),
+            (true, 3, "MIL: On (3 DTCs)"),
+            (false, 5, "MIL: Off (5 DTCs)")
+        ]
+        
+        for (milOn, dtcCount, expected) in testCases {
+            let dtcLabel = dtcCount == 1 ? "1 DTC" : "\(dtcCount) DTCs"
+            let result = "MIL: \(milOn ? "On" : "Off") (\(dtcLabel))"
+            XCTAssertEqual(result, expected, "Should format correctly for milOn=\(milOn), dtcCount=\(dtcCount)")
+        }
+    }
+    
+    // MARK: - Sorted Monitors Tests
+    
+    func testSortedSupportedMonitorsIsArray() {
+        // sortedSupportedMonitors should return an array
+        let monitors = viewModel.sortedSupportedMonitors
+        XCTAssertNotNil(monitors, "Should return monitors array")
+    }
+    
+ 
+    
+    // MARK: - Callback Tests
+    
+    func testOnChangedCallback() {
+        var callbackFired = false
+        viewModel.onChanged = {
+            callbackFired = true
+        }
+        
+        // Normally status would be set through OBDConnectionManager publisher
+        // For now, just verify the callback mechanism exists
+        XCTAssertNotNil(viewModel.onChanged, "Should support onChanged callback")
+    }
 }

@@ -82,12 +82,14 @@
 				testObdiiViews/DTCDetailViewTests.swift,
 				testObdiiViews/FuelStatusViewTests.swift,
 				testObdiiViews/GaugeDetailViewTests.swift,
+				testObdiiViews/GaugeListViewTests.swift,
 				testObdiiViews/GaugesViewTests.swift,
 				testObdiiViews/MILStatusViewTests.swift,
 				testObdiiViews/PIDToggleListViewTests.swift,
 				testObdiiViews/RingGaugeViewTests.swift,
 				testObdiiViews/RootTabViewTests.swift,
 				testObdiiViews/SettingsViewTests.swift,
+				testObdiiViews/ViewControllerTests.swift,
 			);
 			target = D44B59D62ECF70B900801658 /* testObdiiCore */;
 		};
@@ -98,12 +100,14 @@
 				testObdiiViews/DTCDetailViewTests.swift,
 				testObdiiViews/FuelStatusViewTests.swift,
 				testObdiiViews/GaugeDetailViewTests.swift,
+				testObdiiViews/GaugeListViewTests.swift,
 				testObdiiViews/GaugesViewTests.swift,
 				testObdiiViews/MILStatusViewTests.swift,
 				testObdiiViews/PIDToggleListViewTests.swift,
 				testObdiiViews/RingGaugeViewTests.swift,
 				testObdiiViews/RootTabViewTests.swift,
 				testObdiiViews/SettingsViewTests.swift,
+				testObdiiViews/ViewControllerTests.swift,
 			);
 			target = D44B59EF2ECF716900801658 /* testObdiiViews */;
 		};

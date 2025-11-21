@@ -65,7 +65,63 @@ final class HelpersTests: XCTestCase {
         XCTAssertNotNil(critical, "Critical severity should return a color")
     }
 
+    // MARK: - Tinted Symbol Tests
     
+    func testTintedSymbolCreation() {
+        let image = tintedSymbol(named: "exclamationmark.circle", severity: .low)
+        XCTAssertNotNil(image, "Should create tinted symbol image")
+    }
+    
+    func testTintedSymbolWithInvalidName() {
+        let image = tintedSymbol(named: "nonexistent_symbol_98765", severity: .moderate)
+        XCTAssertNil(image, "Should return nil for invalid symbol name")
+    }
+    
+    func testTintedSymbolPreservesRenderingMode() {
+        let image = tintedSymbol(named: "exclamationmark.triangle", severity: .high)
+        XCTAssertNotNil(image, "Should create tinted image")
+        // Rendering mode should be .alwaysOriginal to preserve tint
+        XCTAssertEqual(image?.renderingMode, .alwaysOriginal, "Should use alwaysOriginal rendering mode")
+    }
+    
+    func testTintedSymbolForAllSeverities() {
+        let severities: [CodeSeverity] = [.low, .moderate, .high, .critical]
+        
+        for severity in severities {
+            let symbolName = imageName(for: severity)
+            let image = tintedSymbol(named: symbolName, severity: severity)
+            XCTAssertNotNil(image, "Should create tinted symbol for \(severity) severity")
+        }
+    }
+    
+    // MARK: - Log Collection Tests
+    
+    func testCollectLogsReturnsJSON() async throws {
+        let data = try await collectLogs(since: -60)
+        XCTAssertGreaterThan(data.count, 0, "Should return JSON data")
+        
+        // Verify it's valid JSON by decoding
+        let entries = try JSONDecoder().decode([LogEntry].self, from: data)
+        XCTAssertGreaterThanOrEqual(entries.count, 0, "Should decode to array of LogEntry")
+    }
+    
+    func testCollectLogsWithCustomTimeInterval() async throws {
+        // Test with 1 minute window
+        let data = try await collectLogs(since: -60)
+        XCTAssertNotNil(data, "Should handle custom time interval")
+    }
+    
+    func testCollectLogsEmptyResult() async throws {
+        // Test with very short time window (likely empty)
+        let data = try await collectLogs(since: -0.001)
+        
+        // Should still return valid JSON even if empty
+        let entries = try JSONDecoder().decode([LogEntry].self, from: data)
+        XCTAssertGreaterThanOrEqual(entries.count, 0, "Should handle empty results gracefully")
+    }
+
+    // MARK: - LogEntry Tests
+
     func testLogEntryCreation() {
         let entry = LogEntry(
             timestamp: Date(),

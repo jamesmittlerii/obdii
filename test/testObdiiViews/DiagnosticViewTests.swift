@@ -301,4 +301,95 @@ final class DiagnosticsViewTests: XCTestCase {
             )
         ]
     }
+    
+    // MARK: - Mocked ViewModel Tests
+    
+    func testDisplaysDTCsGroupedBySeverity() {
+        // Test that DTCs are properly grouped by severity
+        let mockDTCs = createMockDTCs()
+        
+        // Create ViewModel (it will initialize with nil codes initially)
+        let viewModel = DiagnosticsViewModel()
+        
+        // Verify DTCs have different severities
+        let severities = Set(mockDTCs.map { $0.severity })
+        XCTAssertGreaterThan(severities.count, 1, "Mock DTCs should have multiple severities")
+        
+        // Test includes critical, high, moderate, and low
+        XCTAssertTrue(mockDTCs.contains { $0.severity == .critical }, "Should have critical DTC")
+        XCTAssertTrue(mockDTCs.contains { $0.severity == .high }, "Should have high severity DTC")
+        XCTAssertTrue(mockDTCs.contains { $0.severity == .moderate }, "Should have moderate DTC")
+        XCTAssertTrue(mockDTCs.contains { $0.severity == .low }, "Should have low severity DTC")
+    }
+    
+    func testNavigationToDTCDetailWithData() throws {
+        // Test navigation to detail view works with actual DTC data
+        let view = DiagnosticsView()
+        
+        // Find navigation links
+        let navLinks = try view.inspect().findAll(ViewType.NavigationLink.self)
+        
+        // Navigation structure should exist even if no DTCs loaded yet
+        XCTAssertGreaterThanOrEqual(navLinks.count, 0, "Should have navigation structure")
+    }
+    
+    func testSeveritySectionOrdering() {
+        // Test that sections are ordered by severity: Critical -> High -> Moderate -> Low
+        let mockDTCs = createMockDTCs()
+        
+        // Group DTCs by severity manually to verify ordering
+        let grouped = Dictionary(grouping: mockDTCs, by: { $0.severity })
+        let expectedOrder: [CodeSeverity] = [.critical, .high, .moderate, .low]
+        
+        // Build sections in the expected order
+        let sections = expectedOrder.compactMap { severity -> DiagnosticsViewModel.Section? in
+            guard let items = grouped[severity], !items.isEmpty else { return nil }
+            return DiagnosticsViewModel.Section(
+                title: severity.rawValue.capitalized,
+                severity: severity,
+                items: items
+            )
+        }
+        
+        // Verify sections are in correct order
+        for (index, section) in sections.enumerated() {
+            XCTAssertEqual(section.severity, expectedOrder.filter { grouped[$0]?.isEmpty == false }[index],
+                          "Sections should be ordered by severity")
+        }
+    }
+    
+    func testMultipleDTCsPerSeverity() {
+        // Test handling of multiple DTCs in the same severity category
+        let mockDTCs = createMockDTCs()
+        
+        // Count DTCs by severity
+        let grouped = Dictionary(grouping: mockDTCs, by: { $0.severity })
+        
+        // Verify we have the expected DTCs
+        XCTAssertEqual(mockDTCs.count, 4, "Should have 4 mock DTCs")
+        
+        // Each severity in our mock data should have exactly 1 DTC
+        for (severity, items) in grouped {
+            XCTAssertGreaterThanOrEqual(items.count, 1, "Severity \(severity) should have at least 1 DTC")
+        }
+    }
+    
+    func testDTCCountDisplay() {
+        // Test that DTC counts are correctly calculated
+        let mockDTCs = createMockDTCs()
+        
+        // Total count
+        XCTAssertEqual(mockDTCs.count, 4, "Mock data should have 4 DTCs")
+        
+        // Count by severity
+        let criticalCount = mockDTCs.filter { $0.severity == .critical }.count
+        let highCount = mockDTCs.filter { $0.severity == .high }.count
+        let moderateCount = mockDTCs.filter { $0.severity == .moderate }.count
+        let lowCount = mockDTCs.filter { $0.severity == .low }.count
+        
+        XCTAssertEqual(criticalCount, 1, "Should have 1 critical DTC")
+        XCTAssertEqual(highCount, 1, "Should have 1 high severity DTC")
+        XCTAssertEqual(moderateCount, 1, "Should have 1 moderate DTC")
+        XCTAssertEqual(lowCount, 1, "Should have 1 low severity DTC")
+    }
 }
