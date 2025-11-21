@@ -13,10 +13,30 @@ import XCTest
 import SwiftUI
 import ViewInspector
 import SwiftOBD2
+import Combine
 @testable import obdii
 
 @MainActor
 final class MILStatusViewTests: XCTestCase {
+    
+    // MARK: - Setup & Teardown
+    
+    override func setUp() {
+        super.setUp()
+        // Reset manager state before each test to ensure isolation
+        OBDConnectionManager.shared.MILStatus = nil
+        OBDConnectionManager.shared.troubleCodes = nil
+        // Disconnect if connected from previous test
+        OBDConnectionManager.shared.disconnect()
+    }
+    
+    override func tearDown() {
+        // Clean up manager state after each test
+        OBDConnectionManager.shared.MILStatus = nil
+        OBDConnectionManager.shared.troubleCodes = nil
+        OBDConnectionManager.shared.disconnect()
+        super.tearDown()
+    }
     
     // MARK: - Navigation Structure Tests
     
@@ -236,5 +256,132 @@ final class MILStatusViewTests: XCTestCase {
         // "MIL: On/Off (X DTC/DTCs)"
         // This requires actual status data from OBDConnectionManager
         XCTAssertFalse(viewModel.hasStatus, "Should not have status initially")
+    }
+    
+    // MARK: - Live Demo Data Tests
+    
+    func testMILStatusWithLiveDemoData() async throws {
+        // Configure for demo mode
+        ConfigData.shared.connectionType = .demo
+        OBDConnectionManager.shared.updateConnectionDetails()
+        
+        // Explicitly register interest instead of relying on view onAppear
+        let token = PIDInterestRegistry.shared.makeToken()
+        PIDInterestRegistry.shared.replace(pids: [.mode1(.status)], for: token)
+        
+        // Set up expectation for MIL status
+        var cancellables = Set<AnyCancellable>()
+        let expectation = XCTestExpectation(description: "MIL status should populate from demo")
+        
+        OBDConnectionManager.shared.$MILStatus
+            .dropFirst() // Skip initial nil
+            .sink { status in
+                if status != nil {
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+        
+        // Connect to demo
+        await OBDConnectionManager.shared.connect()
+        
+        // Wait for status data
+        await fulfillment(of: [expectation], timeout: 10.0)
+        
+        // Verify we got status data
+        let viewModel = MILStatusViewModel()
+        XCTAssertTrue(viewModel.hasStatus, "Should have MIL status from demo")
+        XCTAssertNotEqual(viewModel.headerText, "No MIL Status", "Should have actual status text")
+        
+        // Cleanup
+        PIDInterestRegistry.shared.clear(token: token)
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        cancellables.removeAll()
+    }
+    
+    func testReadinessMonitorsWithLiveDemoData() async throws {
+        // Configure for demo mode
+        ConfigData.shared.connectionType = .demo
+        OBDConnectionManager.shared.updateConnectionDetails()
+        
+        // Explicitly register interest instead of relying on view onAppear
+        let token = PIDInterestRegistry.shared.makeToken()
+        PIDInterestRegistry.shared.replace(pids: [.mode1(.status)], for: token)
+        
+        // Set up expectation for MIL status (which contains readiness monitors)
+        var cancellables = Set<AnyCancellable>()
+        let expectation = XCTestExpectation(description: "Readiness monitors should populate from demo")
+        
+        OBDConnectionManager.shared.$MILStatus
+            .dropFirst() // Skip initial nil
+            .sink { status in
+                if let status = status, !status.monitors.isEmpty {
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+        
+        // Connect to demo
+        await OBDConnectionManager.shared.connect()
+        
+        // Wait for monitor data
+        await fulfillment(of: [expectation], timeout: 10.0)
+        
+        // Verify we got monitor data
+        let viewModel = MILStatusViewModel()
+        let monitors = viewModel.sortedSupportedMonitors
+        XCTAssertFalse(monitors.isEmpty, "Should have readiness monitors from demo")
+        
+        // Cleanup
+        PIDInterestRegistry.shared.clear(token: token)
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        cancellables.removeAll()
+    }
+    
+    func testMILStatusViewRendersWithLiveDemoData() async throws {
+        // Configure for demo mode
+        ConfigData.shared.connectionType = .demo
+        OBDConnectionManager.shared.updateConnectionDetails()
+        
+        // Explicitly register interest instead of relying on view onAppear
+        let token = PIDInterestRegistry.shared.makeToken()
+        PIDInterestRegistry.shared.replace(pids: [.mode1(.status)], for: token)
+        
+        // Set up expectation for MIL status
+        var cancellables = Set<AnyCancellable>()
+        let expectation = XCTestExpectation(description: "MIL status view should render with demo data")
+        
+        OBDConnectionManager.shared.$MILStatus
+            .dropFirst()
+            .sink { status in
+                if status != nil {
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+        
+        // Create view (no need to call onAppear now)
+        let view = MILStatusView()
+        let inspected = try view.inspect()
+        
+        // Connect to demo
+        await OBDConnectionManager.shared.connect()
+        
+        // Wait for status data
+        await fulfillment(of: [expectation], timeout: 10.0)
+        
+        // Verify view structure with data
+        let stack = try inspected.find(ViewType.NavigationStack.self)
+        let list = try stack.find(ViewType.List.self)
+        XCTAssertNotNil(list, "Should have list with MIL status data")
+        
+        // Should have sections when data is present
+        let sections = try inspected.findAll(ViewType.Section.self)
+        XCTAssertGreaterThan(sections.count, 0, "Should have sections with demo data")
+        
+        // Cleanup
+        PIDInterestRegistry.shared.clear(token: token)
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        cancellables.removeAll()
     }
 }

@@ -21,6 +21,7 @@ import XCTest
 import SwiftUI
 import ViewInspector
 import SwiftOBD2
+import Combine
 @testable import obdii
 
 @MainActor
@@ -498,5 +499,87 @@ final class GaugeListViewTests: XCTestCase {
         
         // List should support navigation even if empty initially
         XCTAssertGreaterThanOrEqual(navLinks.count, 0, "Should have navigation support")
+    }
+    
+    // MARK: - Live Demo Data Tests (explicit interest registration)
+    
+    func testGaugeListPopulatesWithLiveDemoData() async throws {
+        // Configure for demo mode
+        ConfigData.shared.connectionType = .demo
+        OBDConnectionManager.shared.updateConnectionDetails()
+        
+        // Register interest in a representative set of common gauges
+        let token = PIDInterestRegistry.shared.makeToken()
+        let interested: Set<OBDCommand> = [.mode1(.rpm), .mode1(.speed), .mode1(.coolantTemp)]
+        PIDInterestRegistry.shared.replace(pids: interested, for: token)
+        
+        // Expect pidStats to receive any of these
+        var cancellables = Set<AnyCancellable>()
+        let expectation = XCTestExpectation(description: "Gauge list should receive live stats in demo")
+        
+        OBDConnectionManager.shared.$pidStats
+            .dropFirst() // skip initial empty
+            .sink { stats in
+                if stats[.mode1(.rpm)] != nil ||
+                   stats[.mode1(.speed)] != nil ||
+                   stats[.mode1(.coolantTemp)] != nil {
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+        
+        // Connect to demo
+        await OBDConnectionManager.shared.connect()
+        
+        // Await any live stats
+        await fulfillment(of: [expectation], timeout: 10.0)
+        
+        // Cleanup
+        PIDInterestRegistry.shared.clear(token: token)
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        cancellables.removeAll()
+    }
+    
+    func testGaugeListViewRendersWithLiveDemoData() async throws {
+        // Configure for demo mode
+        ConfigData.shared.connectionType = .demo
+        OBDConnectionManager.shared.updateConnectionDetails()
+        
+        // Register interest in common gauges
+        let token = PIDInterestRegistry.shared.makeToken()
+        let interested: Set<OBDCommand> = [.mode1(.rpm), .mode1(.speed)]
+        PIDInterestRegistry.shared.replace(pids: interested, for: token)
+        
+        // Expect stats to arrive
+        var cancellables = Set<AnyCancellable>()
+        let expectation = XCTestExpectation(description: "GaugeListView should render with demo data")
+        
+        OBDConnectionManager.shared.$pidStats
+            .dropFirst()
+            .sink { stats in
+                if stats[.mode1(.rpm)] != nil || stats[.mode1(.speed)] != nil {
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+        
+        // Build the view (no need to call onAppear since we registered interest explicitly)
+        let view = GaugeListView()
+        let inspected = try view.inspect()
+        
+        // Connect to demo
+        await OBDConnectionManager.shared.connect()
+        
+        // Await stats
+        await fulfillment(of: [expectation], timeout: 10.0)
+        
+        // Verify structure still contains a List
+        let list = try inspected.find(ViewType.List.self)
+        XCTAssertNotNil(list, "List should exist once data is available")
+        
+        // Cleanup
+        PIDInterestRegistry.shared.clear(token: token)
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        cancellables.removeAll()
     }
 }

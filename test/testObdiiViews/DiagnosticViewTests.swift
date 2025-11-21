@@ -14,10 +14,28 @@ import XCTest
 import SwiftUI
 import ViewInspector
 import SwiftOBD2
+import Combine
 @testable import obdii
 
 @MainActor
 final class DiagnosticsViewTests: XCTestCase {
+    
+    // MARK: - Setup & Teardown
+    
+    override func setUp() {
+        super.setUp()
+        // Reset manager state before each test to ensure isolation
+        OBDConnectionManager.shared.troubleCodes = nil
+        // Disconnect if connected from previous test
+        OBDConnectionManager.shared.disconnect()
+    }
+    
+    override func tearDown() {
+        // Clean up manager state after each test
+        OBDConnectionManager.shared.troubleCodes = nil
+        OBDConnectionManager.shared.disconnect()
+        super.tearDown()
+    }
     
     // MARK: - Navigation Structure Tests
     
@@ -38,46 +56,29 @@ final class DiagnosticsViewTests: XCTestCase {
         // ViewInspector's navigationTitle() only works with Binding<String>, not constant strings
         // Error: "navigationTitle() is only supported with a Binding<String> parameter."
         // See: https://github.com/nalexn/ViewInspector/issues/347
-        //
-        // Our view uses: .navigationTitle("Diagnostic Codes")
-        // This is a constant string, which ViewInspector cannot extract
-        //
-        // To test the title, we would need to refactor to:
-        // @State private var title = "Diagnostic Codes"
-        // .navigationTitle(title)
         
         // Instead, verify the navigation structure is correct
         let list = try stack.find(ViewType.List.self)
         XCTAssertNotNil(list, "NavigationStack should contain a List")
-        
-        // The navigation title "Diagnostic Codes" exists in the view code but cannot be
-        // tested with ViewInspector due to the above limitation
     }
     
     // MARK: - Waiting State Tests
     
     func testWaitingStateDisplaysProgressView() throws {
         let view = DiagnosticsView()
-        
-        // Initially, viewModel.codes should be nil (waiting state)
         let list = try view.inspect().find(ViewType.List.self)
         XCTAssertNotNil(list, "Should display a List in waiting state")
-        
-        // Look for ProgressView in waiting state
         let progressView = try view.inspect().find(ViewType.ProgressView.self)
         XCTAssertNotNil(progressView, "Should display ProgressView when waiting for data")
     }
     
     func testWaitingStateDisplaysWaitingText() throws {
         let view = DiagnosticsView()
-        
-        // Find the waiting text
         let texts = try view.inspect().findAll(ViewType.Text.self)
         let waitingText = try texts.first { text in
             let string = try text.string()
             return string.contains("Waiting for data")
         }
-        
         XCTAssertNotNil(waitingText, "Should display 'Waiting for data' text in waiting state")
     }
     
@@ -85,33 +86,19 @@ final class DiagnosticsViewTests: XCTestCase {
     
     func testEmptyStateDisplaysNoCodesMessage() throws {
         _ = DiagnosticsViewModel()
-        
-        // Simulate loaded but empty state by setting codes to empty array
-        // Note: This requires making the viewModel injectable or using a test helper
         _ = DiagnosticsView()
-        
-        // We'd need to inject viewModel state here in a real scenario
-        // For now, we're documenting the expected behavior
-        
-        // When codes = [] (empty array), should show "No Diagnostic Trouble Codes"
-        // This test demonstrates the structure validation
+        // Documented expected behavior; injection would be needed to force empty state.
     }
     
     // MARK: - Sections Display Tests
     
     func testSectionsDisplayWhenCodesExist() throws {
-        // When viewModel has codes with different severities,
-        // it should display sections grouped by severity
         let view = DiagnosticsView()
-        
-        // The view should contain a List with Sections when codes exist
         let list = try view.inspect().find(ViewType.List.self)
         XCTAssertNotNil(list, "Should display a List")
     }
     
     func testListStyleIsInsetGrouped() throws {
-        // When DTCs are present, list should use insetGrouped style
-        // This is harder to test with ViewInspector but we can verify the structure
         let view = DiagnosticsView()
         let list = try view.inspect().find(ViewType.List.self)
         XCTAssertNotNil(list, "List should exist")
@@ -121,14 +108,6 @@ final class DiagnosticsViewTests: XCTestCase {
     
     func testCodeRowStructure() throws {
         let view = DiagnosticsView()
-        
-        // When codes exist, each row should have:
-        // - HStack containing Image and VStack
-        // - VStack with code text and severity text
-        
-        // We can test the structure of the codeRow function
-        // by verifying the view hierarchy
-        
         let hstacks = try view.inspect().findAll(ViewType.HStack.self)
         XCTAssertGreaterThanOrEqual(hstacks.count, 0, "Should contain HStack elements")
     }
@@ -137,8 +116,6 @@ final class DiagnosticsViewTests: XCTestCase {
     
     func testViewModelInitializesWithNilCodes() throws {
         let viewModel = DiagnosticsViewModel()
-        
-        // Initially, codes should be nil (waiting state)
         XCTAssertNil(viewModel.codes, "ViewModel should initialize with nil codes")
         XCTAssertEqual(viewModel.sections.count, 0, "ViewModel should have no sections initially")
         XCTAssertFalse(viewModel.isEmpty, "isEmpty should be false when codes is nil (waiting state)")
@@ -146,31 +123,17 @@ final class DiagnosticsViewTests: XCTestCase {
     
     func testViewModelHandlesEmptyCodes() throws {
         _ = DiagnosticsViewModel()
-        
-        // Simulate receiving empty codes
-        // This would normally come from OBDConnectionManager
-        // For testing, we'd need to inject or mock the data
-        
-        // Expected: sections = [], isEmpty = true
+        // Expected: sections = [], isEmpty = true (requires injection/mocking)
     }
     
     func testViewModelGroupsCodesBySeverity() throws {
         _ = DiagnosticsViewModel()
-        
-        // When codes with different severities are provided,
-        // they should be grouped into sections
-        
-        // Expected sections order: Critical, High, Moderate, Low
-        // Each section should only contain codes of that severity
+        // Documented; see severity ordering test for structure.
     }
     
     // MARK: - Severity Ordering Tests
     
     func testSeverityOrderisCriticalHighModerateLow() throws {
-        // Verify that sections are ordered by severity
-        // Critical > High > Moderate > Low
-        
-        // Create mock DTCs with different severities
         let criticalCode = TroubleCodeMetadata(
             code: "P0001",
             title: "Critical Issue",
@@ -179,7 +142,6 @@ final class DiagnosticsViewTests: XCTestCase {
             causes: [],
             remedies: []
         )
-        
         let lowCode = TroubleCodeMetadata(
             code: "P0002",
             title: "Low Issue",
@@ -188,40 +150,57 @@ final class DiagnosticsViewTests: XCTestCase {
             causes: [],
             remedies: []
         )
-        
-        // Test that severity enum ordering is correct
         XCTAssertTrue(criticalCode.severity.rawValue < lowCode.severity.rawValue,
                      "Critical severity should have lower raw value than low severity")
     }
     
     // MARK: - Navigation Link Tests
     
-    func testCodeRowsAreNavigationLinks() throws {
+    func testCodeRowsAreNavigationLinks() async throws {
+        // Drive the real demo pipeline so rows render and codeRow executes.
+        
+        // 1) Switch to Demo and rebuild OBDService
+        ConfigData.shared.connectionType = .demo
+        OBDConnectionManager.shared.updateConnectionDetails()
+        
+        // 2) Instantiate the view and trigger onAppear on the NavigationStack
         let view = DiagnosticsView()
+        let stack = try view.inspect().find(ViewType.NavigationStack.self)
+        try stack.callOnAppear()
         
-        // When codes exist, each code row should be wrapped in a NavigationLink
-        // The destination should be DTCDetailView
+        // 3) Wait for trouble codes to be published after connecting
+        let expectation = XCTestExpectation(description: "Demo should publish trouble codes")
+        var cancellables = Set<AnyCancellable>()
+        OBDConnectionManager.shared.$troubleCodes
+            .dropFirst() // skip initial nil
+            .sink { codes in
+                if let codes = codes, !codes.isEmpty {
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
         
-        let navigationLinks = try view.inspect().findAll(ViewType.NavigationLink.self)
+        // 4) Connect the manager (demo)
+        await OBDConnectionManager.shared.connect()
         
-        // If codes exist, there should be NavigationLinks
-        // In waiting/empty state, there won't be any
-        XCTAssertGreaterThanOrEqual(navigationLinks.count, 0,
-                                   "Should have NavigationLinks when codes exist")
+        // 5) Wait for demo emissions
+        await fulfillment(of: [expectation], timeout: 10.0)
+        
+        // 6) Now rows should exist; NavigationLinks will have been built via codeRow
+        let navLinks = try view.inspect().findAll(ViewType.NavigationLink.self)
+        XCTAssertGreaterThan(navLinks.count, 0, "Should have NavigationLinks when demo DTCs are emitted")
+        
+        // Cleanup: trigger onDisappear on the NavigationStack
+        try stack.callOnDisappear()
+        cancellables.removeAll()
     }
     
     // MARK: - Section Header Tests
     
     func testSectionHeadersDisplaySeverityTitles() throws {
-        // Section headers should display: "Critical", "High", "Moderate", "Low"
         let view = DiagnosticsView()
-        
-        // When sections exist, verify header text
         let sections = try view.inspect().findAll(ViewType.Section.self)
-        
-        // Each section should have a header with severity title
         for section in sections {
-            // Verify section has a header
             XCTAssertNoThrow(try section.header())
         }
     }
@@ -230,22 +209,14 @@ final class DiagnosticsViewTests: XCTestCase {
     
     func testWaitingRowHasAccessibilityLabel() throws {
         let view = DiagnosticsView()
-        
-        // The waiting row should have accessibility label "Waiting for data"
-        // This improves VoiceOver support
-        
-        let hStacks = try view.inspect().findAll(ViewType.HStack.self)
-        
-        // Verify accessibility is configured (structure test)
-        XCTAssertGreaterThanOrEqual(hStacks.count, 0)
+        let hstacks = try view.inspect().findAll(ViewType.HStack.self)
+        XCTAssertGreaterThanOrEqual(hstacks.count, 0)
     }
     
     // MARK: - List Content Tests
     
     func testListExistsInAllStates() throws {
         let view = DiagnosticsView()
-        
-        // All three states (waiting, empty, with codes) should display a List
         let list = try view.inspect().find(ViewType.List.self)
         XCTAssertNotNil(list, "List should exist in all view states")
     }
@@ -253,9 +224,7 @@ final class DiagnosticsViewTests: XCTestCase {
     // MARK: - Mock Data Helper Tests
     
     func testCreateMockDTCs() throws {
-        // Test helper to create mock DTCs for testing
         let mockCodes = createMockDTCs()
-        
         XCTAssertGreaterThan(mockCodes.count, 0, "Should create mock DTCs")
         XCTAssertTrue(mockCodes.contains { $0.severity == .critical },
                      "Mock codes should include critical severity")
@@ -305,17 +274,10 @@ final class DiagnosticsViewTests: XCTestCase {
     // MARK: - Mocked ViewModel Tests
     
     func testDisplaysDTCsGroupedBySeverity() {
-        // Test that DTCs are properly grouped by severity
         let mockDTCs = createMockDTCs()
-        
-        // Create ViewModel (it will initialize with nil codes initially)
         _ = DiagnosticsViewModel()
-        
-        // Verify DTCs have different severities
         let severities = Set(mockDTCs.map { $0.severity })
         XCTAssertGreaterThan(severities.count, 1, "Mock DTCs should have multiple severities")
-        
-        // Test includes critical, high, moderate, and low
         XCTAssertTrue(mockDTCs.contains { $0.severity == .critical }, "Should have critical DTC")
         XCTAssertTrue(mockDTCs.contains { $0.severity == .high }, "Should have high severity DTC")
         XCTAssertTrue(mockDTCs.contains { $0.severity == .moderate }, "Should have moderate DTC")
@@ -323,25 +285,15 @@ final class DiagnosticsViewTests: XCTestCase {
     }
     
     func testNavigationToDTCDetailWithData() throws {
-        // Test navigation to detail view works with actual DTC data
         let view = DiagnosticsView()
-        
-        // Find navigation links
         let navLinks = try view.inspect().findAll(ViewType.NavigationLink.self)
-        
-        // Navigation structure should exist even if no DTCs loaded yet
         XCTAssertGreaterThanOrEqual(navLinks.count, 0, "Should have navigation structure")
     }
     
     func testSeveritySectionOrdering() {
-        // Test that sections are ordered by severity: Critical -> High -> Moderate -> Low
         let mockDTCs = createMockDTCs()
-        
-        // Group DTCs by severity manually to verify ordering
         let grouped = Dictionary(grouping: mockDTCs, by: { $0.severity })
         let expectedOrder: [CodeSeverity] = [.critical, .high, .moderate, .low]
-        
-        // Build sections in the expected order
         let sections = expectedOrder.compactMap { severity -> DiagnosticsViewModel.Section? in
             guard let items = grouped[severity], !items.isEmpty else { return nil }
             return DiagnosticsViewModel.Section(
@@ -350,8 +302,6 @@ final class DiagnosticsViewTests: XCTestCase {
                 items: items
             )
         }
-        
-        // Verify sections are in correct order
         for (index, section) in sections.enumerated() {
             XCTAssertEqual(section.severity, expectedOrder.filter { grouped[$0]?.isEmpty == false }[index],
                           "Sections should be ordered by severity")
@@ -359,37 +309,24 @@ final class DiagnosticsViewTests: XCTestCase {
     }
     
     func testMultipleDTCsPerSeverity() {
-        // Test handling of multiple DTCs in the same severity category
         let mockDTCs = createMockDTCs()
-        
-        // Count DTCs by severity
         let grouped = Dictionary(grouping: mockDTCs, by: { $0.severity })
-        
-        // Verify we have the expected DTCs
         XCTAssertEqual(mockDTCs.count, 4, "Should have 4 mock DTCs")
-        
-        // Each severity in our mock data should have exactly 1 DTC
-        for (severity, items) in grouped {
-            XCTAssertGreaterThanOrEqual(items.count, 1, "Severity \(severity) should have at least 1 DTC")
+        for (_, items) in grouped {
+            XCTAssertGreaterThanOrEqual(items.count, 1, "Each severity should have at least 1 DTC")
         }
     }
     
     func testDTCCountDisplay() {
-        // Test that DTC counts are correctly calculated
         let mockDTCs = createMockDTCs()
-        
-        // Total count
         XCTAssertEqual(mockDTCs.count, 4, "Mock data should have 4 DTCs")
-        
-        // Count by severity
         let criticalCount = mockDTCs.filter { $0.severity == .critical }.count
         let highCount = mockDTCs.filter { $0.severity == .high }.count
         let moderateCount = mockDTCs.filter { $0.severity == .moderate }.count
         let lowCount = mockDTCs.filter { $0.severity == .low }.count
-        
-        XCTAssertEqual(criticalCount, 1, "Should have 1 critical DTC")
-        XCTAssertEqual(highCount, 1, "Should have 1 high severity DTC")
-        XCTAssertEqual(moderateCount, 1, "Should have 1 moderate DTC")
-        XCTAssertEqual(lowCount, 1, "Should have 1 low severity DTC")
+        XCTAssertEqual(criticalCount, 1)
+        XCTAssertEqual(highCount, 1)
+        XCTAssertEqual(moderateCount, 1)
+        XCTAssertEqual(lowCount, 1)
     }
 }

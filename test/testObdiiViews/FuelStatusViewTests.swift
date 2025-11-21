@@ -14,10 +14,35 @@ import XCTest
 import SwiftUI
 import ViewInspector
 import SwiftOBD2
+import Combine
 @testable import obdii
 
 @MainActor
 final class FuelStatusViewTests: XCTestCase {
+    
+    // MARK: - Setup & Teardown
+    
+    override func setUp() {
+        super.setUp()
+        // Ensure manager is in a clean, disconnected, empty state so ViewModel starts "waiting"
+        let manager = OBDConnectionManager.shared
+        manager.disconnect()
+        manager.fuelStatus = nil
+        manager.troubleCodes = nil
+        manager.MILStatus = nil
+        
+    }
+    
+    override func tearDown() {
+        // Clean up to avoid cross-test interference
+        let manager = OBDConnectionManager.shared
+        manager.disconnect()
+        manager.fuelStatus = nil
+        manager.troubleCodes = nil
+        manager.MILStatus = nil
+     
+        super.tearDown()
+    }
     
     // MARK: - Navigation Structure Tests
     
@@ -53,10 +78,10 @@ final class FuelStatusViewTests: XCTestCase {
     // MARK: - Waiting State Tests
     
     func testWaitingStateDisplaysProgressView() throws {
+        // With setUp clearing manager.fuelStatus to nil and disconnected,
+        // a fresh view should show waiting UI.
         let view = FuelStatusView()
         
-        // Initially, viewModel.status should be nil (waiting state)
-        // Look for ProgressView in waiting state
         let progressView = try view.inspect().find(ViewType.ProgressView.self)
         XCTAssertNotNil(progressView, "Should display ProgressView when waiting for data")
     }
@@ -64,7 +89,6 @@ final class FuelStatusViewTests: XCTestCase {
     func testWaitingStateDisplaysWaitingText() throws {
         let view = FuelStatusView()
         
-        // Find the waiting text
         let texts = try view.inspect().findAll(ViewType.Text.self)
         let waitingText = try texts.first { text in
             let string = try text.string()
@@ -87,9 +111,10 @@ final class FuelStatusViewTests: XCTestCase {
     // MARK: - ViewModel Integration Tests
     
     func testViewModelInitializesWithNilStatus() throws {
+        // Because setUp cleared manager.fuelStatus and disconnected,
+        // the ViewModel should start with nil status (waiting).
         let viewModel = FuelStatusViewModel()
         
-        // Initially, status should be nil (waiting state)
         XCTAssertNil(viewModel.status, "ViewModel should initialize with nil status")
         XCTAssertNil(viewModel.bank1, "Bank 1 should be nil initially")
         XCTAssertNil(viewModel.bank2, "Bank 2 should be nil initially")
@@ -143,4 +168,87 @@ final class FuelStatusViewTests: XCTestCase {
         let hStacks = try view.inspect().findAll(ViewType.HStack.self)
         XCTAssertGreaterThan(hStacks.count, 0, "Should have HStack with accessibility")
     }
+    
+    // MARK: - Live Demo Data Tests (explicit interest registration)
+    
+    func testFuelStatusWithLiveDemoData() async throws {
+        // Configure for demo mode
+        ConfigData.shared.connectionType = .demo
+        OBDConnectionManager.shared.updateConnectionDetails()
+        
+        // Explicitly register interest in fuel status
+        let token = PIDInterestRegistry.shared.makeToken()
+        PIDInterestRegistry.shared.replace(pids: [.mode1(.fuelStatus)], for: token)
+        
+        // Expectation for fuel status to arrive
+        var cancellables = Set<AnyCancellable>()
+        let expectation = XCTestExpectation(description: "Fuel status should populate from demo")
+        
+        OBDConnectionManager.shared.$fuelStatus
+            .dropFirst() // skip initial nil
+            .sink { status in
+                if status != nil {
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+        
+        // Connect to demo
+        await OBDConnectionManager.shared.connect()
+        
+        // Await fuel status
+        await fulfillment(of: [expectation], timeout: 10.0)
+        
+        // Verify we got data
+        XCTAssertNotNil(OBDConnectionManager.shared.fuelStatus, "Fuel status should be set from demo")
+        
+        // Cleanup
+        PIDInterestRegistry.shared.clear(token: token)
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        cancellables.removeAll()
+    }
+    
+    func testFuelStatusViewRendersWithLiveDemoData() async throws {
+        // Configure for demo mode
+        ConfigData.shared.connectionType = .demo
+        OBDConnectionManager.shared.updateConnectionDetails()
+        
+        // Explicitly register interest in fuel status
+        let token = PIDInterestRegistry.shared.makeToken()
+        PIDInterestRegistry.shared.replace(pids: [.mode1(.fuelStatus)], for: token)
+        
+        // Expectation for fuel status to arrive
+        var cancellables = Set<AnyCancellable>()
+        let expectation = XCTestExpectation(description: "Fuel status view should render with demo data")
+        
+        OBDConnectionManager.shared.$fuelStatus
+            .dropFirst()
+            .sink { status in
+                if status != nil {
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+        
+        // Build the view (no onAppear needed since we registered interest explicitly)
+        let view = FuelStatusView()
+        let inspected = try view.inspect()
+        
+        // Connect to demo
+        await OBDConnectionManager.shared.connect()
+        
+        // Await data
+        await fulfillment(of: [expectation], timeout: 10.0)
+        
+        // Verify structure
+        let stack = try inspected.find(ViewType.NavigationStack.self)
+        let list = try stack.find(ViewType.List.self)
+        XCTAssertNotNil(list, "List should exist once data is available")
+        
+        // Cleanup
+        PIDInterestRegistry.shared.clear(token: token)
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        cancellables.removeAll()
+    }
 }
+

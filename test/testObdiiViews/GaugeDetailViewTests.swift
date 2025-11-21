@@ -13,6 +13,7 @@ import XCTest
 import SwiftUI
 import ViewInspector
 import SwiftOBD2
+import Combine
 @testable import obdii
 
 @MainActor
@@ -142,5 +143,92 @@ final class GaugeDetailViewTests: XCTestCase {
         // CurrentValue, MinValue, MaxValue, SampleCount
         let texts = try view.inspect().findAll(ViewType.Text.self)
         XCTAssertGreaterThan(texts.count, 0, "Statistics should have accessibility identifiers")
+    }
+    
+    // MARK: - Live Demo Data Tests (explicit interest registration)
+    
+    func testGaugeDetailStatsWithLiveDemoData() async throws {
+        // Configure for demo mode
+        ConfigData.shared.connectionType = .demo
+        OBDConnectionManager.shared.updateConnectionDetails()
+        
+        // Explicitly register interest in the detail PID
+        let token = PIDInterestRegistry.shared.makeToken()
+        PIDInterestRegistry.shared.replace(pids: [testPID.pid], for: token)
+        
+        // Expect stats for the PID to arrive
+        var cancellables = Set<AnyCancellable>()
+        let expectation = XCTestExpectation(description: "Detail stats should populate from demo")
+        
+        OBDConnectionManager.shared.$pidStats
+            .dropFirst() // skip initial empty
+            .sink { stats in
+                if stats[self.testPID.pid] != nil {
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+        
+        // Connect to demo
+        await OBDConnectionManager.shared.connect()
+        
+        // Wait for stats
+        await fulfillment(of: [expectation], timeout: 10.0)
+        
+        // Verify ViewModel can see stats
+        let viewModel = GaugeDetailViewModel(pid: testPID)
+        if let stats = viewModel.stats {
+            XCTAssertEqual(stats.pid, testPID.pid, "Stats should match the PID")
+            XCTAssertGreaterThan(stats.sampleCount, 0, "Should have samples")
+        } else {
+            XCTFail("Expected stats for PID")
+        }
+        
+        // Cleanup
+        PIDInterestRegistry.shared.clear(token: token)
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        cancellables.removeAll()
+    }
+    
+    func testGaugeDetailViewRendersWithLiveDemoData() async throws {
+        // Configure for demo mode
+        ConfigData.shared.connectionType = .demo
+        OBDConnectionManager.shared.updateConnectionDetails()
+        
+        // Explicitly register interest in the detail PID
+        let token = PIDInterestRegistry.shared.makeToken()
+        PIDInterestRegistry.shared.replace(pids: [testPID.pid], for: token)
+        
+        // Expect stats to arrive
+        var cancellables = Set<AnyCancellable>()
+        let expectation = XCTestExpectation(description: "GaugeDetailView should render with demo data")
+        
+        OBDConnectionManager.shared.$pidStats
+            .dropFirst()
+            .sink { stats in
+                if stats[self.testPID.pid] != nil {
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+        
+        // Build the view (no need to call onAppear since we registered interest explicitly)
+        let view = GaugeDetailView(pid: testPID)
+        let inspected = try view.inspect()
+        
+        // Connect to demo
+        await OBDConnectionManager.shared.connect()
+        
+        // Wait for stats
+        await fulfillment(of: [expectation], timeout: 10.0)
+        
+        // Verify it still contains a List (structure check)
+        let list = try inspected.find(ViewType.List.self)
+        XCTAssertNotNil(list, "List should exist once data is available")
+        
+        // Cleanup
+        PIDInterestRegistry.shared.clear(token: token)
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        cancellables.removeAll()
     }
 }
