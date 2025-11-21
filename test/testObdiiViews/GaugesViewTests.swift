@@ -322,14 +322,16 @@ final class GaugesViewTests: XCTestCase {
         await OBDConnectionManager.shared.connect()
         await fulfillment(of: [expectation], timeout: 10.0)
         
-        // Traverse to each NavigationLink’s label to force GaugeTile.body to evaluate
-        let links = try inspected.findAll(ViewType.NavigationLink.self)
-        for link in links {
-            let label = try link.label()
-            // Access VStack and Text to force evaluation of GaugeTile
-            _ = try? label.find(ViewType.VStack.self)
-            _ = try? label.find(ViewType.Text.self)
-            _ = try? label.findAll(ViewType.Text.self) // also traverses RingGaugeView internals
+        // Navigate explicitly into LazyVGrid -> ForEach and inspect label subtree by structure (avoid .label())
+        let grid = try inspected.find(ViewType.ScrollView.self).find(ViewType.LazyVGrid.self)
+        let fe = try grid.forEach(0)
+        let count = fe.count
+        for i in 0..<count {
+            let link = try fe.navigationLink(i)
+            // Instead of .label(), dive into the label subtree by structure
+            let vstack = try link.find(ViewType.VStack.self)
+            _ = try? vstack.find(ViewType.Text.self)
+            _ = vstack.findAll(ViewType.Text.self) // Also traverses RingGaugeView internals
         }
         
         // Cleanup
@@ -338,3 +340,4 @@ final class GaugesViewTests: XCTestCase {
         cancellables.removeAll()
     }
 }
+

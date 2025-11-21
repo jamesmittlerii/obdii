@@ -376,7 +376,7 @@ final class MILStatusViewTests: XCTestCase {
         XCTAssertNotNil(list, "Should have list with MIL status data")
         
         // Should have sections when data is present
-        let sections = try inspected.findAll(ViewType.Section.self)
+        let sections = inspected.findAll(ViewType.Section.self)
         XCTAssertGreaterThan(sections.count, 0, "Should have sections with demo data")
         
         // Cleanup
