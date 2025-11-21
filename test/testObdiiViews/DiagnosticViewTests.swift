@@ -309,7 +309,7 @@ final class DiagnosticsViewTests: XCTestCase {
         let mockDTCs = createMockDTCs()
         
         // Create ViewModel (it will initialize with nil codes initially)
-        let viewModel = DiagnosticsViewModel()
+        _ = DiagnosticsViewModel()
         
         // Verify DTCs have different severities
         let severities = Set(mockDTCs.map { $0.severity })

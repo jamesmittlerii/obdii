@@ -31,49 +31,6 @@
       shouldAutocreateTestPlan = "YES">
       <Testables>
          <TestableReference
-            skipped = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "CBAD9EA824A3E3DE00989CA4"
-               BuildableName = "obdiiTests.xctest"
-               BlueprintName = "obdiiTests"
-               ReferencedContainer = "container:obdii.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
-         <TestableReference
-            skipped = "NO"
-            parallelizable = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "D45435CE2ECF6ED70028C7A2"
-               BuildableName = "testViewModels.xctest"
-               BlueprintName = "testViewModels"
-               ReferencedContainer = "container:obdii.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
-         <TestableReference
-            skipped = "NO"
-            parallelizable = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "D45435B22ECF6E120028C7A2"
-               BuildableName = "testCore.xctest"
-               BlueprintName = "testCore"
-               ReferencedContainer = "container:obdii.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
-         <TestableReference
-            skipped = "NO"
-            parallelizable = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "D48C4E522ECF62BA00D14230"
-               BuildableName = "testViews.xctest"
-               BlueprintName = "testViews"
-               ReferencedContainer = "container:obdii.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
-         <TestableReference
             skipped = "NO"
             parallelizable = "YES">
             <BuildableReference

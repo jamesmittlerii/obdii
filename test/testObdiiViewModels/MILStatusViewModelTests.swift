@@ -121,8 +121,10 @@ final class MILStatusViewModelTests: XCTestCase {
             callbackFired = true
         }
         
-        // Normally status would be set through OBDConnectionManager publisher
-        // For now, just verify the callback mechanism exists
-        XCTAssertNotNil(viewModel.onChanged, "Should support onChanged callback")
+        // Trigger the callback directly to verify it updates the flag.
+        viewModel.onChanged?()
+        
+        // Read and assert the flag so the write isn't unused.
+        XCTAssertTrue(callbackFired, "onChanged callback should set the flag when invoked")
     }
 }
