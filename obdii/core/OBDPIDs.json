@@ -532,7 +532,7 @@
     "formula": "A",
     "units": "kPa",
     "typicalRange": {
-      "min": 20,
+      "min": 0,
       "max": 250
     },
     "notes": "Boost can be derived vs baro",

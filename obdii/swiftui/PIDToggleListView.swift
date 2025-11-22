@@ -62,6 +62,11 @@ struct PIDToggleListView: View {
                 viewModel.searchText = ""
             }
         }
+        .onAppear {
+            // If a search was active when navigating back, re-present the drawer
+            if !viewModel.searchText.isEmpty {
+                isSearchPresented = true
+            }
     }
 
     // MARK: - Core List View
