@@ -13,11 +13,32 @@
 import SwiftUI
 import SwiftOBD2
 
+@MainActor
 struct GaugeListView: View {
 
     @ObservedObject private var connectionManager = OBDConnectionManager.shared
-    @State private var viewModel = GaugesViewModel()
-    @State private var interestToken = PIDInterestRegistry.shared.makeToken()
+    @State private var viewModel: GaugesViewModel
+    @State private var interestToken: UUID
+
+    // MARK: - Initializers
+
+    // Default initializer preserves existing behavior
+    @MainActor
+    init() {
+        _viewModel = State(initialValue: GaugesViewModel())
+        // Create the token on the main actor inside the initializer body
+        let token = PIDInterestRegistry.shared.makeToken()
+        _interestToken = State(initialValue: token)
+    }
+
+    // Injectable initializer for testing/mocking
+    @MainActor
+    init(viewModel: GaugesViewModel, interestToken: UUID? = nil) {
+        _viewModel = State(initialValue: viewModel)
+        // If no token provided, create one here on the main actor
+        let token = interestToken ?? PIDInterestRegistry.shared.makeToken()
+        _interestToken = State(initialValue: token)
+    }
 
     // Used to detect changes in the list of PIDs we should subscribe to.
     private var tileIdentities: [TileIdentity] {

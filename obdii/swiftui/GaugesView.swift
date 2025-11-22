@@ -19,10 +19,20 @@ import UIKit
 struct GaugesView: View {
 
     // Stable observable view model instance
-    @State private var viewModel: GaugesViewModel = GaugesViewModel()
+    @State private var viewModel: GaugesViewModel
 
-    // Demand-driven polling token
-    @State private var interestToken: UUID = PIDInterestRegistry.shared.makeToken()
+    // Demand-driven polling token (set in @MainActor init to avoid nonisolated call)
+    @State private var interestToken: UUID
+
+    // MARK: - Injectable initializer
+
+    @MainActor
+    init() {
+        _viewModel = State(initialValue: GaugesViewModel())
+        // Create the token on the main actor inside the initializer body
+        let token = PIDInterestRegistry.shared.makeToken()
+        _interestToken = State(initialValue: token)
+    }
 
     // Adaptive layout: 2–4 columns depending on device width
     private let columns = [
