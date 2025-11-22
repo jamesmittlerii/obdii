@@ -13,6 +13,7 @@ protocol PIDListProviding {
 @MainActor
 protocol PIDStatsProviding {
     var pidStatsPublisher: AnyPublisher<[OBDCommand: OBDConnectionManager.PIDStats], Never> { get }
+    func currentStats(for pid: OBDCommand) -> OBDConnectionManager.PIDStats?
 }
 
 @MainActor
@@ -28,6 +29,7 @@ extension PIDStore: PIDListProviding {
 
 extension OBDConnectionManager: PIDStatsProviding {
     var pidStatsPublisher: AnyPublisher<[OBDCommand: PIDStats], Never> { $pidStats.eraseToAnyPublisher() }
+    func currentStats(for pid: OBDCommand) -> PIDStats? { stats(for: pid) }
 }
 
 extension ConfigData: UnitsProviding {}

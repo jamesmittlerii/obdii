@@ -25,10 +25,12 @@ final class GaugesViewModelTests: XCTestCase {
     }
 
     final class MockStatsProvider: PIDStatsProviding {
-        typealias StatsType = OBDConnectionManager.PIDStats
         let subject = CurrentValueSubject<[OBDCommand: OBDConnectionManager.PIDStats], Never>([:])
         var pidStatsPublisher: AnyPublisher<[OBDCommand: OBDConnectionManager.PIDStats], Never> {
             subject.eraseToAnyPublisher()
+        }
+        func currentStats(for pid: OBDCommand) -> OBDConnectionManager.PIDStats? {
+            subject.value[pid]
         }
     }
 

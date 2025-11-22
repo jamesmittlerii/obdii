@@ -22,7 +22,8 @@ final class GaugeDetailViewModel: BaseViewModel {
     // MARK: - Dependencies
 
     let pid: OBDPID
-    private let connectionManager: OBDConnectionManager
+    private let statsProvider: PIDStatsProviding
+    private let unitsProvider: UnitsProviding
 
     // MARK: - Observable State
 
@@ -40,10 +41,15 @@ final class GaugeDetailViewModel: BaseViewModel {
 
     // MARK: - Init
 
-    init(pid: OBDPID) {
+    init(
+        pid: OBDPID,
+        statsProvider: PIDStatsProviding,
+        unitsProvider: UnitsProviding
+    ) {
         self.pid = pid
-        self.connectionManager = .shared
-        self.stats = connectionManager.pidStats[pid.pid]
+        self.statsProvider = statsProvider
+        self.unitsProvider = unitsProvider
+        self.stats = statsProvider.currentStats(for: pid.pid)
 
         super.init()
 
@@ -51,10 +57,18 @@ final class GaugeDetailViewModel: BaseViewModel {
         bindUnits()
     }
 
+     convenience init(pid: OBDPID) {
+        self.init(
+            pid: pid,
+            statsProvider: OBDConnectionManager.shared,
+            unitsProvider: ConfigData.shared
+        )
+    }
+
     // MARK: - Combining PID Stats
 
     private func bindPIDStats() {
-        connectionManager.$pidStats
+        statsProvider.pidStatsPublisher
             .map { [pid] dict in
                 dict[pid.pid]
             }
@@ -68,11 +82,11 @@ final class GaugeDetailViewModel: BaseViewModel {
     // MARK: - Units Change Handling
 
     private func bindUnits() {
-        ConfigData.shared.$units
+        unitsProvider.unitsPublisher
             .removeDuplicates()
             .sink { [unowned self] _ in
                 // Force a refresh so the UI re-renders with new unit formatting
-                self.stats = self.connectionManager.pidStats[self.pid.pid]
+                self.stats = self.statsProvider.currentStats(for: self.pid.pid)
             }
             .store(in: &cancellables)
     }
