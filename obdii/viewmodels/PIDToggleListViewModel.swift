@@ -13,6 +13,7 @@
 import Foundation
 import Observation
 import SwiftOBD2
+import Combine
 
 @MainActor
 @Observable
@@ -29,12 +30,19 @@ final class PIDToggleListViewModel {
     // MARK: - Dependencies
 
     private let store: PIDStore
+    private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Init
 
     init() {
         self.store = .shared
         self.pids = store.pids      // seed mirror
+
+        // Keep local mirror in sync with the store without mutating during view computation
+        store.$pids
+            .receive(on: RunLoop.main)
+            .sink { [weak self] in self?.pids = $0 }
+            .store(in: &cancellables)
     }
 
     // MARK: - Section Helpers
@@ -50,13 +58,11 @@ final class PIDToggleListViewModel {
     // MARK: - Filtered Lists for UI
 
     var filteredEnabled: [OBDPID] {
-        syncFromStore()
         let base = pids.filter { $0.enabled && $0.kind == .gauge }
         return applySearch(base)
     }
 
     var filteredDisabled: [OBDPID] {
-        syncFromStore()
         let base = pids.filter { !$0.enabled && $0.kind == .gauge }
         return applySearch(base)
     }
@@ -87,29 +93,13 @@ final class PIDToggleListViewModel {
     // MARK: - Intents (User Actions)
 
     func toggle(at index: Int, to isOn: Bool) {
-        syncFromStore()
         guard pids.indices.contains(index) else { return }
-
         let pid = pids[index]
-
         guard pid.enabled != isOn else { return }
-
-        store.toggle(pid)
-        pids = store.pids
+        store.toggle(pid) // subscription will update pids
     }
 
     func moveEnabled(fromOffsets offsets: IndexSet, toOffset newOffset: Int) {
-        syncFromStore()
-        store.moveEnabled(fromOffsets: offsets, toOffset: newOffset)
-        pids = store.pids
-    }
-
-    // MARK: - Mirror Synchronization
-
-    /// Refresh the local PID mirror when the store changes.
-    private func syncFromStore() {
-        if pids != store.pids {
-            pids = store.pids
-        }
+        store.moveEnabled(fromOffsets: offsets, toOffset: newOffset) // subscription will update pids
     }
 }

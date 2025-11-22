@@ -67,6 +67,7 @@ struct PIDToggleListView: View {
             if !viewModel.searchText.isEmpty {
                 isSearchPresented = true
             }
+        }
     }
 
     // MARK: - Core List View
@@ -86,6 +87,8 @@ struct PIDToggleListView: View {
                     .onMove { source, dest in
                         viewModel.moveEnabled(fromOffsets: source, toOffset: dest)
                     }
+                    // Prevent index mismatches (and flicker) when search is active
+                    .moveDisabled(!viewModel.searchText.isEmpty)
                 }
             }
 
