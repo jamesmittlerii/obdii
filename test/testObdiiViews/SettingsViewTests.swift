@@ -12,7 +12,48 @@
 import XCTest
 import SwiftUI
 import ViewInspector
+import Combine
+import SwiftOBD2
 @testable import obdii
+
+// MARK: - Mock Providers for View Testing
+
+final class MockSettingsConfigForView: SettingsConfigProviding {
+    var wifiHost: String = "192.168.0.10"
+    var wifiPort: Int = 35000
+    var autoConnectToOBD: Bool = false
+    var connectionType: ConnectionType = .bluetooth
+    var units: MeasurementUnit = .metric
+    
+    func setUnits(_ units: MeasurementUnit) {
+        self.units = units
+    }
+    
+    let unitsSubject = PassthroughSubject<MeasurementUnit, Never>()
+    let connectionTypeSubject = PassthroughSubject<String, Never>()
+    
+    var unitsPublisher: AnyPublisher<MeasurementUnit, Never> {
+        unitsSubject.eraseToAnyPublisher()
+    }
+    
+    var connectionTypePublisher: AnyPublisher<String, Never> {
+        connectionTypeSubject.eraseToAnyPublisher()
+    }
+}
+
+final class MockOBDConnectionForView: OBDConnectionControlling {
+    var connectionState: OBDConnectionManager.ConnectionState = .disconnected
+    
+    func updateConnectionDetails() {}
+    func connect() async {}
+    func disconnect() {}
+    
+    let connectionStateSubject = PassthroughSubject<OBDConnectionManager.ConnectionState, Never>()
+    
+    var connectionStatePublisher: AnyPublisher<OBDConnectionManager.ConnectionState, Never> {
+        connectionStateSubject.eraseToAnyPublisher()
+    }
+}
 
 @MainActor
 final class SettingsViewTests: XCTestCase {
@@ -134,13 +175,40 @@ final class SettingsViewTests: XCTestCase {
     
     // MARK: - ViewModel Integration Tests
     
-    func testViewModelInitialization() throws {
-        let viewModel = SettingsViewModel()
+    func testViewModelInitializationWithMocks() {
+        let mockConfig = MockSettingsConfigForView()
+        let mockConnection = MockOBDConnectionForView()
+        let viewModel = SettingsViewModel(config: mockConfig, connection: mockConnection)
         
-        // ViewModel should have default values from ConfigData
-        XCTAssertNotNil(viewModel.units, "Should have default units")
-        XCTAssertNotNil(viewModel.connectionType, "Should have default connection type")
-        XCTAssertNotNil(viewModel.connectionState, "Should have connection state")
+        // ViewModel should have values from mock providers
+        XCTAssertEqual(viewModel.wifiHost, "192.168.0.10")
+        XCTAssertEqual(viewModel.wifiPort, 35000)
+        XCTAssertEqual(viewModel.units, .metric)
+        XCTAssertEqual(viewModel.connectionType, .bluetooth)
+        XCTAssertEqual(viewModel.connectionState, .disconnected)
+    }
+    
+    func testViewModelWithDifferentConnectionStates() {
+        let mockConfig = MockSettingsConfigForView()
+        let mockConnection = MockOBDConnectionForView()
+        
+        // Test disconnected state
+        mockConnection.connectionState = .disconnected
+        var viewModel = SettingsViewModel(config: mockConfig, connection: mockConnection)
+        XCTAssertEqual(viewModel.connectionState, .disconnected)
+        XCTAssertFalse(viewModel.isConnectButtonDisabled)
+        
+        // Test connecting state
+        mockConnection.connectionState = .connecting
+        viewModel = SettingsViewModel(config: mockConfig, connection: mockConnection)
+        XCTAssertEqual(viewModel.connectionState, .connecting)
+        XCTAssertTrue(viewModel.isConnectButtonDisabled)
+        
+        // Test connected state
+        mockConnection.connectionState = .connected
+        viewModel = SettingsViewModel(config: mockConfig, connection: mockConnection)
+        XCTAssertEqual(viewModel.connectionState, .connected)
+        XCTAssertFalse(viewModel.isConnectButtonDisabled)
     }
     
     // MARK: - Accessibility Tests

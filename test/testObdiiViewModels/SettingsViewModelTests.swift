@@ -6,119 +6,246 @@
  * Unit Tests for SettingsViewModel
  *
  * Tests connection state management, WiFi configuration, unit switching,
- * debouncing logic, and integration with ConfigData and OBDConnectionManager.
+ * debouncing logic, and publisher bindings using mock providers for isolated testing.
  */
 
 import XCTest
 import SwiftOBD2
+import Combine
 @testable import obdii
+
+final class MockSettingsConfig: SettingsConfigProviding {
+    // Config data properties
+    var wifiHost: String = "192.168.0.10"
+    var wifiPort: Int = 35000
+    var autoConnectToOBD: Bool = false
+    var connectionType: ConnectionType = .bluetooth
+    var units: MeasurementUnit = .metric
+    
+    func setUnits(_ units: MeasurementUnit) {
+        self.units = units
+    }
+    
+    // Publishers
+    let unitsSubject = PassthroughSubject<MeasurementUnit, Never>()
+    let connectionTypeSubject = PassthroughSubject<String, Never>()
+    
+    var unitsPublisher: AnyPublisher<MeasurementUnit, Never> {
+        unitsSubject.eraseToAnyPublisher()
+    }
+    
+    var connectionTypePublisher: AnyPublisher<String, Never> {
+        connectionTypeSubject.eraseToAnyPublisher()
+    }
+}
+
+final class MockOBDConnection: OBDConnectionControlling {
+    // Connection manager properties
+    var connectionState: OBDConnectionManager.ConnectionState = .disconnected
+    var updateConnectionDetailsCallCount = 0
+    var connectCallCount = 0
+    var disconnectCallCount = 0
+    
+    func updateConnectionDetails() {
+        updateConnectionDetailsCallCount += 1
+    }
+    
+    func connect() async {
+        connectCallCount += 1
+    }
+    
+    func disconnect() {
+        disconnectCallCount += 1
+    }
+    
+    // Publishers
+    let connectionStateSubject = PassthroughSubject<OBDConnectionManager.ConnectionState, Never>()
+    
+    var connectionStatePublisher: AnyPublisher<OBDConnectionManager.ConnectionState, Never> {
+        connectionStateSubject.eraseToAnyPublisher()
+    }
+}
 
 @MainActor
 final class SettingsViewModelTests: XCTestCase {
     
     var viewModel: SettingsViewModel!
+    var mockConfig: MockSettingsConfig!
+    var mockConnection: MockOBDConnection!
     
     override func setUp() async throws {
-        viewModel = SettingsViewModel()
+        mockConfig = MockSettingsConfig()
+        mockConnection = MockOBDConnection()
+        viewModel = SettingsViewModel(config: mockConfig, connection: mockConnection)
     }
     
     override func tearDown() async throws {
         viewModel = nil
+        mockConfig = nil
+        mockConnection = nil
     }
     
     // MARK: - Initialization Tests
     
     func testInitialization() {
         XCTAssertNotNil(viewModel, "ViewModel should initialize")
-        XCTAssertNotNil(viewModel.units, "Units should be set from ConfigData")
-        XCTAssertNotNil(viewModel.connectionType, "Connection type should be set")
-        XCTAssertNotNil(viewModel.connectionState, "Connection state should be set")
-    }
-    
-    func testInitialValuesFromConfigData() {
-        // ViewModel should reflect ConfigData's current values
-        XCTAssertEqual(viewModel.wifiHost, ConfigData.shared.wifiHost, "WiFi host should match ConfigData")
-        XCTAssertEqual(viewModel.wifiPort, ConfigData.shared.wifiPort, "WiFi port should match ConfigData")
-        XCTAssertEqual(viewModel.autoConnectToOBD, ConfigData.shared.autoConnectToOBD, "AutoConnect should match ConfigData")
+        XCTAssertEqual(viewModel.wifiHost, "192.168.0.10")
+        XCTAssertEqual(viewModel.wifiPort, 35000)
+        XCTAssertEqual(viewModel.autoConnectToOBD, false)
+        XCTAssertEqual(viewModel.connectionType, .bluetooth)
+        XCTAssertEqual(viewModel.units, .metric)
+        XCTAssertEqual(viewModel.connectionState, .disconnected)
     }
     
     // MARK: - WiFi Configuration Tests
     
-    func testWiFiHostUpdate() {
+    func testWiFiHostUpdate() async {
         let newHost = "192.168.1.100"
         viewModel.wifiHost = newHost
         
-        // Should update the value immediately
-        XCTAssertEqual(viewModel.wifiHost, newHost, "WiFi host should update")
+        // Wait for debounce (500ms)
+        try? await Task.sleep(for: .seconds(0.6))
+        
+        XCTAssertEqual(viewModel.wifiHost, newHost)
+        XCTAssertEqual(mockConfig.wifiHost, newHost, "Config should be updated")
     }
     
-    func testWiFiPortUpdate() {
-        let newPort = 35000
+    func testWiFiPortUpdate() async {
+        let newPort = 35001
         viewModel.wifiPort = newPort
         
-        XCTAssertEqual(viewModel.wifiPort, newPort, "WiFi port should update")
+        // Wait for debounce (500ms)
+        try? await Task.sleep(for: .seconds(0.6))
+        
+        XCTAssertEqual(viewModel.wifiPort, newPort)
+        XCTAssertEqual(mockConfig.wifiPort, newPort, "Config should be updated")
+    }
+    
+    func testWiFiHostUpdateTriggersConnectionDetailsUpdateWhenWiFi() async {
+        // Set connection type to WiFi
+        viewModel.connectionType = .wifi
+        
+        mockConnection.updateConnectionDetailsCallCount = 0
+        viewModel.wifiHost = "10.0.0.1"
+        
+        try? await Task.sleep(for: .seconds(0.6))
+        
+        XCTAssertEqual(mockConnection.updateConnectionDetailsCallCount, 1, 
+                      "Should call updateConnectionDetails when WiFi is active")
+    }
+    
+    func testWiFiHostUpdateDoesNotTriggerConnectionDetailsUpdateWhenBluetooth() async {
+        // Connection type is bluetooth by default
+        XCTAssertEqual(viewModel.connectionType, .bluetooth)
+        
+        mockConnection.updateConnectionDetailsCallCount = 0
+        viewModel.wifiHost = "10.0.0.1"
+        
+        try? await Task.sleep(for: .seconds(0.6))
+        
+        XCTAssertEqual(mockConnection.updateConnectionDetailsCallCount, 0, 
+                      "Should not call updateConnectionDetails when Bluetooth is active")
     }
     
     // MARK: - Connection Type Tests
     
     func testConnectionTypeChange() {
-        let initialType = viewModel.connectionType
-        let newType: ConnectionType = (initialType == .bluetooth) ? .wifi : .bluetooth
+        viewModel.connectionType = .wifi
         
-        viewModel.connectionType = newType
-        
-        XCTAssertEqual(viewModel.connectionType, newType, "Connection type should update")
-        XCTAssertEqual(ConfigData.shared.connectionType, newType, "ConfigData should be updated")
+        XCTAssertEqual(viewModel.connectionType, .wifi)
+        XCTAssertEqual(mockConfig.connectionType, .wifi, "Config should be updated")
+        XCTAssertEqual(mockConnection.updateConnectionDetailsCallCount, 1, 
+                      "Should call updateConnectionDetails")
     }
     
     func testConnectionTypePreventsRedundantUpdates() {
-        let currentType = viewModel.connectionType
+        mockConnection.updateConnectionDetailsCallCount = 0
         
         // Set to same value
-        viewModel.connectionType = currentType
+        viewModel.connectionType = .bluetooth
         
-        // Should still be the same
-        XCTAssertEqual(viewModel.connectionType, currentType, "Redundant update should be ignored")
+        XCTAssertEqual(viewModel.connectionType, .bluetooth)
+        XCTAssertEqual(mockConnection.updateConnectionDetailsCallCount, 0, 
+                      "Should not call updateConnectionDetails for redundant update")
     }
     
     // MARK: - Units Tests
     
     func testUnitsChange() {
+        viewModel.units = .imperial
+        
+        XCTAssertEqual(viewModel.units, .imperial)
+        XCTAssertEqual(mockConfig.units, .imperial, "Config should be updated")
+    }
+    
+    func testUnitsPreventsRedundantUpdates() {
         let initialUnits = viewModel.units
-        let newUnits: MeasurementUnit = (initialUnits == .metric) ? .imperial : .metric
         
-        viewModel.units = newUnits
+        // Set to same value
+        viewModel.units = initialUnits
         
-        XCTAssertEqual(viewModel.units, newUnits, "Units should update")
+        XCTAssertEqual(viewModel.units, initialUnits, "Redundant update should be handled")
     }
     
     // MARK: - Auto-Connect Tests
     
     func testAutoConnectToggle() {
-        let initial = viewModel.autoConnectToOBD
+        viewModel.autoConnectToOBD = true
         
-        viewModel.autoConnectToOBD = !initial
-        
-        XCTAssertEqual(viewModel.autoConnectToOBD, !initial, "AutoConnect should toggle")
-        XCTAssertEqual(ConfigData.shared.autoConnectToOBD, !initial, "ConfigData should be updated")
+        XCTAssertEqual(viewModel.autoConnectToOBD, true)
+        XCTAssertEqual(mockConfig.autoConnectToOBD, true, "Config should be updated")
     }
     
     // MARK: - Connection State Tests
     
-    func testConnectionStateTracking() {
-        // ViewModel should track OBDConnectionManager's state
-        XCTAssertEqual(viewModel.connectionState, 
-                      OBDConnectionManager.shared.connectionState,
-                      "Connection state should match manager")
+    func testConnectionStateUpdateFromPublisher() async {
+        mockConnection.connectionStateSubject.send(.connecting)
+        
+        try? await Task.sleep(for: .seconds(0.1))
+        
+        XCTAssertEqual(viewModel.connectionState, .connecting)
+    }
+    
+    func testConnectionStateProgression() async {
+        mockConnection.connectionStateSubject.send(.connecting)
+        try? await Task.sleep(for: .seconds(0.1))
+        XCTAssertEqual(viewModel.connectionState, .connecting)
+        
+        mockConnection.connectionStateSubject.send(.connected)
+        try? await Task.sleep(for: .seconds(0.1))
+        XCTAssertEqual(viewModel.connectionState, .connected)
+        
+        mockConnection.connectionStateSubject.send(.disconnected)
+        try? await Task.sleep(for: .seconds(0.1))
+        XCTAssertEqual(viewModel.connectionState, .disconnected)
     }
     
     func testIsConnectButtonDisabled() {
-        // Button should be disabled when connecting
-        let isDisabled = viewModel.isConnectButtonDisabled
-        let isConnecting = (viewModel.connectionState == .connecting)
+        // Initially disconnected
+        XCTAssertFalse(viewModel.isConnectButtonDisabled)
         
-        XCTAssertEqual(isDisabled, isConnecting, 
-                      "Button should be disabled only when connecting")
+        // Simulate connecting state
+        mockConnection.connectionState = .connecting
+        viewModel = SettingsViewModel(config: mockConfig, connection: mockConnection)
+        XCTAssertTrue(viewModel.isConnectButtonDisabled)
+    }
+    
+    // MARK: - Publisher Binding Tests
+    
+    func testUnitsPublisherUpdatesViewModel() async {
+        mockConfig.unitsSubject.send(.imperial)
+        
+        try? await Task.sleep(for: .seconds(0.1))
+        
+        XCTAssertEqual(viewModel.units, .imperial)
+    }
+    
+    func testConnectionTypePublisherUpdatesViewModel() async {
+        mockConfig.connectionTypeSubject.send(ConnectionType.wifi.rawValue)
+        
+        try? await Task.sleep(for: .seconds(0.1))
+        
+        XCTAssertEqual(viewModel.connectionType, .wifi)
     }
     
     // MARK: - Number Formatter Tests
@@ -139,11 +266,44 @@ final class SettingsViewModelTests: XCTestCase {
     
     // MARK: - Connection Button Tap Tests
     
-    func testHandleConnectionButtonTapWhenDisconnected() {
-        // Can't fully test without mocking, but we can verify it doesn't crash
+    func testHandleConnectionButtonTapWhenDisconnected() async {
+        mockConnection.connectionState = .disconnected
+        viewModel = SettingsViewModel(config: mockConfig, connection: mockConnection)
+        
         viewModel.handleConnectionButtonTap()
         
-        // Should execute without errors
-        XCTAssertTrue(true, "Should handle tap without errors")
+        try? await Task.sleep(for: .seconds(0.1))
+        
+        XCTAssertEqual(mockConnection.connectCallCount, 1, "Should call connect")
+    }
+    
+    func testHandleConnectionButtonTapWhenConnected() {
+        mockConnection.connectionState = .connected
+        viewModel = SettingsViewModel(config: mockConfig, connection: mockConnection)
+        
+        viewModel.handleConnectionButtonTap()
+        
+        XCTAssertEqual(mockConnection.disconnectCallCount, 1, "Should call disconnect")
+    }
+    
+    func testHandleConnectionButtonTapWhenConnecting() {
+        mockConnection.connectionState = .connecting
+        viewModel = SettingsViewModel(config: mockConfig, connection: mockConnection)
+        
+        viewModel.handleConnectionButtonTap()
+        
+        XCTAssertEqual(mockConnection.connectCallCount, 0, "Should not call connect")
+        XCTAssertEqual(mockConnection.disconnectCallCount, 0, "Should not call disconnect")
+    }
+    
+    func testHandleConnectionButtonTapWhenFailed() async {
+        mockConnection.connectionState = .failed(NSError(domain: "Test", code: 1))
+        viewModel = SettingsViewModel(config: mockConfig, connection: mockConnection)
+        
+        viewModel.handleConnectionButtonTap()
+        
+        try? await Task.sleep(for: .seconds(0.1))
+        
+        XCTAssertEqual(mockConnection.connectCallCount, 1, "Should call connect when failed")
     }
 }

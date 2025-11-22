@@ -1,31 +1,97 @@
-/**
- * __Final Project__
- * Jim Mittler
- * 19 November 2025
- *
- * ViewModel for application settings screen
- *
- * Manages Wi-Fi connection details, connection type, auto-connect preference,
- * and measurement units. Provides two-way bindings with ConfigData and
- * OBDConnectionManager. Debounces Wi-Fi host/port changes to avoid frequent
- * reconnections. Handles connect/disconnect button tap logic.
- */
+//
+//  SettingsViewModel.swift
+//  Final Project — Refactored (Option C)
+//  Jim Mittler — 19 November 2025
+//
+//  Clean separation of concerns:
+//  - ConfigData handles settings
+//  - OBDConnectionManager handles live OBD connection state
+//
+
 import Foundation
 import Combine
 import Observation
 import SwiftOBD2
 
+// MARK: - Protocols
+// ---------------------------------------------
+
+@MainActor
+protocol SettingsConfigProviding: AnyObject {
+    var wifiHost: String { get set }
+    var wifiPort: Int { get set }
+    var autoConnectToOBD: Bool { get set }
+    var connectionType: ConnectionType { get set }
+
+    var units: MeasurementUnit { get }
+    func setUnits(_ units: MeasurementUnit)
+
+    // Publishers
+    var unitsPublisher: AnyPublisher<MeasurementUnit, Never> { get }
+    var connectionTypePublisher: AnyPublisher<String, Never> { get }
+}
+
+
+@MainActor
+protocol OBDConnectionControlling: AnyObject {
+    var connectionState: OBDConnectionManager.ConnectionState { get }
+
+    func updateConnectionDetails()
+    func connect() async
+    func disconnect()
+
+    var connectionStatePublisher: AnyPublisher<OBDConnectionManager.ConnectionState, Never> { get }
+}
+
+
+// Composite protocol exposed to SettingsViewModel
+typealias SettingsDataProviding =
+    SettingsConfigProviding & OBDConnectionControlling
+
+
+// MARK: - ConfigData Conformance
+// ---------------------------------------------
+
+extension ConfigData: SettingsConfigProviding {
+
+    var connectionTypePublisher: AnyPublisher<String, Never> {
+        $publishedConnectionType.eraseToAnyPublisher()
+    }
+
+    var unitsPublisher: AnyPublisher<MeasurementUnit, Never> {
+        $units.eraseToAnyPublisher()
+    }
+}
+
+
+// MARK: - OBDConnectionManager Conformance
+// ---------------------------------------------
+
+extension OBDConnectionManager: OBDConnectionControlling {
+
+    var connectionStatePublisher: AnyPublisher<OBDConnectionManager.ConnectionState, Never> {
+        $connectionState.eraseToAnyPublisher()
+    }
+}
+
+
+// MARK: - SettingsViewModel
+// ---------------------------------------------
+
 @MainActor
 @Observable
 final class SettingsViewModel: BaseViewModel {
+
+    // MARK: - Dependencies
+    private let config: SettingsConfigProviding
+    private let connection: OBDConnectionControlling
 
     // MARK: - Observable Properties
 
     var wifiHost: String {
         didSet {
             debounceApply(&hostDebounceTask) { [weak self] in
-                guard let self = self else { return }
-                applyWiFiHostChange(wifiHost)
+                self?.applyWiFiHostChange(self?.wifiHost ?? "")
             }
         }
     }
@@ -33,24 +99,23 @@ final class SettingsViewModel: BaseViewModel {
     var wifiPort: Int {
         didSet {
             debounceApply(&portDebounceTask) { [weak self] in
-                guard let self = self else { return }
-                applyWiFiPortChange(wifiPort)
+                self?.applyWiFiPortChange(self?.wifiPort ?? 0)
             }
         }
     }
 
     var autoConnectToOBD: Bool {
         didSet {
-            configData.autoConnectToOBD = autoConnectToOBD
+            config.autoConnectToOBD = autoConnectToOBD
             onChanged?()
         }
     }
 
     var connectionType: ConnectionType {
         didSet {
-            guard oldValue != connectionType else { return }   // <-- New guard
-            configData.connectionType = connectionType
-            connectionManager.updateConnectionDetails()
+            guard oldValue != connectionType else { return }
+            config.connectionType = connectionType
+            connection.updateConnectionDetails()
             onChanged?()
         }
     }
@@ -62,19 +127,15 @@ final class SettingsViewModel: BaseViewModel {
     var units: MeasurementUnit {
         didSet {
             guard oldValue != units else { return }
-            configData.setUnits(units)
+            config.setUnits(units)
             onChanged?()
         }
     }
 
-    // MARK: - Dependencies
-
-    private let configData: ConfigData
-    private let connectionManager: OBDConnectionManager
+    // MARK: - Combine
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Debounce Tasks
-
     private var hostDebounceTask: Task<Void, Never>?
     private var portDebounceTask: Task<Void, Never>?
 
@@ -106,35 +167,46 @@ final class SettingsViewModel: BaseViewModel {
 
     // MARK: - Init
 
-    override init() {
-        self.configData = .shared
-        self.connectionManager = .shared
+    init(
+        config: SettingsConfigProviding,
+        connection: OBDConnectionControlling
+    ) {
+        self.config = config
+        self.connection = connection
 
-        self.wifiHost = configData.wifiHost
-        self.wifiPort = configData.wifiPort
-        self.autoConnectToOBD = configData.autoConnectToOBD
-        self.connectionType = configData.connectionType
-        self.connectionState = connectionManager.connectionState
-        self.units = configData.units
+        self.wifiHost = config.wifiHost
+        self.wifiPort = config.wifiPort
+        self.autoConnectToOBD = config.autoConnectToOBD
+        self.connectionType = config.connectionType
+        self.units = config.units
+        self.connectionState = connection.connectionState
 
         super.init()
         bindExternalPublishers()
     }
 
+    @MainActor
+    override convenience init() {
+        self.init(
+            config: ConfigData.shared,
+            connection: OBDConnectionManager.shared
+        )
+    }
+
     // MARK: - Update Helpers
 
     private func applyWiFiHostChange(_ newValue: String) {
-        configData.wifiHost = newValue
+        config.wifiHost = newValue
         if connectionType == .wifi {
-            connectionManager.updateConnectionDetails()
+            connection.updateConnectionDetails()
         }
         onChanged?()
     }
 
     private func applyWiFiPortChange(_ newValue: Int) {
-        configData.wifiPort = newValue
+        config.wifiPort = newValue
         if connectionType == .wifi {
-            connectionManager.updateConnectionDetails()
+            connection.updateConnectionDetails()
         }
         onChanged?()
     }
@@ -143,26 +215,28 @@ final class SettingsViewModel: BaseViewModel {
 
     private func bindExternalPublishers() {
 
-        connectionManager.$connectionState
+        connection.connectionStatePublisher
             .removeDuplicates()
             .sink { [unowned self] newState in
                 self.connectionState = newState
             }
             .store(in: &cancellables)
 
-        configData.$units
+        config.unitsPublisher
             .removeDuplicates()
             .sink { [unowned self] newUnits in
-                self.units = newUnits
+                if self.units != newUnits {
+                    self.units = newUnits
+                }
             }
             .store(in: &cancellables)
 
-        configData.$publishedConnectionType
+        config.connectionTypePublisher
             .removeDuplicates()
             .sink { [unowned self] raw in
                 let newType = ConnectionType(rawValue: raw) ?? .bluetooth
-                if self.connectionType != newType {   // <-- prevents reconnection
-                    self.connectionType = newType      // didSet triggers updateConnectionDetails()
+                if self.connectionType != newType {
+                    self.connectionType = newType
                 }
             }
             .store(in: &cancellables)
@@ -171,15 +245,16 @@ final class SettingsViewModel: BaseViewModel {
     // MARK: - User Actions
 
     func handleConnectionButtonTap() {
-        switch connectionManager.connectionState {
+        switch connection.connectionState {
         case .connected:
-            connectionManager.disconnect()
+            connection.disconnect()
 
         case .disconnected, .failed:
-            Task { await connectionManager.connect() }
+            Task { await connection.connect() }
 
         case .connecting:
             break
         }
     }
 }
+

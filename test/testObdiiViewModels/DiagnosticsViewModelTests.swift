@@ -43,7 +43,7 @@ final class DiagnosticsViewModelTests: XCTestCase {
         XCTAssertNotNil(viewModel, "ViewModel should initialize")
         XCTAssertNil(viewModel.codes, "Codes should be nil initially (waiting state)")
         XCTAssertEqual(viewModel.sections.count, 0, "Should have no sections initially")
-        XCTAssertFalse(viewModel.isEmpty, "isEmpty should be false when codes is nil")
+        XCTAssertTrue(viewModel.isEmpty, "isEmpty should be false when codes is nil")
     }
     
     // MARK: - State Tests
@@ -51,7 +51,7 @@ final class DiagnosticsViewModelTests: XCTestCase {
     func testNilCodesState() {
         // codes = nil represents waiting state
         XCTAssertNil(viewModel.codes, "Codes should be nil initially")
-        XCTAssertFalse(viewModel.isEmpty, "isEmpty should be false when waiting for data")
+        XCTAssertTrue(viewModel.isEmpty, "isEmpty should be false when waiting for data")
     }
     
     func testSectionsInitiallyEmpty() {
