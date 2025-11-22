@@ -16,10 +16,22 @@ import Foundation
 import Observation
 
 @MainActor
+protocol FuelStatusProviding {
+    var fuelStatusPublisher: AnyPublisher<[StatusCodeMetadata?]?, Never> { get }
+}
+
+extension OBDConnectionManager: FuelStatusProviding {
+    var fuelStatusPublisher: AnyPublisher<[StatusCodeMetadata?]?, Never> {
+        $fuelStatus.eraseToAnyPublisher()
+    }
+}
+
+@MainActor
 @Observable
 final class FuelStatusViewModel: BaseViewModel {
 
     // MARK: - Published state
+    private let provider: FuelStatusProviding
     
     /// nil = waiting for first update
     /// non-nil = data received (may contain nils for missing banks)
@@ -36,15 +48,23 @@ final class FuelStatusViewModel: BaseViewModel {
 
     // MARK: - Init
 
-    override init() {
+    // Designated initializer without default argument (nonisolated-safe)
+    init(provider: FuelStatusProviding) {
+        self.provider = provider
         super.init()
 
-        OBDConnectionManager.shared.$fuelStatus
+        provider.fuelStatusPublisher
             .removeDuplicates()
             .sink { [unowned self] newValue in
                 self.status = newValue
             }
             .store(in: &cancellables)
+    }
+
+    // Convenience initializer that supplies the main-actor-isolated singleton
+    @MainActor
+    override convenience init() {
+        self.init(provider: OBDConnectionManager.shared)
     }
 
     // MARK: - Accessors

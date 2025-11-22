@@ -11,19 +11,30 @@
 
 import XCTest
 import SwiftOBD2
+import Combine
 @testable import obdii
+
+final class MockFuelStatusProvider: FuelStatusProviding {
+    let subject = PassthroughSubject<[StatusCodeMetadata?]?, Never>()
+    var fuelStatusPublisher: AnyPublisher<[StatusCodeMetadata?]?, Never> {
+        subject.eraseToAnyPublisher()
+    }
+}
 
 @MainActor
 final class FuelStatusViewModelTests: XCTestCase {
     
     var viewModel: FuelStatusViewModel!
+    var mockProvider: MockFuelStatusProvider!
     
     override func setUp() async throws {
-        viewModel = FuelStatusViewModel()
+        mockProvider = MockFuelStatusProvider()
+        viewModel = FuelStatusViewModel(provider: mockProvider)
     }
     
     override func tearDown() async throws {
         viewModel = nil
+        mockProvider = nil
     }
     
     // MARK: - Initialization Tests
@@ -49,6 +60,20 @@ final class FuelStatusViewModelTests: XCTestCase {
     }
     
     // MARK: - Bank Status Tests
+    
+    func testFuelStatusUpdates() {
+        XCTAssertNil(viewModel.status)
+
+        let testValue: [StatusCodeMetadata?] = [
+            StatusCodeMetadata(code: "OK", description: "Closed loop"),
+            nil
+        ]
+        mockProvider.subject.send(testValue)
+
+        XCTAssertEqual(viewModel.bank1?.code, "OK")
+        XCTAssertNil(viewModel.bank2)
+        XCTAssertTrue(viewModel.hasAnyStatus)
+    }
     
     func testBank1AndBank2AreIndependent() {
         // bank1 and bank2 should be independent properties

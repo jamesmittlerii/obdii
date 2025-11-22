@@ -19,35 +19,44 @@ import Combine
 @MainActor
 final class MILStatusViewTests: XCTestCase {
     
+    // MARK: - Local Mock Provider
+    
+    // Conforms to MILStatusProviding from MILStatusViewModel.swift
+    final class MockMILStatusProvider: MILStatusProviding {
+        let subject = PassthroughSubject<Status?, Never>()
+        var milStatusPublisher: AnyPublisher<Status?, Never> {
+            subject.eraseToAnyPublisher()
+        }
+    }
+    
+    // Helper to build a view with injected mock VM
+    private func makeView(with mock: MockMILStatusProvider) -> (MILStatusView, MILStatusViewModel, MockMILStatusProvider) {
+        let vm = MILStatusViewModel(provider: mock)
+        let view = MILStatusView(viewModel: vm)
+        return (view, vm, mock)
+    }
+    
     // MARK: - Setup & Teardown
     
     override func setUp() {
         super.setUp()
-        // Reset manager state before each test to ensure isolation
-        OBDConnectionManager.shared.MILStatus = nil
-        OBDConnectionManager.shared.troubleCodes = nil
-        // Disconnect if connected from previous test
-        OBDConnectionManager.shared.disconnect()
+        // No reliance on OBDConnectionManager.shared in these tests anymore.
     }
     
     override func tearDown() {
-        // Clean up manager state after each test
-        OBDConnectionManager.shared.MILStatus = nil
-        OBDConnectionManager.shared.troubleCodes = nil
-        OBDConnectionManager.shared.disconnect()
         super.tearDown()
     }
     
     // MARK: - Navigation Structure Tests
     
     func testHasNavigationStack() throws {
-        let view = MILStatusView()
+        let (view, _, _) = makeView(with: MockMILStatusProvider())
         let navigationStack = try view.inspect().find(ViewType.NavigationStack.self)
         XCTAssertNotNil(navigationStack, "MILStatusView should contain a NavigationStack")
     }
     
     func testNavigationTitle() throws {
-        let view = MILStatusView()
+        let (view, _, _) = makeView(with: MockMILStatusProvider())
         
         let stack = try view.inspect().find(ViewType.NavigationStack.self)
         XCTAssertNotNil(stack, "MILStatusView should have a NavigationStack")
@@ -62,13 +71,13 @@ final class MILStatusViewTests: XCTestCase {
     // MARK: - List Structure Tests
     
     func testContainsList() throws {
-        let view = MILStatusView()
+        let (view, _, _) = makeView(with: MockMILStatusProvider())
         let list = try view.inspect().find(ViewType.List.self)
         XCTAssertNotNil(list, "MILStatusView should contain a List")
     }
     
     func testListHasSections() throws {
-        let view = MILStatusView()
+        let (view, _, _) = makeView(with: MockMILStatusProvider())
         let sections = try view.inspect().findAll(ViewType.Section.self)
         
         // Should have at least one section (MIL Summary at minimum)
@@ -78,7 +87,7 @@ final class MILStatusViewTests: XCTestCase {
     // MARK: - Waiting State Tests
     
     func testWaitingStateDisplaysProgressView() throws {
-        let view = MILStatusView()
+        let (view, _, _) = makeView(with: MockMILStatusProvider())
         
         // Look for ProgressView in waiting state
         let progressView = try view.inspect().find(ViewType.ProgressView.self)
@@ -86,7 +95,7 @@ final class MILStatusViewTests: XCTestCase {
     }
     
     func testWaitingStateDisplaysWaitingText() throws {
-        let view = MILStatusView()
+        let (view, _, _) = makeView(with: MockMILStatusProvider())
         
         let texts = try view.inspect().findAll(ViewType.Text.self)
         let waitingText = try texts.first { text in
@@ -100,11 +109,11 @@ final class MILStatusViewTests: XCTestCase {
     // MARK: - Section Header Tests
     
     func testHasMILSectionHeader() throws {
-        let view = MILStatusView()
+        let (view, _, _) = makeView(with: MockMILStatusProvider())
         
         let sections = try view.inspect().findAll(ViewType.Section.self)
         
-        // First section should be "Malfunction Indicator Lamp"
+        // First section should have a header
         if sections.count > 0 {
             XCTAssertNoThrow(try sections[0].header(), "First section should have header")
         }
@@ -113,7 +122,7 @@ final class MILStatusViewTests: XCTestCase {
     // MARK: - MIL Status Display Tests
     
     func testMILStatusRowStructure() throws {
-        let view = MILStatusView()
+        let (view, _, _) = makeView(with: MockMILStatusProvider())
         
         // MIL status uses HStack with Image and Text
         let hStacks = try view.inspect().findAll(ViewType.HStack.self)
@@ -121,34 +130,37 @@ final class MILStatusViewTests: XCTestCase {
     }
     
     func testContainsWrenchIcon() throws {
-        let view = MILStatusView()
+        let (view, _, _) = makeView(with: MockMILStatusProvider())
         
-        // MIL status shows wrench icon
+        // MIL status may show wrench icon when data is present; structure exists
         let images = try view.inspect().findAll(ViewType.Image.self)
         XCTAssertGreaterThanOrEqual(images.count, 0, "View may contain wrench icon")
     }
     
     // MARK: - Readiness Monitors Tests
     
-    func testReadinessMonitorsSection() throws {
-        let view = MILStatusView()
+    func testReadinessMonitorsSectionAppearsWhenStatusSent() throws {
+        let mock = MockMILStatusProvider()
+        let (view, _, _) = makeView(with: mock)
         
-        // When status data exists, should have "Readiness Monitors" section
+        // Send a status with supported monitors
+        let monitors = [
+            ReadinessMonitor(name: "Misfire", supported: true, ready: true),
+            ReadinessMonitor(name: "Fuel System", supported: true, ready: false)
+        ]
+        mock.subject.send(Status(milOn: true, dtcCount: 1, monitors: monitors))
+        
+        // Now the "Readiness Monitors" section should be present
         let texts = try view.inspect().findAll(ViewType.Text.self)
-        
-        // Check if Readiness Monitors text exists in the view
-        let hasReadinessText = texts.contains { text in
-            (try? text.string().contains("Readiness")) ?? false
-        }
-        
-        // This will be true when data is loaded
-        XCTAssertTrue(hasReadinessText || texts.count > 0, "View structure should support readiness monitors")
+        let hasReadinessText = try texts.contains { try $0.string().contains("Readiness Monitors") }
+        XCTAssertTrue(hasReadinessText, "View should show Readiness Monitors section when status exists")
     }
     
     // MARK: - ViewModel Integration Tests
     
     func testViewModelInitializesWithNilStatus() throws {
-        let viewModel = MILStatusViewModel()
+        let mock = MockMILStatusProvider()
+        let viewModel = MILStatusViewModel(provider: mock)
         
         // Initially, status should be nil
         XCTAssertNil(viewModel.status, "ViewModel should initialize with nil status")
@@ -159,7 +171,7 @@ final class MILStatusViewTests: XCTestCase {
     // MARK: - Monitor Row Structure Tests
     
     func testMonitorRowsUseHStack() throws {
-        let view = MILStatusView()
+        let (view, _, _) = makeView(with: MockMILStatusProvider())
         
         // Each monitor row is an HStack
         let hStacks = try view.inspect().findAll(ViewType.HStack.self)
@@ -167,7 +179,7 @@ final class MILStatusViewTests: XCTestCase {
     }
     
     func testMonitorRowsHaveVStack() throws {
-        let view = MILStatusView()
+        let (view, _, _) = makeView(with: MockMILStatusProvider())
         
         // Monitor rows may contain VStack for text layout
         let vStacks = try view.inspect().findAll(ViewType.VStack.self)
@@ -177,7 +189,7 @@ final class MILStatusViewTests: XCTestCase {
     // MARK: - Empty State Tests
     
     func testNoMILStatusLabel() throws {
-        let view = MILStatusView()
+        let (view, _, _) = makeView(with: MockMILStatusProvider())
         
         let texts = try view.inspect().findAll(ViewType.Text.self)
         
@@ -189,7 +201,7 @@ final class MILStatusViewTests: XCTestCase {
     // MARK: - Accessibility Tests
     
     func testAccessibilityLabels() throws {
-        let view = MILStatusView()
+        let (view, _, _) = makeView(with: MockMILStatusProvider())
         
         // Elements should have accessibility labels
         let hStacks = try view.inspect().findAll(ViewType.HStack.self)
@@ -199,189 +211,67 @@ final class MILStatusViewTests: XCTestCase {
     // MARK: - Mocked ViewModel Tests
     
     func testDisplaysActiveMILStatus() {
-        // Test MIL status display
-        let viewModel = MILStatusViewModel()
+        let mock = MockMILStatusProvider()
+        let vm = MILStatusViewModel(provider: mock)
         
         // Initially nil
-        XCTAssertNil(viewModel.status, "Status should be nil initially")
+        XCTAssertNil(vm.status, "Status should be nil initially")
         
         // Test headerText property format
-        let headerText = viewModel.headerText
+        let headerText = vm.headerText
         XCTAssertNotNil(headerText, "Should have headerText")
         
         // When status is nil, should show "No MIL Status"
         XCTAssertEqual(headerText, "No MIL Status", "Should show no status message when status is nil")
+        
+        // Send a value and verify header updates
+        mock.subject.send(Status(milOn: true, dtcCount: 2, monitors: []))
+        XCTAssertEqual(vm.headerText, "MIL: On (2 DTCs)")
     }
     
-    func testRendersReadinessMonitors() {
-        // Test readiness monitor rendering
-        let viewModel = MILStatusViewModel()
+    func testRendersReadinessMonitors() throws {
+        let mock = MockMILStatusProvider()
+        let vm = MILStatusViewModel(provider: mock)
         
         // sortedSupportedMonitors should return an array
-        let monitors = viewModel.sortedSupportedMonitors
+        let monitorsEmpty = vm.sortedSupportedMonitors
+        XCTAssertTrue(monitorsEmpty.isEmpty, "Should have no monitors when status is nil")
         
-        // When status is nil, monitors should be empty
-        XCTAssertTrue(monitors.isEmpty, "Should have no monitors when status is nil")
+        // After sending status with monitors
+        let monitors = [
+            ReadinessMonitor(name: "Misfire", supported: true, ready: true),
+            ReadinessMonitor(name: "Fuel System", supported: true, ready: false)
+        ]
+        mock.subject.send(Status(milOn: false, dtcCount: 0, monitors: monitors))
         
-        // ViewModel should be able to handle monitors once status is set
-        XCTAssertNotNil(viewModel, "ViewModel should initialize properly")
+        XCTAssertFalse(vm.sortedSupportedMonitors.isEmpty, "Should have monitors after status is set")
     }
     
-    func testMonitorStateColors() {
-        // Test color coding for different monitor states
-        // In SwiftUI, green = ready, yellow = not ready, secondary = not supported
+    func testMonitorStateColorsAreRepresented() {
+        // This is a structural test; colors are chosen in the view based on ready
+        let readyColor = Color.blue
+        XCTAssertNotNil(readyColor, "Ready monitors should map to a color")
         
-        // Ready state should use green
-        let readyColor = Color.green
-        XCTAssertNotNil(readyColor, "Ready monitors should use green")
+        let notReadyColor = Color.orange
+        XCTAssertNotNil(notReadyColor, "Not ready monitors should map to a color")
         
-        // Not ready state should use yellow  
-        let notReadyColor = Color.yellow
-        XCTAssertNotNil(notReadyColor, "Not ready monitors should use yellow")
-        
-        // Not supported/unknown should use secondary
         let secondaryColor = Color.secondary
-        XCTAssertNotNil(secondaryColor, "Unknown state should use secondary color")
+        XCTAssertNotNil(secondaryColor, "Unknown/secondary style should exist")
     }
     
     func testHeaderTextFormats() {
-        // Test headerText computed property
-        let viewModel = MILStatusViewModel()
+        let mock = MockMILStatusProvider()
+        let vm = MILStatusViewModel(provider: mock)
         
         // With nil status
-        let noStatusText = viewModel.headerText
+        let noStatusText = vm.headerText
         XCTAssertEqual(noStatusText, "No MIL Status", "Should show 'No MIL Status' when status is nil")
         
-        // The headerText format when status exists would be:
-        // "MIL: On/Off (X DTC/DTCs)"
-        // This requires actual status data from OBDConnectionManager
-        XCTAssertFalse(viewModel.hasStatus, "Should not have status initially")
-    }
-    
-    // MARK: - Live Demo Data Tests
-    
-    func testMILStatusWithLiveDemoData() async throws {
-        // Configure for demo mode
-        ConfigData.shared.connectionType = .demo
-        OBDConnectionManager.shared.updateConnectionDetails()
+        // Send a status to verify formatting
+        mock.subject.send(Status(milOn: false, dtcCount: 1, monitors: []))
+        XCTAssertEqual(vm.headerText, "MIL: Off (1 DTC)")
         
-        // Explicitly register interest instead of relying on view onAppear
-        let token = PIDInterestRegistry.shared.makeToken()
-        PIDInterestRegistry.shared.replace(pids: [.mode1(.status)], for: token)
-        
-        // Set up expectation for MIL status
-        var cancellables = Set<AnyCancellable>()
-        let expectation = XCTestExpectation(description: "MIL status should populate from demo")
-        
-        OBDConnectionManager.shared.$MILStatus
-            .dropFirst() // Skip initial nil
-            .sink { status in
-                if status != nil {
-                    expectation.fulfill()
-                }
-            }
-            .store(in: &cancellables)
-        
-        // Connect to demo
-        await OBDConnectionManager.shared.connect()
-        
-        // Wait for status data
-        await fulfillment(of: [expectation], timeout: 10.0)
-        
-        // Verify we got status data
-        let viewModel = MILStatusViewModel()
-        XCTAssertTrue(viewModel.hasStatus, "Should have MIL status from demo")
-        XCTAssertNotEqual(viewModel.headerText, "No MIL Status", "Should have actual status text")
-        
-        // Cleanup
-        PIDInterestRegistry.shared.clear(token: token)
-        try? await Task.sleep(nanoseconds: 100_000_000)
-        cancellables.removeAll()
-    }
-    
-    func testReadinessMonitorsWithLiveDemoData() async throws {
-        // Configure for demo mode
-        ConfigData.shared.connectionType = .demo
-        OBDConnectionManager.shared.updateConnectionDetails()
-        
-        // Explicitly register interest instead of relying on view onAppear
-        let token = PIDInterestRegistry.shared.makeToken()
-        PIDInterestRegistry.shared.replace(pids: [.mode1(.status)], for: token)
-        
-        // Set up expectation for MIL status (which contains readiness monitors)
-        var cancellables = Set<AnyCancellable>()
-        let expectation = XCTestExpectation(description: "Readiness monitors should populate from demo")
-        
-        OBDConnectionManager.shared.$MILStatus
-            .dropFirst() // Skip initial nil
-            .sink { status in
-                if let status = status, !status.monitors.isEmpty {
-                    expectation.fulfill()
-                }
-            }
-            .store(in: &cancellables)
-        
-        // Connect to demo
-        await OBDConnectionManager.shared.connect()
-        
-        // Wait for monitor data
-        await fulfillment(of: [expectation], timeout: 10.0)
-        
-        // Verify we got monitor data
-        let viewModel = MILStatusViewModel()
-        let monitors = viewModel.sortedSupportedMonitors
-        XCTAssertFalse(monitors.isEmpty, "Should have readiness monitors from demo")
-        
-        // Cleanup
-        PIDInterestRegistry.shared.clear(token: token)
-        try? await Task.sleep(nanoseconds: 100_000_000)
-        cancellables.removeAll()
-    }
-    
-    func testMILStatusViewRendersWithLiveDemoData() async throws {
-        // Configure for demo mode
-        ConfigData.shared.connectionType = .demo
-        OBDConnectionManager.shared.updateConnectionDetails()
-        
-        // Explicitly register interest instead of relying on view onAppear
-        let token = PIDInterestRegistry.shared.makeToken()
-        PIDInterestRegistry.shared.replace(pids: [.mode1(.status)], for: token)
-        
-        // Set up expectation for MIL status
-        var cancellables = Set<AnyCancellable>()
-        let expectation = XCTestExpectation(description: "MIL status view should render with demo data")
-        
-        OBDConnectionManager.shared.$MILStatus
-            .dropFirst()
-            .sink { status in
-                if status != nil {
-                    expectation.fulfill()
-                }
-            }
-            .store(in: &cancellables)
-        
-        // Create view (no need to call onAppear now)
-        let view = MILStatusView()
-        let inspected = try view.inspect()
-        
-        // Connect to demo
-        await OBDConnectionManager.shared.connect()
-        
-        // Wait for status data
-        await fulfillment(of: [expectation], timeout: 10.0)
-        
-        // Verify view structure with data
-        let stack = try inspected.find(ViewType.NavigationStack.self)
-        let list = try stack.find(ViewType.List.self)
-        XCTAssertNotNil(list, "Should have list with MIL status data")
-        
-        // Should have sections when data is present
-        let sections = inspected.findAll(ViewType.Section.self)
-        XCTAssertGreaterThan(sections.count, 0, "Should have sections with demo data")
-        
-        // Cleanup
-        PIDInterestRegistry.shared.clear(token: token)
-        try? await Task.sleep(nanoseconds: 100_000_000)
-        cancellables.removeAll()
+        mock.subject.send(Status(milOn: true, dtcCount: 3, monitors: []))
+        XCTAssertEqual(vm.headerText, "MIL: On (3 DTCs)")
     }
 }

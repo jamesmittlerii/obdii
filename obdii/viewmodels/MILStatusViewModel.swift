@@ -15,13 +15,25 @@ import SwiftOBD2
 import Observation
 import Combine
 
+
+@MainActor
+protocol MILStatusProviding {
+    var milStatusPublisher: AnyPublisher<Status?, Never> { get }
+}
+
+extension OBDConnectionManager: MILStatusProviding {
+    var milStatusPublisher: AnyPublisher<Status?, Never> {
+        $MILStatus.eraseToAnyPublisher()
+    }
+}
+
 @MainActor
 @Observable
 final class MILStatusViewModel: BaseViewModel {
 
     // MARK: - Dependencies
 
-    private let manager: OBDConnectionManager
+    private let provider: MILStatusProviding
 
     // MARK: - Published State
 
@@ -39,25 +51,23 @@ final class MILStatusViewModel: BaseViewModel {
 
     // MARK: - Init
 
-    override init() {
-        self.manager = .shared
-        self.status = manager.MILStatus   // seed initial snapshot
+     init(provider: MILStatusProviding) {
+         self.provider = provider
+                super.init()
 
-        super.init()
-
-        bindMILStatus()
+         provider.milStatusPublisher
+                    .removeDuplicates()
+                    .sink { [unowned self] newValue in
+                        self.status = newValue
+                    }
+                    .store(in: &cancellables)
     }
 
-    // MARK: - Bindings
-
-    private func bindMILStatus() {
-        manager.$MILStatus
-            .removeDuplicates()
-            .sink { [unowned self] newValue in
-                self.status = newValue
-            }
-            .store(in: &cancellables)
+    @MainActor
+    override convenience init() {
+        self.init(provider: OBDConnectionManager.shared)
     }
+  
 
     // MARK: - Computed UI Helpers
 

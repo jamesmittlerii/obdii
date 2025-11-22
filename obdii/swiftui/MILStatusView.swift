@@ -17,7 +17,17 @@ import SwiftOBD2
 struct MILStatusView: View {
 
     // Stable view model instance
-    @State private var viewModel = MILStatusViewModel()
+    @State private var viewModel: MILStatusViewModel
+    
+    // Default initializer preserves existing app behavior
+    init() {
+        _viewModel = State(initialValue: MILStatusViewModel())
+    }
+
+    // Injectable initializer for tests or previews
+    init(viewModel: MILStatusViewModel) {
+        _viewModel = State(initialValue: viewModel)
+    }
 
     // Demand-driven PID interest
     @State private var interestToken: UUID = PIDInterestRegistry.shared.makeToken()

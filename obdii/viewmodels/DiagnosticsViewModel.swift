@@ -16,6 +16,17 @@ import SwiftOBD2
 import Observation
 
 @MainActor
+protocol DiagnosticsProviding {
+    var diagnosticsPublisher: AnyPublisher<[TroubleCodeMetadata]?, Never> { get }
+}
+
+extension OBDConnectionManager: DiagnosticsProviding {
+    var diagnosticsPublisher: AnyPublisher<[TroubleCodeMetadata]?, Never> {
+        $troubleCodes.eraseToAnyPublisher()
+    }
+}
+
+@MainActor
 @Observable
 final class DiagnosticsViewModel: BaseViewModel {
 
@@ -26,9 +37,12 @@ final class DiagnosticsViewModel: BaseViewModel {
     }
 
     // MARK: - Published State
+    private let provider: DiagnosticsProviding
 
     private(set) var codes: [TroubleCodeMetadata]? = nil {
         didSet {
+            // Rebuild sections and update isEmpty whenever codes changes
+            rebuildSections(from: codes)
             if oldValue != codes {
                 onChanged?()
             }
@@ -43,17 +57,23 @@ final class DiagnosticsViewModel: BaseViewModel {
 
     // MARK: - Init
 
-    override init() {
+    // Designated initializer without default argument (nonisolated-safe)
+    init(provider: DiagnosticsProviding) {
+        self.provider = provider
         super.init()
 
-        OBDConnectionManager.shared.$troubleCodes
+        provider.diagnosticsPublisher
             .removeDuplicates()
-            .sink { [unowned self] codes in
-                self.rebuildSections(from: codes)
-                self.codes = codes
-                
+            .sink { [unowned self] newValue in
+                self.codes = newValue
             }
             .store(in: &cancellables)
+    }
+
+    // Convenience initializer that supplies the main-actor-isolated singleton
+    @MainActor
+    override convenience init() {
+        self.init(provider: OBDConnectionManager.shared)
     }
 
     // MARK: - Section Construction

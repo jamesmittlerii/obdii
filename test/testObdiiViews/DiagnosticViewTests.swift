@@ -20,33 +20,42 @@ import Combine
 @MainActor
 final class DiagnosticsViewTests: XCTestCase {
     
+    // Local mock identical to the one in FuelStatusViewModelTests to avoid cross-file coupling
+    final class MockDiagnosticsProvider: DiagnosticsProviding {
+        let subject = PassthroughSubject<[TroubleCodeMetadata]?, Never>()
+        var diagnosticsPublisher: AnyPublisher<[TroubleCodeMetadata]?, Never> {
+            subject.eraseToAnyPublisher()
+        }
+    }
+    
+    // Helper to build a view with injected mock VM
+    private func makeView(with mock: MockDiagnosticsProvider) -> (DiagnosticsView, DiagnosticsViewModel, MockDiagnosticsProvider) {
+        let vm = DiagnosticsViewModel(provider: mock)
+        let view = DiagnosticsView(viewModel: vm)
+        return (view, vm, mock)
+    }
+    
     // MARK: - Setup & Teardown
     
     override func setUp() {
         super.setUp()
-        // Reset manager state before each test to ensure isolation
-        OBDConnectionManager.shared.troubleCodes = nil
-        // Disconnect if connected from previous test
-        OBDConnectionManager.shared.disconnect()
+        // No reliance on OBDConnectionManager.shared anymore in these tests.
     }
     
     override func tearDown() {
-        // Clean up manager state after each test
-        OBDConnectionManager.shared.troubleCodes = nil
-        OBDConnectionManager.shared.disconnect()
         super.tearDown()
     }
     
     // MARK: - Navigation Structure Tests
     
     func testHasNavigationStack() throws {
-        let view = DiagnosticsView()
+        let (view, _, _) = makeView(with: MockDiagnosticsProvider())
         let navigationStack = try view.inspect().find(ViewType.NavigationStack.self)
         XCTAssertNotNil(navigationStack, "DiagnosticsView should contain a NavigationStack")
     }
     
     func testNavigationTitle() throws {
-        let view = DiagnosticsView()
+        let (view, _, _) = makeView(with: MockDiagnosticsProvider())
         
         // Find the NavigationStack
         let stack = try view.inspect().find(ViewType.NavigationStack.self)
@@ -65,7 +74,7 @@ final class DiagnosticsViewTests: XCTestCase {
     // MARK: - Waiting State Tests
     
     func testWaitingStateDisplaysProgressView() throws {
-        let view = DiagnosticsView()
+        let (view, _, _) = makeView(with: MockDiagnosticsProvider())
         let list = try view.inspect().find(ViewType.List.self)
         XCTAssertNotNil(list, "Should display a List in waiting state")
         let progressView = try view.inspect().find(ViewType.ProgressView.self)
@@ -73,7 +82,7 @@ final class DiagnosticsViewTests: XCTestCase {
     }
     
     func testWaitingStateDisplaysWaitingText() throws {
-        let view = DiagnosticsView()
+        let (view, _, _) = makeView(with: MockDiagnosticsProvider())
         let texts = try view.inspect().findAll(ViewType.Text.self)
         let waitingText = try texts.first { text in
             let string = try text.string()
@@ -93,13 +102,13 @@ final class DiagnosticsViewTests: XCTestCase {
     // MARK: - Sections Display Tests
     
     func testSectionsDisplayWhenCodesExist() throws {
-        let view = DiagnosticsView()
+        let (view, _, _) = makeView(with: MockDiagnosticsProvider())
         let list = try view.inspect().find(ViewType.List.self)
         XCTAssertNotNil(list, "Should display a List")
     }
     
     func testListStyleIsInsetGrouped() throws {
-        let view = DiagnosticsView()
+        let (view, _, _) = makeView(with: MockDiagnosticsProvider())
         let list = try view.inspect().find(ViewType.List.self)
         XCTAssertNotNil(list, "List should exist")
     }
@@ -107,7 +116,7 @@ final class DiagnosticsViewTests: XCTestCase {
     // MARK: - Code Row Tests
     
     func testCodeRowStructure() throws {
-        let view = DiagnosticsView()
+        let (view, _, _) = makeView(with: MockDiagnosticsProvider())
         let hstacks = try view.inspect().findAll(ViewType.HStack.self)
         XCTAssertGreaterThanOrEqual(hstacks.count, 0, "Should contain HStack elements")
     }
@@ -157,48 +166,33 @@ final class DiagnosticsViewTests: XCTestCase {
     // MARK: - Navigation Link Tests
     
     func testCodeRowsAreNavigationLinks() async throws {
-        // Drive the real demo pipeline so rows render and codeRow executes.
+        // Use injected mock provider instead of OBDConnectionManager.shared
+        let mock = MockDiagnosticsProvider()
+        let (view, _, _) = makeView(with: mock)
         
-        // 1) Switch to Demo and rebuild OBDService
-        ConfigData.shared.connectionType = .demo
-        OBDConnectionManager.shared.updateConnectionDetails()
-        
-        // 2) Instantiate the view and trigger onAppear on the NavigationStack
-        let view = DiagnosticsView()
+        // Trigger onAppear on the NavigationStack
         let stack = try view.inspect().find(ViewType.NavigationStack.self)
         try stack.callOnAppear()
         
-        // 3) Wait for trouble codes to be published after connecting
-        let expectation = XCTestExpectation(description: "Demo should publish trouble codes")
-        var cancellables = Set<AnyCancellable>()
-        OBDConnectionManager.shared.$troubleCodes
-            .dropFirst() // skip initial nil
-            .sink { codes in
-                if let codes = codes, !codes.isEmpty {
-                    expectation.fulfill()
-                }
-            }
-            .store(in: &cancellables)
+        // Send mock trouble codes
+        let sampleCodes: [TroubleCodeMetadata] = [
+            TroubleCodeMetadata(code: "P0301", title: "Cylinder 1 Misfire", description: "", severity: .high, causes: [], remedies: []),
+            TroubleCodeMetadata(code: "P0420", title: "Catalyst Efficiency", description: "", severity: .moderate, causes: [], remedies: [])
+        ]
+        mock.subject.send(sampleCodes)
         
-        // 4) Connect the manager (demo)
-        await OBDConnectionManager.shared.connect()
-        
-        // 5) Wait for demo emissions
-        await fulfillment(of: [expectation], timeout: 10.0)
-        
-        // 6) Now rows should exist; NavigationLinks will have been built via codeRow
+        // Now rows should exist; NavigationLinks should be present
         let navLinks = try view.inspect().findAll(ViewType.NavigationLink.self)
-        XCTAssertGreaterThan(navLinks.count, 0, "Should have NavigationLinks when demo DTCs are emitted")
+        XCTAssertGreaterThan(navLinks.count, 0, "Should have NavigationLinks when mock DTCs are emitted")
         
         // Cleanup: trigger onDisappear on the NavigationStack
         try stack.callOnDisappear()
-        cancellables.removeAll()
     }
     
     // MARK: - Section Header Tests
     
     func testSectionHeadersDisplaySeverityTitles() throws {
-        let view = DiagnosticsView()
+        let (view, _, _) = makeView(with: MockDiagnosticsProvider())
         let sections = try view.inspect().findAll(ViewType.Section.self)
         for section in sections {
             XCTAssertNoThrow(try section.header())
@@ -208,7 +202,7 @@ final class DiagnosticsViewTests: XCTestCase {
     // MARK: - Accessibility Tests
     
     func testWaitingRowHasAccessibilityLabel() throws {
-        let view = DiagnosticsView()
+        let (view, _, _) = makeView(with: MockDiagnosticsProvider())
         let hstacks = try view.inspect().findAll(ViewType.HStack.self)
         XCTAssertGreaterThanOrEqual(hstacks.count, 0)
     }
@@ -216,7 +210,7 @@ final class DiagnosticsViewTests: XCTestCase {
     // MARK: - List Content Tests
     
     func testListExistsInAllStates() throws {
-        let view = DiagnosticsView()
+        let (view, _, _) = makeView(with: MockDiagnosticsProvider())
         let list = try view.inspect().find(ViewType.List.self)
         XCTAssertNotNil(list, "List should exist in all view states")
     }
@@ -285,7 +279,7 @@ final class DiagnosticsViewTests: XCTestCase {
     }
     
     func testNavigationToDTCDetailWithData() throws {
-        let view = DiagnosticsView()
+        let (view, _, _) = makeView(with: MockDiagnosticsProvider())
         let navLinks = try view.inspect().findAll(ViewType.NavigationLink.self)
         XCTAssertGreaterThanOrEqual(navLinks.count, 0, "Should have navigation structure")
     }

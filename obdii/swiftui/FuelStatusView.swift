@@ -16,8 +16,18 @@ import SwiftOBD2
 
 struct FuelStatusView: View {
 
-    @State private var viewModel = FuelStatusViewModel()
+    @State private var viewModel: FuelStatusViewModel
     @State private var interestToken = PIDInterestRegistry.shared.makeToken()
+
+    // Default initializer preserves existing app behavior
+    init() {
+        _viewModel = State(initialValue: FuelStatusViewModel())
+    }
+
+    // Injectable initializer for tests or previews
+    init(viewModel: FuelStatusViewModel) {
+        _viewModel = State(initialValue: viewModel)
+    }
 
     var body: some View {
         NavigationStack {

@@ -15,8 +15,19 @@ import SwiftOBD2
 
 struct DiagnosticsView: View {
 
-    @State private var viewModel = DiagnosticsViewModel()
+    @State private var viewModel: DiagnosticsViewModel
     @State private var interestToken = PIDInterestRegistry.shared.makeToken()
+    
+    // Default initializer preserves existing app behavior
+    init() {
+        _viewModel = State(initialValue: DiagnosticsViewModel())
+    }
+
+    // Injectable initializer for tests or previews
+    init(viewModel: DiagnosticsViewModel) {
+        _viewModel = State(initialValue: viewModel)
+    }
+
 
     var body: some View {
         NavigationStack {

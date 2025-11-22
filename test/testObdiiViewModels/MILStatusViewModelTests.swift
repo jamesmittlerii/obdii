@@ -11,19 +11,31 @@
 
 import XCTest
 import SwiftOBD2
+import Combine
 @testable import obdii
+
+// Local mock provider for MIL status publisher
+final class MockMILStatusProvider: MILStatusProviding {
+    let subject = PassthroughSubject<Status?, Never>()
+    var milStatusPublisher: AnyPublisher<Status?, Never> {
+        subject.eraseToAnyPublisher()
+    }
+}
 
 @MainActor
 final class MILStatusViewModelTests: XCTestCase {
     
     var viewModel: MILStatusViewModel!
+    var mockProvider: MockMILStatusProvider!
     
     override func setUp() async throws {
-        viewModel = MILStatusViewModel()
+        mockProvider = MockMILStatusProvider()
+        viewModel = MILStatusViewModel(provider: mockProvider)
     }
     
     override func tearDown() async throws {
         viewModel = nil
+        mockProvider = nil
     }
     
     // MARK: - Initialization Tests
@@ -41,6 +53,21 @@ final class MILStatusViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.hasStatus, "hasStatus should be false when status is nil")
     }
     
+    func testStatusUpdatesFromProvider() {
+        XCTAssertNil(viewModel.status)
+        let monitors: [ReadinessMonitor] = [
+            ReadinessMonitor(name: "Misfire", supported: true, ready: true),
+            ReadinessMonitor(name: "Fuel System", supported: true, ready: false)
+        ]
+        let status = Status(milOn: true, dtcCount: 2, monitors: monitors)
+        
+        mockProvider.subject.send(status)
+        
+        XCTAssertNotNil(viewModel.status, "Status should update from provider")
+        XCTAssertTrue(viewModel.hasStatus, "hasStatus should be true after update")
+        XCTAssertEqual(viewModel.headerText, "MIL: On (2 DTCs)")
+    }
+    
     func testSortedSupportedMonitorsInitiallyEmpty() {
         XCTAssertTrue(viewModel.sortedSupportedMonitors.isEmpty, 
                      "Sorted monitors should be empty initially")
@@ -49,46 +76,59 @@ final class MILStatusViewModelTests: XCTestCase {
     // MARK: - Monitor Sorting Tests
     
     func testMonitorSortingLogic() {
-        // When monitors exist, they should be sorted alphabetically
-        let monitors = viewModel.sortedSupportedMonitors
+        // Create supported monitors with varying readiness and names
+        let monitors: [ReadinessMonitor] = [
+            ReadinessMonitor(name: "B Monitor", supported: true, ready: true),
+            ReadinessMonitor(name: "A Monitor", supported: true, ready: false),
+            ReadinessMonitor(name: "C Monitor", supported: true, ready: false),
+            ReadinessMonitor(name: "Z Unsupported", supported: false, ready: true)
+        ]
+        let status = Status(milOn: false, dtcCount: 0, monitors: monitors)
+        mockProvider.subject.send(status)
         
-        if monitors.count >= 2 {
-            let names = monitors.map { $0.name }
-            let sortedNames = names.sorted()
-            XCTAssertEqual(names, sortedNames, "Monitors should be sorted alphabetically")
-        }
+        let sorted = viewModel.sortedSupportedMonitors
+        // Unsupported should be filtered out
+        XCTAssertFalse(sorted.contains { $0.name == "Z Unsupported" }, "Unsupported monitors should be filtered")
+        // Not Ready first, then Ready; within each group, alphabetical
+        let names = sorted.map { $0.name }
+        XCTAssertEqual(names, ["A Monitor", "C Monitor", "B Monitor"])
     }
     
     // MARK: - MIL Status Structure Tests
     
     func testMILStatusProperties() {
-        // MILStatus should contain MIL on/off and DTCCount
         XCTAssertNil(viewModel.status, "Status should be nil initially")
+        
+        let status = Status(milOn: false, dtcCount: 1, monitors: [])
+        mockProvider.subject.send(status)
+        
+        XCTAssertNotNil(viewModel.status)
+        XCTAssertEqual(viewModel.headerText, "MIL: Off (1 DTC)")
     }
     
     // MARK: - Monitor Structure Tests
     
     func testMonitorHasName() {
-        let monitors = viewModel.sortedSupportedMonitors
+        let monitors: [ReadinessMonitor] = [
+            ReadinessMonitor(name: "Alpha", supported: true, ready: true),
+            ReadinessMonitor(name: "Beta", supported: true, ready: false)
+        ]
+        mockProvider.subject.send(Status(milOn: true, dtcCount: 0, monitors: monitors))
         
-        for monitor in monitors {
+        for monitor in viewModel.sortedSupportedMonitors {
             XCTAssertFalse(monitor.name.isEmpty, "Monitor should have a name")
         }
     }
     
-    
     // MARK: - Header Text Formatting Tests
     
     func testHeaderTextWithNoStatus() {
-        viewModel = MILStatusViewModel()
         XCTAssertNil(viewModel.status, "Status should be nil initially")
-        
         let headerText = viewModel.headerText
         XCTAssertEqual(headerText, "No MIL Status", "Should show 'No MIL Status' when status is nil")
     }
     
     func testHeaderTextFormattingLogic() {
-        // Test the formatting logic directly by verifying the format string pattern
         let testCases: [(milOn: Bool, dtcCount: Int, expected: String)] = [
             (false, 0, "MIL: Off (0 DTCs)"),
             (true, 1, "MIL: On (1 DTC)"),
@@ -97,21 +137,17 @@ final class MILStatusViewModelTests: XCTestCase {
         ]
         
         for (milOn, dtcCount, expected) in testCases {
-            let dtcLabel = dtcCount == 1 ? "1 DTC" : "\(dtcCount) DTCs"
-            let result = "MIL: \(milOn ? "On" : "Off") (\(dtcLabel))"
-            XCTAssertEqual(result, expected, "Should format correctly for milOn=\(milOn), dtcCount=\(dtcCount)")
+            mockProvider.subject.send(Status(milOn: milOn, dtcCount: dtcCount, monitors: []))
+            XCTAssertEqual(viewModel.headerText, expected, "Should format correctly for milOn=\(milOn), dtcCount=\(dtcCount)")
         }
     }
     
     // MARK: - Sorted Monitors Tests
     
     func testSortedSupportedMonitorsIsArray() {
-        // sortedSupportedMonitors should return an array
         let monitors = viewModel.sortedSupportedMonitors
         XCTAssertNotNil(monitors, "Should return monitors array")
     }
-    
- 
     
     // MARK: - Callback Tests
     
@@ -121,10 +157,15 @@ final class MILStatusViewModelTests: XCTestCase {
             callbackFired = true
         }
         
-        // Trigger the callback directly to verify it updates the flag.
-        viewModel.onChanged?()
+        // Drive a change via the mock
+        mockProvider.subject.send(Status(milOn: true, dtcCount: 0, monitors: []))
         
-        // Read and assert the flag so the write isn't unused.
-        XCTAssertTrue(callbackFired, "onChanged callback should set the flag when invoked")
+        // Allow main actor queue to process sink
+        let exp = expectation(description: "Callback fired")
+        DispatchQueue.main.async {
+            XCTAssertTrue(callbackFired, "onChanged callback should set the flag when status updates")
+            exp.fulfill()
+        }
+        wait(for: [exp], timeout: 1.0)
     }
 }

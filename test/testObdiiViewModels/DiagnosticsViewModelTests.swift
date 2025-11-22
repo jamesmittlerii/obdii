@@ -10,20 +10,31 @@
  */
 
 import XCTest
+import Combine
 import SwiftOBD2
 @testable import obdii
+
+final class MockDiagnosticsProvider: DiagnosticsProviding {
+    let subject = PassthroughSubject<[TroubleCodeMetadata]?, Never>()
+    var diagnosticsPublisher: AnyPublisher<[TroubleCodeMetadata]?, Never> {
+        subject.eraseToAnyPublisher()
+    }
+}
 
 @MainActor
 final class DiagnosticsViewModelTests: XCTestCase {
     
     var viewModel: DiagnosticsViewModel!
+    var mockProvider: MockDiagnosticsProvider!
     
     override func setUp() async throws {
-        viewModel = DiagnosticsViewModel()
+        mockProvider = MockDiagnosticsProvider()
+        viewModel = DiagnosticsViewModel(provider: mockProvider)
     }
     
     override func tearDown() async throws {
         viewModel = nil
+        mockProvider = nil
     }
     
     // MARK: - Initialization Tests
