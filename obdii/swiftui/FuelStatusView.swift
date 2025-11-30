@@ -11,7 +11,6 @@
  * initial data load and empty state if no status codes are available.
  */
 import SwiftUI
-import Combine
 import SwiftOBD2
 
 struct FuelStatusView: View {

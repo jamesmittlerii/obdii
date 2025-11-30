@@ -10,7 +10,6 @@
  * Refreshes when units change. Deduplicates updates to prevent unnecessary
  * UI refreshes. Inherits from BaseViewModel for CarPlay integration.
  */
-import SwiftUI
 import SwiftOBD2
 import Combine
 import Observation

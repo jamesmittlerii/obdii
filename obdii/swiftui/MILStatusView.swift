@@ -11,7 +11,6 @@
  * summary and individual readiness monitors.
  */
 import SwiftUI
-import Combine
 import SwiftOBD2
 
 struct MILStatusView: View {

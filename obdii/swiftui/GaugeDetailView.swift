@@ -11,7 +11,6 @@
  */
 import SwiftUI
 import SwiftOBD2
-import Combine
 import Observation
 
 struct GaugeDetailView: View {

@@ -92,17 +92,13 @@ final class SettingsViewModel: BaseViewModel {
 
     var wifiHost: String {
         didSet {
-            debounceApply(&hostDebounceTask) { [weak self] in
-                self?.applyWiFiHostChange(self?.wifiHost ?? "")
-            }
+            wifiHostSubject.send(wifiHost)
         }
     }
 
     var wifiPort: Int {
         didSet {
-            debounceApply(&portDebounceTask) { [weak self] in
-                self?.applyWiFiPortChange(self?.wifiPort ?? 0)
-            }
+            wifiPortSubject.send(wifiPort)
         }
     }
 
@@ -136,21 +132,10 @@ final class SettingsViewModel: BaseViewModel {
 
     // MARK: - Combine
     private var cancellables = Set<AnyCancellable>()
-
-    // MARK: - Debounce Tasks
-    private var hostDebounceTask: Task<Void, Never>?
-    private var portDebounceTask: Task<Void, Never>?
-
-    private func debounceApply(
-        _ task: inout Task<Void, Never>?,
-        _ action: @escaping () -> Void
-    ) {
-        task?.cancel()
-        task = Task {
-            try? await Task.sleep(nanoseconds: 500_000_000)
-            action()
-        }
-    }
+    
+    // Subjects for debounced WiFi settings
+    private let wifiHostSubject = PassthroughSubject<String, Never>()
+    private let wifiPortSubject = PassthroughSubject<Int, Never>()
 
     // MARK: - UI Helpers
 
@@ -240,6 +225,22 @@ final class SettingsViewModel: BaseViewModel {
                 if self.connectionType != newType {
                     self.connectionType = newType
                 }
+            }
+            .store(in: &cancellables)
+        
+        // Debounced WiFi host changes
+        wifiHostSubject
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .sink { [unowned self] newHost in
+                self.applyWiFiHostChange(newHost)
+            }
+            .store(in: &cancellables)
+        
+        // Debounced WiFi port changes
+        wifiPortSubject
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .sink { [unowned self] newPort in
+                self.applyWiFiPortChange(newPort)
             }
             .store(in: &cancellables)
     }

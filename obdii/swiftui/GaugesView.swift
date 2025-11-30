@@ -11,7 +11,6 @@
  * Tapping a tile navigates to detailed statistics view.
  */
 import SwiftUI
-import Combine
 import SwiftOBD2
 import UIKit
 
