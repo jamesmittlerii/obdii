@@ -116,7 +116,7 @@ final class DiagnosticsViewTests: XCTestCase {
         let viewModel = DiagnosticsViewModel()
         XCTAssertNil(viewModel.codes, "ViewModel should initialize with nil codes")
         XCTAssertEqual(viewModel.sections.count, 0, "ViewModel should have no sections initially")
-        XCTAssertFalse(viewModel.isEmpty, "isEmpty should be false when codes is nil (waiting state)")
+        XCTAssertTrue(viewModel.sections.isEmpty, "Sections should be empty when codes is nil (waiting state)")
     }
     
     func testViewModelHandlesEmptyCodes() throws {

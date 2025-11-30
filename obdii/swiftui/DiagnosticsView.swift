@@ -56,7 +56,7 @@ struct DiagnosticsView: View {
             }
 
         // 2) Loaded but empty
-        } else if viewModel.isEmpty {
+        } else if viewModel.sections.isEmpty {
             List {
                 Text("No Diagnostic Trouble Codes")
                     .foregroundStyle(.secondary)

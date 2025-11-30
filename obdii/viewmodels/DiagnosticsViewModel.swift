@@ -41,7 +41,7 @@ final class DiagnosticsViewModel: BaseViewModel {
 
     private(set) var codes: [TroubleCodeMetadata]? = nil {
         didSet {
-            // Rebuild sections and update isEmpty whenever codes changes
+            // Rebuild sections whenever codes changes
             rebuildSections(from: codes)
             if oldValue != codes {
                 onChanged?()
@@ -49,7 +49,6 @@ final class DiagnosticsViewModel: BaseViewModel {
         }
     }
     private(set) var sections: [Section] = []
-    private(set) var isEmpty: Bool = true
 
     // MARK: - Combine
 
@@ -83,21 +82,19 @@ final class DiagnosticsViewModel: BaseViewModel {
         // Waiting for initial data
         guard let codes = codes else {
             sections = []
-            isEmpty = false
             return
         }
 
         // Loaded: empty payload
         guard !codes.isEmpty else {
             sections = []
-            isEmpty = true
             return
         }
 
         let grouped = Dictionary(grouping: codes, by: { $0.severity })
         let order: [CodeSeverity] = [.critical, .high, .moderate, .low]
 
-        let builtSections = order.compactMap { severity -> Section? in
+        sections = order.compactMap { severity -> Section? in
             guard let list = grouped[severity], !list.isEmpty else { return nil }
             return Section(
                 title: severity.displayTitle,
@@ -105,9 +102,6 @@ final class DiagnosticsViewModel: BaseViewModel {
                 items: list
             )
         }
-
-        sections = builtSections
-        isEmpty = builtSections.isEmpty
     }
 }
 

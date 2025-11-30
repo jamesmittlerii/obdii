@@ -47,7 +47,13 @@ final class GaugesViewModel: BaseViewModel {
         let measurement: MeasurementResult?
     }
 
-    private(set) var tiles: [Tile] = []
+    private(set) var tiles: [Tile] = [] {
+           didSet {
+               if oldValue != tiles {
+                   onChanged?()
+               }
+           }
+       }
 
     var isEmpty: Bool { tiles.isEmpty }
 
