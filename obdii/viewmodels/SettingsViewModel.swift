@@ -1,12 +1,14 @@
-//
-//  SettingsViewModel.swift
-//  Final Project — Refactored (Option C)
-//  Jim Mittler — 19 November 2025
-//
-//  Clean separation of concerns:
-//  - ConfigData handles settings
-//  - OBDConnectionManager handles live OBD connection state
-//
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 30 November 2025
+ *
+ * ViewModel for settings management
+ *
+ * Separate ConfigData for settings and OBDConnectionManager for live data updates
+ *
+ */
+
 
 import Foundation
 import Combine

@@ -1,3 +1,14 @@
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 30 November 2025
+ *
+ * ViewModel for our selected gauges
+ *
+ * Keeps an array of visible tiles. Update when new data arrives.
+ * 
+ */
+
 import Foundation
 import Combine
 import Observation

@@ -1,9 +1,12 @@
-//
-//  RingGaugeViewTests.swift
-//  obdii
-//
-//  Created by cisstudent on 11/20/25.
-//
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 19 November 2025
+ *
+ * Unit Tests for RingGaugeView
+ *
+ * Test drawing the ring gauges.
+ */
 
 
 /**

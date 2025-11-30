@@ -1,9 +1,13 @@
-//
-//  GaugeListViewTests.swift
-//  obdii
-//
-//  Created by cisstudent on 11/20/25.
-//
+/**
+ * __Final Project__
+ * Jim Mittler
+ * 30 November 2025
+ *
+ * ViewInspector Unit Tests for GaugeListView
+ *
+ * Tests the GaugeListlView SwiftUI structure and behavior.
+ * 
+ */
 
 /**
  * __Final Project__
