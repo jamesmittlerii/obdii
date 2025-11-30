@@ -30,6 +30,43 @@ final class GaugeDetailViewTests: XCTestCase {
         typicalRange: ValueRange(min: 0, max: 8000)
     )
     
+    // MARK: - Local Mocks compatible with app protocols
+    
+    final class MockStatsProvider: PIDStatsProviding {
+        let subject = CurrentValueSubject<[OBDCommand: OBDConnectionManager.PIDStats], Never>([:])
+        var pidStatsPublisher: AnyPublisher<[OBDCommand: OBDConnectionManager.PIDStats], Never> {
+            subject.eraseToAnyPublisher()
+        }
+        func currentStats(for pid: OBDCommand) -> OBDConnectionManager.PIDStats? {
+            subject.value[pid]
+        }
+    }
+
+    final class MockUnitsProvider: UnitsProviding {
+        let subject = CurrentValueSubject<MeasurementUnit, Never>(.metric)
+        var unitsPublisher: AnyPublisher<MeasurementUnit, Never> {
+            subject.eraseToAnyPublisher()
+        }
+    }
+    
+    // MARK: - Helpers
+    
+    @MainActor
+    private func makeVM(
+        pid: OBDPID,
+        statsProvider: MockStatsProvider,
+        unitsProvider: MockUnitsProvider
+    ) -> (GaugeDetailViewModel, MockStatsProvider, MockUnitsProvider) {
+        let vm = GaugeDetailViewModel(pid: pid, statsProvider: statsProvider, unitsProvider: unitsProvider)
+        return (vm, statsProvider, unitsProvider)
+    }
+    
+    private func pump() async {
+        await Task.yield()
+        try? await Task.sleep(nanoseconds: 20_000_000) // 20ms
+        await Task.yield()
+    }
+    
     // MARK: - List Structure Tests
     
     func testHasList() throws {
@@ -48,55 +85,99 @@ final class GaugeDetailViewTests: XCTestCase {
         XCTAssertNotNil(list, "Should have List for statistics")
     }
     
-    func testDisplaysCurrentValue() throws {
-        let view = GaugeDetailView(pid: testPID)
+    func testDisplaysCurrentValue_WithMocks() async throws {
+        // Arrange
+        let statsProvider = MockStatsProvider()
+        let unitsProvider = MockUnitsProvider()
+        let (vm, statsProviderRet, _) = makeVM(pid: testPID, statsProvider: statsProvider, unitsProvider: unitsProvider)
+        let view = GaugeDetailView(viewModel: vm)
         
-        // Should display current value with large font
-        let texts = try view.inspect().findAll(ViewType.Text.self)
-        XCTAssertGreaterThan(texts.count, 0, "Should display current value")
+        // Seed stats
+        let measurement = MeasurementResult(value: 1500.0, unit: Unit(symbol: "rpm"))
+        let stats = OBDConnectionManager.PIDStats(pid: .mode1(.rpm), measurement: measurement)
+        statsProviderRet.subject.send([.mode1(.rpm): stats])
+        await pump()
+        
+        // Act
+        let inspected = try view.inspect()
+        let list = try inspected.find(ViewType.List.self)
+        let currentSection = try list.section(0)
+        let currentText = try currentSection.text(0).string()
+        
+        // Assert
+        XCTAssertTrue(currentText.contains("1,500") || currentText.contains("1500"), "Should show formatted current value")
+        XCTAssertTrue(currentText.lowercased().contains("rpm"), "Should include unit")
     }
     
-    func testDisplaysMinMaxValues() throws {
-        let view = GaugeDetailView(pid: testPID)
+    func testDisplaysMinMaxAndSamples_WithMocks() async throws {
+        // Arrange
+        let statsProvider = MockStatsProvider()
+        let unitsProvider = MockUnitsProvider()
+        let (vm, statsProviderRet, _) = makeVM(pid: testPID, statsProvider: statsProvider, unitsProvider: unitsProvider)
+        let view = GaugeDetailView(viewModel: vm)
         
-        // Should display min and max values when stats are available
-        let texts = try view.inspect().findAll(ViewType.Text.self)
-        XCTAssertGreaterThan(texts.count, 0, "Should have text elements for display")
+        // Seed stats with evolving values to update min/max/sampleCount
+        var s = OBDConnectionManager.PIDStats(
+            pid: .mode1(.rpm),
+            measurement: MeasurementResult(value: 1500.0, unit: Unit(symbol: "rpm"))
+        )
+        s.update(with: MeasurementResult(value: 1200.0, unit: Unit(symbol: "rpm"))) // min 1200
+        s.update(with: MeasurementResult(value: 2200.0, unit: Unit(symbol: "rpm"))) // max 2200
+        statsProviderRet.subject.send([.mode1(.rpm): s])
+        await pump()
+        
+        // Act
+        let inspected = try view.inspect()
+        let list = try inspected.find(ViewType.List.self)
+        // Sections: 0=Current, 1=Statistics, 2=Maximum Range
+        let statsSection = try list.section(1)
+        let minText = try statsSection.text(0).string()
+        let maxText = try statsSection.text(1).string()
+        let samplesText = try statsSection.text(2).string()
+        
+        // Assert
+        XCTAssertTrue(minText.contains("Min:"), "Should label Min")
+        XCTAssertTrue(maxText.contains("Max:"), "Should label Max")
+        XCTAssertTrue(samplesText.contains("Samples:"), "Should label Samples")
+        
+        XCTAssertTrue(minText.contains("1,200") || minText.contains("1200"), "Min should reflect seeded min")
+        XCTAssertTrue(maxText.contains("2,200") || maxText.contains("2200"), "Max should reflect seeded max")
+        XCTAssertTrue(samplesText.contains("\(s.sampleCount)"), "Samples should reflect count")
     }
     
-    func testDisplaysSampleCount() throws {
-        let view = GaugeDetailView(pid: testPID)
+    func testPlaceholderWhenNoStats_WithMocks() throws {
+        // Arrange: VM with no stats seeded
+        let statsProvider = MockStatsProvider()
+        let unitsProvider = MockUnitsProvider()
+        let (vm, _, _) = makeVM(pid: testPID, statsProvider: statsProvider, unitsProvider: unitsProvider)
+        let view = GaugeDetailView(viewModel: vm)
         
-        // Should display sample count
-        let texts = try view.inspect().findAll(ViewType.Text.self)
+        // Act
+        let inspected = try view.inspect()
+        let list = try inspected.find(ViewType.List.self)
+        let currentSection = try list.section(0)
+        let text = try currentSection.text(0).string()
         
-        // Sample count text exists
-        XCTAssertGreaterThan(texts.count, 0, "Should display sample count")
+        // Assert: "— <units>"
+        XCTAssertTrue(text.contains("—"), "Should show placeholder dash")
+        XCTAssertTrue(text.uppercased().contains("RPM"), "Should show units in placeholder")
     }
     
-    // MARK: - Chart Section Tests
+    // MARK: - Chart/Sections/Header presence
     
     func testHasSections() throws {
         let view = GaugeDetailView(pid: testPID)
-        
-        // Should contain sections: Current, Statistics, Maximum Range
         let sections = try view.inspect().findAll(ViewType.Section.self)
         XCTAssertGreaterThan(sections.count, 0, "Should have sections")
     }
     
-    // MARK: - Section Headers Tests
-    
     func testHasSectionHeaders() throws {
         let view = GaugeDetailView(pid: testPID)
-        
-        // Should have "Statistics" and "History" headers
         let texts = try view.inspect().findAll(ViewType.Text.self)
-        
         let hasHeaderText = texts.contains { text in
             guard let string = try? text.string() else { return false }
-            return string.contains("Statistics") || string.contains("History")
+            return string.contains("Statistics") || string.contains("History") || string.contains("Maximum Range") || string.contains("Current")
         }
-        
         XCTAssertTrue(hasHeaderText || texts.count > 0, "Should have section headers")
     }
     
@@ -104,21 +185,13 @@ final class GaugeDetailViewTests: XCTestCase {
     
     func testViewModelInitialization() throws {
         let viewModel = GaugeDetailViewModel(pid: testPID)
-        
-        // ViewModel should initialize with the PID
         XCTAssertEqual(viewModel.pid.id, testPID.id, "ViewModel should store the PID")
-        
-        // Initially stats may be nil (no data collected yet)
-        // This is acceptable - stats are populated when data arrives
     }
     
     // MARK: - Formatting Tests
     
     func testValueFormatting() throws {
         let viewModel = GaugeDetailViewModel(pid: testPID)
-        
-        // Stats should be optional (nil if no data received yet)
-        // When stats are available, they contain latest, min, max, sampleCount
         XCTAssertTrue(viewModel.stats == nil || viewModel.stats != nil, "Stats can be nil or contain values")
     }
     
@@ -126,43 +199,19 @@ final class GaugeDetailViewTests: XCTestCase {
     
     func testUsesGaugeNameAsTitle() throws {
         let view = GaugeDetailView(pid: testPID)
-        
-        // Title should be the gauge name
-        // ViewInspector limitation for constant titles: https://github.com/nalexn/ViewInspector/issues/347
-        
         let list = try view.inspect().find(ViewType.List.self)
         XCTAssertNotNil(list, "View structure should be correct")
     }
     
-    // MARK: - Accessibility Tests
+    // MARK: - Accessibility Tests (structure presence)
     
     func testStatisticsHaveAccessibilityIdentifiers() throws {
         let view = GaugeDetailView(pid: testPID)
-        
-        // Statistics elements should have identifiers
-        // CurrentValue, MinValue, MaxValue, SampleCount
         let texts = try view.inspect().findAll(ViewType.Text.self)
         XCTAssertGreaterThan(texts.count, 0, "Statistics should have accessibility identifiers")
     }
     
     // MARK: - Mocked Data Tests (use mocks instead of live connection)
-    
-    final class MockStatsProvider: PIDStatsProviding {
-        let subject = CurrentValueSubject<[OBDCommand: OBDConnectionManager.PIDStats], Never>([:])
-        var pidStatsPublisher: AnyPublisher<[OBDCommand: OBDConnectionManager.PIDStats], Never> {
-            subject.eraseToAnyPublisher()
-        }
-        func currentStats(for pid: OBDCommand) -> OBDConnectionManager.PIDStats? {
-            subject.value[pid]
-        }
-    }
-
-    final class MockUnitsProvider: UnitsProviding {
-        let subject = CurrentValueSubject<MeasurementUnit, Never>(.metric)
-        var unitsPublisher: AnyPublisher<MeasurementUnit, Never> {
-            subject.eraseToAnyPublisher()
-        }
-    }
     
     func testGaugeDetailStatsWithMockData() async throws {
         // Arrange mocks
@@ -214,5 +263,36 @@ final class GaugeDetailViewTests: XCTestCase {
         // Assert: refresh happened but value is preserved
         XCTAssertEqual(before?.latest.value, after?.latest.value, "Unit change should refresh snapshot but preserve latest value")
     }
+    
+    // MARK: - UI with mocks: full path
+    
+    func testUIRendersAllSectionsWithMockedStats() async throws {
+        // Arrange
+        let statsProvider = MockStatsProvider()
+        let unitsProvider = MockUnitsProvider()
+        let (vm, statsProviderRet, _) = makeVM(pid: testPID, statsProvider: statsProvider, unitsProvider: unitsProvider)
+        let view = GaugeDetailView(viewModel: vm)
+        
+        var s = OBDConnectionManager.PIDStats(
+            pid: .mode1(.rpm),
+            measurement: MeasurementResult(value: 2000.0, unit: Unit(symbol: "rpm"))
+        )
+        s.update(with: MeasurementResult(value: 1800.0, unit: Unit(symbol: "rpm")))
+        s.update(with: MeasurementResult(value: 2600.0, unit: Unit(symbol: "rpm")))
+        statsProviderRet.subject.send([.mode1(.rpm): s])
+        await pump()
+        
+        // Act
+        let inspected = try view.inspect()
+        let list = try inspected.find(ViewType.List.self)
+        
+        // Sections present
+        XCTAssertNoThrow(try list.section(0))
+        XCTAssertNoThrow(try list.section(1))
+        XCTAssertNoThrow(try list.section(2))
+        
+        // Maximum Range text is non-empty
+        let rangeText = try list.section(2).text(0).string()
+        XCTAssertFalse(rangeText.isEmpty, "Maximum Range should be present")
+    }
 }
-
