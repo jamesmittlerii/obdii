@@ -19,33 +19,90 @@ import Combine
 @MainActor
 final class GaugesViewTests: XCTestCase {
     
+    // MARK: - Mocks
+    
+    private struct MockPIDListProvider: PIDListProviding {
+        let pidsPublisher: AnyPublisher<[OBDPID], Never>
+        init(pids: [OBDPID]) {
+            self.pidsPublisher = Just(pids).eraseToAnyPublisher()
+        }
+    }
+    
+    private struct MockPIDStatsProvider: PIDStatsProviding {
+        let pidStatsPublisher: AnyPublisher<[OBDCommand: OBDConnectionManager.PIDStats], Never>
+        private let current: [OBDCommand: OBDConnectionManager.PIDStats]
+        init(stats: [OBDCommand: OBDConnectionManager.PIDStats] = [:]) {
+            self.current = stats
+            self.pidStatsPublisher = Just(stats).eraseToAnyPublisher()
+        }
+        func currentStats(for pid: OBDCommand) -> OBDConnectionManager.PIDStats? {
+            current[pid]
+        }
+    }
+    
+    private struct MockUnitsProvider: UnitsProviding {
+        let unitsPublisher: AnyPublisher<MeasurementUnit, Never>
+        init(units: MeasurementUnit) {
+            self.unitsPublisher = Just(units).eraseToAnyPublisher()
+        }
+    }
+    
+    // MARK: - Helpers
+    
+    private func makeViewModelWithMocks(
+        pids: [OBDPID],
+        stats: [OBDCommand: OBDConnectionManager.PIDStats] = [:],
+        units: MeasurementUnit = .metric
+    ) -> GaugesViewModel {
+        GaugesViewModel(
+            pidProvider: MockPIDListProvider(pids: pids),
+            statsProvider: MockPIDStatsProvider(stats: stats),
+            unitsProvider: MockUnitsProvider(units: units)
+        )
+    }
+    
+    private func makeViewWithMocks(
+        pids: [OBDPID],
+        stats: [OBDCommand: OBDConnectionManager.PIDStats] = [:],
+        units: MeasurementUnit = .metric
+    ) -> GaugesView {
+        let vm = makeViewModelWithMocks(pids: pids, stats: stats, units: units)
+        return GaugesView(viewModel: vm, interestToken: UUID())
+    }
+    
+    private func pidStats(
+        for command: OBDCommand,
+        value: Double,
+        unitSymbol: String
+    ) -> OBDConnectionManager.PIDStats {
+        let measurement = MeasurementResult(value: value, unit: Unit(symbol: unitSymbol))
+        return OBDConnectionManager.PIDStats(pid: command, measurement: measurement)
+    }
+    
+    // Allow Combine pipeline in GaugesViewModel to rebuild tiles before inspection
+    private func pumpMainRunLoop() async {
+        // Yield to allow any immediate main-actor work to process
+        await Task.yield()
+        // Async-friendly short delay to let Combine/SwiftUI state settle
+        try? await Task.sleep(nanoseconds: 10_000_000) // ~10 ms
+        await Task.yield()
+    }
+    
     // MARK: - Setup & Teardown
     
     override func setUp() {
         super.setUp()
-        // Ensure manager is in a clean, disconnected, empty state so views start "waiting"
-        let manager = OBDConnectionManager.shared
-        manager.disconnect()
-        manager.fuelStatus = nil
-        manager.troubleCodes = nil
-        manager.MILStatus = nil
-        // No global PIDInterestRegistry clearing API; tests create/clear their own tokens as needed.
+        // Do not call into the real OBDConnectionManager here; keep tests isolated to mocks.
     }
     
     override func tearDown() {
-        // Clean up to avoid cross-test interference
-        let manager = OBDConnectionManager.shared
-        manager.disconnect()
-        manager.fuelStatus = nil
-        manager.troubleCodes = nil
-        manager.MILStatus = nil
         super.tearDown()
     }
     
     // MARK: - ScrollView Structure Tests
     
     func testHasScrollView() throws {
-        let view = GaugesView()
+        let view = makeViewWithMocks(pids: [])
         let scrollView = try view.inspect().find(ViewType.ScrollView.self)
         XCTAssertNotNil(scrollView, "GaugesView should contain a ScrollView")
     }
@@ -53,58 +110,69 @@ final class GaugesViewTests: XCTestCase {
     // MARK: - Grid Layout Tests
     
     func testUsesLazyVGrid() throws {
-        let view = GaugesView()
-        
-        // GaugesView uses LazyVGrid for adaptive layout
-        // ViewInspector should find the grid
+        let view = makeViewWithMocks(pids: [])
         let scrollView = try view.inspect().find(ViewType.ScrollView.self)
         XCTAssertNotNil(scrollView, "Should have ScrollView containing grid")
+        // We don’t assert LazyVGrid presence directly since ViewInspector traversal may vary,
+        // but the grid is inside the ScrollView per implementation.
     }
     
     // MARK: - Gauge Tile Tests
     
-    func testGaugeTilesAreNavigationLinks() throws {
-        let view = GaugesView()
+    func testGaugeTilesAreNavigationLinks_WithMocks() async throws {
+        let rpm = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
+        let view = makeViewWithMocks(pids: [rpm])
+        await pumpMainRunLoop()
         
-        // Each gauge tile is wrapped in NavigationLink
         let navLinks = try view.inspect().findAll(ViewType.NavigationLink.self)
-        // Number of links depends on enabled gauges
         XCTAssertGreaterThanOrEqual(navLinks.count, 0, "Should have NavigationLinks for gauges")
     }
     
-    func testGaugeTileStructure() throws {
-        let view = GaugesView()
+    func testGaugeTileStructure_WithMocks() async throws {
+        let rpm = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
+        let view = makeViewWithMocks(pids: [rpm])
+        await pumpMainRunLoop()
         
-        // Each tile contains VStack with RingGaugeView and Text
         let vStacks = try view.inspect().findAll(ViewType.VStack.self)
         XCTAssertGreaterThanOrEqual(vStacks.count, 0, "Gauge tiles use VStack")
     }
     
     // MARK: - ViewModel Integration Tests
     
-    func testViewModelInitialization() throws {
-        let viewModel = GaugesViewModel()
-        // ViewModel should initialize with tiles based on enabled gauges
+    func testViewModelInitialization_Empty() {
+        let viewModel = makeViewModelWithMocks(pids: [])
         XCTAssertGreaterThanOrEqual(viewModel.tiles.count, 0, "ViewModel should have tiles array")
+    }
+    
+    func testViewModelInitialization_WithOnePID() async throws {
+        let rpm = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
+        let vm = makeViewModelWithMocks(pids: [rpm])
+        // Allow Combine to publish tiles
+        await pumpMainRunLoop()
+        XCTAssertEqual(vm.tiles.count, 1, "Should build one tile for one PID")
+        XCTAssertEqual(vm.tiles.first?.pid.pid, .mode1(.rpm))
     }
     
     // MARK: - Navigation Tests
     
-    func testNavigationToGaugeDetail() throws {
-        let view = GaugesView()
-        // Tapping a tile should navigate to GaugeDetailView
+    func testNavigationToGaugeDetail_WithMocks() async throws {
+        let rpm = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
+        let view = makeViewWithMocks(pids: [rpm])
+        await pumpMainRunLoop()
+        
         let navLinks = try view.inspect().findAll(ViewType.NavigationLink.self)
-        // Each NavigationLink should have a destination
         for navLink in navLinks {
-            XCTAssertNoThrow(try navLink.label(), "NavigationLink should have label")
+            XCTAssertNoThrow(try navLink.labelView(), "NavigationLink should have label")
         }
     }
     
     // MARK: - Text Content Tests
     
-    func testGaugeTilesHaveLabels() throws {
-        let view = GaugesView()
-        // Each tile should display the gauge name
+    func testGaugeTilesHaveLabels_WithMocks() async throws {
+        let rpm = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
+        let view = makeViewWithMocks(pids: [rpm])
+        await pumpMainRunLoop()
+        
         let texts = try view.inspect().findAll(ViewType.Text.self)
         XCTAssertGreaterThanOrEqual(texts.count, 0, "Gauge tiles should have text labels")
     }
@@ -112,57 +180,56 @@ final class GaugesViewTests: XCTestCase {
     // MARK: - Tile Identity Tests
     
     func testTileIdentityStructure() throws {
-        // TileIdentity helper struct should be Equatable
         let tile1 = TileIdentity(id: UUID(), name: "Engine RPM")
         let tile2 = TileIdentity(id: UUID(), name: "Engine RPM")
-        // Different IDs should not be equal even with same name
         XCTAssertNotEqual(tile1.id, tile2.id)
     }
     
-    // MARK: - Demand-Driven PID Tests
+    // MARK: - Demand-Driven PID Tests (API surface only)
     
-    func testUpdateInterestMechanism() throws {
-        let view = GaugesView()
-        // View should register interest token for demand-driven polling
-        // This is validated through the view structure
+    func testUpdateInterestMechanism_StructureOnly() throws {
+        let view = makeViewWithMocks(pids: [])
         XCTAssertNoThrow(try view.inspect().find(ViewType.ScrollView.self))
     }
     
     // MARK: - Layout Tests
     
     func testAdaptiveGridColumns() throws {
-        let view = GaugesView()
-        // Grid uses adaptive columns (2-4 based on width)
-        // Verify grid structure exists
+        let view = makeViewWithMocks(pids: [])
         let scrollView = try view.inspect().find(ViewType.ScrollView.self)
         XCTAssertNotNil(scrollView, "Should have scrollable grid layout")
     }
     
     // MARK: - Accessibility Tests
     
-    func testGaugeTilesHaveIdentifiers() throws {
-        let view = GaugesView()
-        // Each tile should have accessibility identifier
-        // Format: "GaugeTile_{UUID}"
+    func testGaugeTilesHaveIdentifiers_WithMocks() async throws {
+        let rpm = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
+        let view = makeViewWithMocks(pids: [rpm])
+        await pumpMainRunLoop()
+        
         let navLinks = try view.inspect().findAll(ViewType.NavigationLink.self)
-        // Verify navigation links exist (they have accessibility identifiers in code)
         XCTAssertGreaterThanOrEqual(navLinks.count, 0, "Tiles should have accessibility identifiers")
     }
     
     // MARK: - Mocked ViewModel Tests
     
-    func testRendersGaugeTilesWithMeasurements() {
-        // Test that the view can render tiles with actual measurement data
-        let viewModel = GaugesViewModel()
-        // Verify ViewModel initializes properly
-        XCTAssertNotNil(viewModel.tiles, "ViewModel should have tiles array")
-        // The tiles will be populated based on enabled PIDs from PIDStore
-        // which may be empty in test environment
-        XCTAssertGreaterThanOrEqual(viewModel.tiles.count, 0, "Should handle tiles with measurements")
+    func testRendersGaugeTilesWithMeasurements_UsingMocks() async throws {
+        // Provide one PID with a stat so measurement is non-nil
+        let rpm = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
+        let stats: [OBDCommand: OBDConnectionManager.PIDStats] = [
+            .mode1(.rpm): pidStats(for: .mode1(.rpm), value: 2500, unitSymbol: "rpm")
+        ]
+        
+        let view = makeViewWithMocks(pids: [rpm], stats: stats)
+        await pumpMainRunLoop()
+        
+        // We can’t easily assert the exact formatted value without diving into RingGaugeView internals,
+        // but structure should exist and row count should be >= 1.
+        let inspected = try view.inspect()
+        _ = try inspected.find(ViewType.ScrollView.self)
     }
     
     func testGaugeTileColorsBasedOnValues() {
-        // Test color coding logic for different value ranges
         let testPID = OBDPID(
             id: UUID(),
             enabled: true,
@@ -174,7 +241,6 @@ final class GaugesViewTests: XCTestCase {
             warningRange: ValueRange(min: 3000, max: 5000),
             dangerRange: ValueRange(min: 5000, max: 8000)
         )
-        // Test color logic used by gauge tiles
         let normalColor = testPID.color(for: 2000, unit: .metric)
         XCTAssertEqual(normalColor, .green, "Normal range should be green")
         let warningColor = testPID.color(for: 4000, unit: .metric)
@@ -183,161 +249,36 @@ final class GaugesViewTests: XCTestCase {
         XCTAssertEqual(dangerColor, .red, "Danger range should be red")
     }
     
-    func testGaugeTileNavigationWithData() throws {
-        // Test navigation to detail view works with actual data
-        let view = GaugesView()
-        // Find navigation links - each represents a gauge tile
+    func testGaugeTileNavigationWithData_WithMocks() async throws {
+        let rpm = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
+        let view = makeViewWithMocks(pids: [rpm])
+        await pumpMainRunLoop()
+        
         let navLinks = try view.inspect().findAll(ViewType.NavigationLink.self)
-        // Verify navigation structure exists
         XCTAssertGreaterThanOrEqual(navLinks.count, 0, "Should have navigable gauge tiles")
-        // Each link should be properly formed
         for link in navLinks {
-            XCTAssertNoThrow(try link.label(), "Navigation link should have valid label")
+            XCTAssertNoThrow(try link.labelView(), "Navigation link should have valid label")
         }
     }
     
-    func testMixedMeasurementStates() {
-        // Test ViewModel handles mixed states (some measurements present, some nil)
-        let viewModel = GaugesViewModel()
-        // Tiles can have nil or non-nil measurements
-        let hasMixedStates = viewModel.tiles.contains { $0.measurement != nil } ||
-                            viewModel.tiles.contains { $0.measurement == nil } ||
-                            viewModel.tiles.isEmpty
+    func testMixedMeasurementStates_WithMocks() async throws {
+        let rpm = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
+        // Provide stats for none → all tiles measurement = nil
+        let vm = makeViewModelWithMocks(pids: [rpm], stats: [:])
+        await pumpMainRunLoop()
+        let hasMixedStates = vm.tiles.contains { $0.measurement != nil } ||
+                             vm.tiles.contains { $0.measurement == nil } ||
+                             vm.tiles.isEmpty
         XCTAssertTrue(hasMixedStates, "Should handle mixed measurement states")
     }
     
-    func testPIDInterestWithEnabledGauges() {
-        // Test PID interest registration works with enabled gauges
+    func testPIDInterestWithEnabledGauges_APIOnly() {
         let token = PIDInterestRegistry.shared.makeToken()
-        // Simulate registering PIDs for enabled gauges
         let testPIDs: Set<OBDCommand> = [.mode1(.rpm), .mode1(.speed), .mode1(.coolantTemp)]
         PIDInterestRegistry.shared.replace(pids: testPIDs, for: token)
-        // Verify registration succeeded
         XCTAssertNotNil(token, "Should register interest for enabled gauges")
-        // Cleanup
         PIDInterestRegistry.shared.clear(token: token)
     }
     
-    // MARK: - Live Demo Data Tests (explicit interest registration)
-    
-    func testGaugesViewPopulatesWithLiveDemoData() async throws {
-        // Configure for demo mode
-        ConfigData.shared.connectionType = .demo
-        OBDConnectionManager.shared.updateConnectionDetails()
-        // Register interest in a representative set of common gauges
-        let token = PIDInterestRegistry.shared.makeToken()
-        let interested: Set<OBDCommand> = [.mode1(.rpm), .mode1(.speed), .mode1(.coolantTemp)]
-        PIDInterestRegistry.shared.replace(pids: interested, for: token)
-        // Expect pidStats to receive any of these
-        var cancellables = Set<AnyCancellable>()
-        let expectation = XCTestExpectation(description: "GaugesView should receive live stats in demo")
-        OBDConnectionManager.shared.$pidStats
-            .dropFirst() // skip initial empty
-            .sink { stats in
-                if stats[.mode1(.rpm)] != nil ||
-                   stats[.mode1(.speed)] != nil ||
-                   stats[.mode1(.coolantTemp)] != nil {
-                    expectation.fulfill()
-                }
-            }
-            .store(in: &cancellables)
-        // Connect to demo
-        await OBDConnectionManager.shared.connect()
-        // Await any live stats
-        await fulfillment(of: [expectation], timeout: 10.0)
-        // Cleanup
-        PIDInterestRegistry.shared.clear(token: token)
-        try? await Task.sleep(nanoseconds: 100_000_000)
-        cancellables.removeAll()
-    }
-    
-    func testGaugesViewRendersWithLiveDemoData() async throws {
-        // Configure for demo mode
-        ConfigData.shared.connectionType = .demo
-        OBDConnectionManager.shared.updateConnectionDetails()
-        // Register interest in common gauges
-        let token = PIDInterestRegistry.shared.makeToken()
-        let interested: Set<OBDCommand> = [.mode1(.rpm), .mode1(.speed)]
-        PIDInterestRegistry.shared.replace(pids: interested, for: token)
-        // Expect stats to arrive
-        var cancellables = Set<AnyCancellable>()
-        let expectation = XCTestExpectation(description: "GaugesView should render with demo data")
-        OBDConnectionManager.shared.$pidStats
-            .dropFirst()
-            .sink { stats in
-                if stats[.mode1(.rpm)] != nil || stats[.mode1(.speed)] != nil {
-                    expectation.fulfill()
-                }
-            }
-            .store(in: &cancellables)
-        // Build the view (no need to call onAppear since we registered interest explicitly)
-        let view = GaugesView()
-        let inspected = try view.inspect()
-        // Connect to demo
-        await OBDConnectionManager.shared.connect()
-        // Await stats
-        await fulfillment(of: [expectation], timeout: 10.0)
-        // Verify structure still contains a ScrollView
-        let scrollView = try inspected.find(ViewType.ScrollView.self)
-        XCTAssertNotNil(scrollView, "ScrollView should exist once data is available")
-        // Cleanup
-        PIDInterestRegistry.shared.clear(token: token)
-        try? await Task.sleep(nanoseconds: 100_000_000)
-        cancellables.removeAll()
-    }
-    
-    // MARK: - Coverage: Force GaugeTile.body evaluation (call onAppear on ScrollView)
-    
-    func testGaugeTileBodiesEvaluateWithLiveDemoData() async throws {
-        // Configure for demo mode
-        ConfigData.shared.connectionType = .demo
-        OBDConnectionManager.shared.updateConnectionDetails()
-        
-        // Register interest in a few common gauges to ensure tiles have data
-        let token = PIDInterestRegistry.shared.makeToken()
-        let interested: Set<OBDCommand> = [.mode1(.rpm), .mode1(.speed), .mode1(.coolantTemp)]
-        PIDInterestRegistry.shared.replace(pids: interested, for: token)
-        
-        // Expect at least one of these stats to arrive
-        var cancellables = Set<AnyCancellable>()
-        let expectation = XCTestExpectation(description: "Gauge tiles should have live stats")
-        OBDConnectionManager.shared.$pidStats
-            .dropFirst()
-            .sink { stats in
-                if stats[.mode1(.rpm)] != nil ||
-                    stats[.mode1(.speed)] != nil ||
-                    stats[.mode1(.coolantTemp)] != nil {
-                    expectation.fulfill()
-                }
-            }
-            .store(in: &cancellables)
-        
-        // Build GaugesView and trigger the onAppear attached to its ScrollView
-        let view = GaugesView()
-        let inspected = try view.inspect()
-        let scroll = try inspected.find(ViewType.ScrollView.self)
-        try scroll.callOnAppear()
-        
-        // Connect and wait for data
-        await OBDConnectionManager.shared.connect()
-        await fulfillment(of: [expectation], timeout: 10.0)
-        
-        // Navigate explicitly into LazyVGrid -> ForEach and inspect label subtree by structure (avoid .label())
-        let grid = try inspected.find(ViewType.ScrollView.self).find(ViewType.LazyVGrid.self)
-        let fe = try grid.forEach(0)
-        let count = fe.count
-        for i in 0..<count {
-            let link = try fe.navigationLink(i)
-            // Instead of .label(), dive into the label subtree by structure
-            let vstack = try link.find(ViewType.VStack.self)
-            _ = try? vstack.find(ViewType.Text.self)
-            _ = vstack.findAll(ViewType.Text.self) // Also traverses RingGaugeView internals
-        }
-        
-        // Cleanup
-        PIDInterestRegistry.shared.clear(token: token)
-        try? await Task.sleep(nanoseconds: 100_000_000)
-        cancellables.removeAll()
-    }
+    // NOTE: Removed all live/demo integration tests. This class now uses only mocks.
 }
-

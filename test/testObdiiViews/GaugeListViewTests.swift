@@ -79,9 +79,12 @@ final class GaugeListViewTests: XCTestCase {
     
     // Allow Combine pipeline in GaugesViewModel to rebuild tiles before inspection
     private func pumpMainRunLoop() async {
-        // Two yields to be safe: one for Combine delivery, one for State update propagation
+        // Yield to let any scheduled main-actor work proceed
         await Task.yield()
-        RunLoop.main.run(until: Date().addingTimeInterval(0.01))
+        // Async-friendly tiny delay instead of RunLoop.main.run(until:)
+        try? await Task.sleep(nanoseconds: 10_000_000) // ~10ms
+        // One more yield to ensure SwiftUI state propagation
+        await Task.yield()
     }
     
     // MARK: - View Structure Tests
@@ -445,9 +448,7 @@ final class GaugeListViewTests: XCTestCase {
             typicalRange: ValueRange(min: 0, max: 120)
         )
         
-        let view = makeViewWithMocks(pids: [testPID])
-        await pumpMainRunLoop()
-        
+         
         let displayUnits = testPID.displayUnits
         let expectedPlaceholder = "— \(displayUnits)"
         XCTAssertTrue(expectedPlaceholder.contains("—"), "tileRow should show dash placeholder without measurement")

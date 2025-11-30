@@ -33,6 +33,15 @@ struct GaugesView: View {
         let token = PIDInterestRegistry.shared.makeToken()
         _interestToken = State(initialValue: token)
     }
+    
+    // Injectable initializer for testing/mocking
+    @MainActor
+    init(viewModel: GaugesViewModel, interestToken: UUID? = nil) {
+        _viewModel = State(initialValue: viewModel)
+        // If no token provided, create one here on the main actor
+        let token = interestToken ?? PIDInterestRegistry.shared.makeToken()
+        _interestToken = State(initialValue: token)
+    }
 
     // Adaptive layout: 2–4 columns depending on device width
     private let columns = [

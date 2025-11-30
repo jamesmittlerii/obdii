@@ -35,17 +35,6 @@ final class DiagnosticsViewTests: XCTestCase {
         return (view, vm, mock)
     }
     
-    // MARK: - Setup & Teardown
-    
-    override func setUp() {
-        super.setUp()
-        // No reliance on OBDConnectionManager.shared anymore in these tests.
-    }
-    
-    override func tearDown() {
-        super.tearDown()
-    }
-    
     // MARK: - Navigation Structure Tests
     
     func testHasNavigationStack() throws {
