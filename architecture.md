@@ -8,6 +8,6 @@ The primary UI was intended to be CarPlay which is based on UIKit and templates.
 
 There are several View Models that are shared by both versions of the UI (Guages, DTCs, settings, etc). This eliminates some of the duplication and helps organize the code more logically.
 
-Models are used to Store the sensor data used by the various View Models and broker the communications.
+Models are used to store the sensor data used by the various View Models and broker the communications.
 
 The OBD-II communication is handled by the SwiftOBD2 library.
