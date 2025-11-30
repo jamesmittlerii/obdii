@@ -7,3 +7,5 @@ To help alleviate the amount of data exchanged, the app optimizes which PIDs it 
 CarPlay and SwiftUI have different UI semantics so the app incorporates different techniques to indicate interest when Views or CarPlay templates gain or lose visibility.
 
 The key is a PIDInterestRegistry class. It maintains which PIDs are current "of interest" and the polling loop creates a subset of PIDs that are enabled and of interest. Multiple screens can be visible at the same time so the class generates a union of PIDs to poll.
+
+<img width="517" height="651" alt="Screenshot 2025-11-30 at 12 09 39 PM" src="https://github.com/user-attachments/assets/cfbc264a-8725-4e64-8aa4-823892ccbb11" />
