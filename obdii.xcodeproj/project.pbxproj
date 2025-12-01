@@ -192,8 +192,8 @@
 		CBAD9E8A24A3E3DD00989CA4 = {
 			isa = PBXGroup;
 			children = (
-				D44B5A2E2ECF73C900801658 /* test */,
 				CBAD9E9524A3E3DD00989CA4 /* obdii */,
+				D44B5A2E2ECF73C900801658 /* test */,
 				CBAD9E9424A3E3DD00989CA4 /* Products */,
 				CBAD9EC624A3E3EB00989CA4 /* Frameworks */,
 			);
@@ -214,12 +214,12 @@
 		CBAD9E9524A3E3DD00989CA4 /* obdii */ = {
 			isa = PBXGroup;
 			children = (
-				D4D4D6862EC7A85900D4623D /* viewmodels */,
 				D4D4D58B2EC7823E00D4623D /* core */,
 				D4FE92C12EC5420100C061D7 /* swiftui */,
 				D4FE92C02EC541E000C061D7 /* carplay */,
-				CBAD9E9C24A3E3DD00989CA4 /* Main.storyboard */,
+				D4D4D6862EC7A85900D4623D /* viewmodels */,
 				CBAD9E9F24A3E3DE00989CA4 /* Assets.xcassets */,
+				CBAD9E9C24A3E3DD00989CA4 /* Main.storyboard */,
 				CBAD9EA124A3E3DE00989CA4 /* LaunchScreen.storyboard */,
 				CBAD9EA424A3E3DE00989CA4 /* Info.plist */,
 				CBAD9ECB24A3E73800989CA4 /* obdii.entitlements */,

@@ -18,8 +18,7 @@ import Combine
 
 @MainActor
 final class MILStatusViewTests: XCTestCase {
-    
-    // MARK: - Local Mock Provider
+
     
     // Conforms to MILStatusProviding from MILStatusViewModel.swift
     final class MockMILStatusProvider: MILStatusProviding {
@@ -35,8 +34,7 @@ final class MILStatusViewTests: XCTestCase {
         let view = MILStatusView(viewModel: vm)
         return (view, vm, mock)
     }
-    
-    // MARK: - Navigation Structure Tests
+
     
     func testHasNavigationStack() throws {
         let (view, _, _) = makeView(with: MockMILStatusProvider())
@@ -56,8 +54,7 @@ final class MILStatusViewTests: XCTestCase {
         let list = try stack.find(ViewType.List.self)
         XCTAssertNotNil(list, "NavigationStack should contain a List")
     }
-    
-    // MARK: - List Structure Tests
+
     
     func testContainsList() throws {
         let (view, _, _) = makeView(with: MockMILStatusProvider())
@@ -72,8 +69,7 @@ final class MILStatusViewTests: XCTestCase {
         // Should have at least one section (MIL Summary at minimum)
         XCTAssertGreaterThan(sections.count, 0, "Should have at least one section")
     }
-    
-    // MARK: - Waiting State Tests
+
     
     func testWaitingStateDisplaysProgressView() throws {
         let (view, _, _) = makeView(with: MockMILStatusProvider())
@@ -94,8 +90,7 @@ final class MILStatusViewTests: XCTestCase {
         
         XCTAssertNotNil(waitingText, "Should display 'Waiting for data' text")
     }
-    
-    // MARK: - Section Header Tests
+
     
     func testHasMILSectionHeader() throws {
         let (view, _, _) = makeView(with: MockMILStatusProvider())
@@ -107,8 +102,7 @@ final class MILStatusViewTests: XCTestCase {
             XCTAssertNoThrow(try sections[0].header(), "First section should have header")
         }
     }
-    
-    // MARK: - MIL Status Display Tests
+
     
     func testMILStatusRowStructure() throws {
         let (view, _, _) = makeView(with: MockMILStatusProvider())
@@ -125,8 +119,7 @@ final class MILStatusViewTests: XCTestCase {
         let images = try view.inspect().findAll(ViewType.Image.self)
         XCTAssertGreaterThanOrEqual(images.count, 0, "View may contain wrench icon")
     }
-    
-    // MARK: - Readiness Monitors Tests
+
     
     func testReadinessMonitorsSectionAppearsWhenStatusSent() throws {
         let mock = MockMILStatusProvider()
@@ -144,8 +137,7 @@ final class MILStatusViewTests: XCTestCase {
         let hasReadinessText = try texts.contains { try $0.string().contains("Readiness Monitors") }
         XCTAssertTrue(hasReadinessText, "View should show Readiness Monitors section when status exists")
     }
-    
-    // MARK: - ViewModel Integration Tests
+
     
     func testViewModelInitializesWithNilStatus() throws {
         let mock = MockMILStatusProvider()
@@ -156,8 +148,7 @@ final class MILStatusViewTests: XCTestCase {
         XCTAssertFalse(viewModel.hasStatus, "hasStatus should be false initially")
         XCTAssertTrue(viewModel.sortedSupportedMonitors.isEmpty, "Should have no monitors initially")
     }
-    
-    // MARK: - Monitor Row Structure Tests
+
     
     func testMonitorRowsUseHStack() throws {
         let (view, _, _) = makeView(with: MockMILStatusProvider())
@@ -174,8 +165,7 @@ final class MILStatusViewTests: XCTestCase {
         let vStacks = try view.inspect().findAll(ViewType.VStack.self)
         XCTAssertGreaterThanOrEqual(vStacks.count, 0, "View may contain VStack elements")
     }
-    
-    // MARK: - Empty State Tests
+
     
     func testNoMILStatusLabel() throws {
         let (view, _, _) = makeView(with: MockMILStatusProvider())
@@ -186,8 +176,7 @@ final class MILStatusViewTests: XCTestCase {
         // This validates the view structure can contain this
         XCTAssertGreaterThanOrEqual(texts.count, 1, "View should contain text elements")
     }
-    
-    // MARK: - Accessibility Tests
+
     
     func testAccessibilityLabels() throws {
         let (view, _, _) = makeView(with: MockMILStatusProvider())
@@ -196,8 +185,7 @@ final class MILStatusViewTests: XCTestCase {
         let hStacks = try view.inspect().findAll(ViewType.HStack.self)
         XCTAssertGreaterThanOrEqual(hStacks.count, 0, "Should have elements with accessibility")
     }
-    
-    // MARK: - Mocked ViewModel Tests
+
     
     func testDisplaysActiveMILStatus() {
         let mock = MockMILStatusProvider()

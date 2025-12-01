@@ -29,8 +29,7 @@ final class GaugeDetailViewTests: XCTestCase {
         units: "RPM",
         typicalRange: ValueRange(min: 0, max: 8000)
     )
-    
-    // MARK: - Local Mocks compatible with app protocols
+
     
     final class MockStatsProvider: PIDStatsProviding {
         let subject = CurrentValueSubject<[OBDCommand: OBDConnectionManager.PIDStats], Never>([:])
@@ -48,8 +47,7 @@ final class GaugeDetailViewTests: XCTestCase {
             subject.eraseToAnyPublisher()
         }
     }
-    
-    // MARK: - Helpers
+
     
     @MainActor
     private func makeVM(
@@ -66,16 +64,14 @@ final class GaugeDetailViewTests: XCTestCase {
         try? await Task.sleep(nanoseconds: 20_000_000) // 20ms
         await Task.yield()
     }
-    
-    // MARK: - List Structure Tests
+
     
     func testHasList() throws {
         let view = GaugeDetailView(pid: testPID)
         let list = try view.inspect().find(ViewType.List.self)
         XCTAssertNotNil(list, "GaugeDetailView should contain a List")
     }
-    
-    // MARK: - Statistics Section Tests
+
     
     func testHasStatisticsSection() throws {
         let view = GaugeDetailView(pid: testPID)
@@ -162,8 +158,7 @@ final class GaugeDetailViewTests: XCTestCase {
         XCTAssertTrue(text.contains("—"), "Should show placeholder dash")
         XCTAssertTrue(text.uppercased().contains("RPM"), "Should show units in placeholder")
     }
-    
-    // MARK: - Chart/Sections/Header presence
+
     
     func testHasSections() throws {
         let view = GaugeDetailView(pid: testPID)
@@ -180,38 +175,33 @@ final class GaugeDetailViewTests: XCTestCase {
         }
         XCTAssertTrue(hasHeaderText || texts.count > 0, "Should have section headers")
     }
-    
-    // MARK: - ViewModel Integration Tests
+
     
     func testViewModelInitialization() throws {
         let viewModel = GaugeDetailViewModel(pid: testPID)
         XCTAssertEqual(viewModel.pid.id, testPID.id, "ViewModel should store the PID")
     }
-    
-    // MARK: - Formatting Tests
+
     
     func testValueFormatting() throws {
         let viewModel = GaugeDetailViewModel(pid: testPID)
         XCTAssertTrue(viewModel.stats == nil || viewModel.stats != nil, "Stats can be nil or contain values")
     }
-    
-    // MARK: - Navigation Title Tests
+
     
     func testUsesGaugeNameAsTitle() throws {
         let view = GaugeDetailView(pid: testPID)
         let list = try view.inspect().find(ViewType.List.self)
         XCTAssertNotNil(list, "View structure should be correct")
     }
-    
-    // MARK: - Accessibility Tests (structure presence)
+
     
     func testStatisticsHaveAccessibilityIdentifiers() throws {
         let view = GaugeDetailView(pid: testPID)
         let texts = try view.inspect().findAll(ViewType.Text.self)
         XCTAssertGreaterThan(texts.count, 0, "Statistics should have accessibility identifiers")
     }
-    
-    // MARK: - Mocked Data Tests (use mocks instead of live connection)
+
     
     func testGaugeDetailStatsWithMockData() async throws {
         // Arrange mocks
@@ -263,8 +253,7 @@ final class GaugeDetailViewTests: XCTestCase {
         // Assert: refresh happened but value is preserved
         XCTAssertEqual(before?.latest.value, after?.latest.value, "Unit change should refresh snapshot but preserve latest value")
     }
-    
-    // MARK: - UI with mocks: full path
+
     
     func testUIRendersAllSectionsWithMockedStats() async throws {
         // Arrange

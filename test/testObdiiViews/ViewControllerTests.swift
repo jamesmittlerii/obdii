@@ -43,14 +43,12 @@ final class ViewControllerTests: XCTestCase {
         // Clean up UserDefaults
         UserDefaults.standard.removeObject(forKey: testKey)
     }
-    
-    // MARK: - Initialization Tests
+
     
     func testViewControllerInitialization() {
         XCTAssertNotNil(viewController, "ViewController should initialize")
     }
-    
-    // MARK: - viewDidLoad Tests
+
     
     func testViewDidLoadAddsHostingController() {
         viewController.loadViewIfNeeded()
@@ -78,8 +76,7 @@ final class ViewControllerTests: XCTestCase {
         
         XCTAssertTrue(viewController.view.subviews.contains(hostingVC.view), "Hosting controller view should be added to view hierarchy")
     }
-    
-    // MARK: - Auto Layout Tests
+
     
     func testHostingControllerUsesAutoresizingMask() {
         viewController.loadViewIfNeeded()
@@ -119,8 +116,7 @@ final class ViewControllerTests: XCTestCase {
         
         XCTAssertEqual(hostingVC.parent, viewController, "Hosting controller should have correct parent")
     }
-    
-    // MARK: - Safety Prompt Tests
+
     
     func testSafetyPromptShownFirstTime() {
         // First time, flag should be false
@@ -145,8 +141,7 @@ final class ViewControllerTests: XCTestCase {
         
         XCTAssertTrue(UserDefaults.standard.bool(forKey: testKey), "Should be true after marking")
     }
-    
-    // MARK: - Alert Controller Tests
+
     
     func testAlertControllerCreation() {
         let alert = UIAlertController(
@@ -175,15 +170,13 @@ final class ViewControllerTests: XCTestCase {
         XCTAssertEqual(alert.actions.first?.title, "OK", "Action should be titled 'OK'")
         XCTAssertEqual(alert.actions.first?.style, .default, "Action should have default style")
     }
-    
-    // MARK: - UserDefaults Key Tests
+
     
     func testUserDefaultsKeyIsCorrect() {
         let expectedKey = "HasShownCarPlayDrivingPrompt"
         XCTAssertEqual(testKey, expectedKey, "UserDefaults key should match expected value")
     }
-    
-    // MARK: - Memory Management Tests
+
     
     func testWeakSelfInAsyncBlock() {
         // Async blocks should use [weak self] to avoid retain cycles
@@ -192,8 +185,7 @@ final class ViewControllerTests: XCTestCase {
         
         XCTAssertTrue(true, "Should use weak self to avoid retain cycles")
     }
-    
-    // MARK: - Presentation Tests
+
     
     func testViewControllerCanPresent() {
         viewController.loadViewIfNeeded()

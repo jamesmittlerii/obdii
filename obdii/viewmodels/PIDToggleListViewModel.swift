@@ -1,3 +1,4 @@
+import Combine
 /**
  * __Final Project__
  * Jim Mittler
@@ -13,93 +14,76 @@
 import Foundation
 import Observation
 import SwiftOBD2
-import Combine
 
 @MainActor
 @Observable
 final class PIDToggleListViewModel {
+  // Local mirror of the store’s PID list (copied for sorting/filtering UI).
+  private(set) var pids: [OBDPID] = []
+  // Raw search string from the UI.
+  var searchText: String = ""
 
-    // MARK: - Published State
+  private let store: PIDStore
+  private var cancellables = Set<AnyCancellable>()
 
-    /// Local mirror of the store’s PID list (copied for sorting/filtering UI).
-    private(set) var pids: [OBDPID] = []
+  init() {
+    self.store = .shared
+    self.pids = store.pids  // seed mirror
 
-    /// Raw search string from the UI.
-    var searchText: String = ""
+    // Keep local mirror in sync with the store without mutating during view computation
+    store.$pids
+      .receive(on: RunLoop.main)
+      .sink { [weak self] in self?.pids = $0 }
+      .store(in: &cancellables)
+  }
 
-    // MARK: - Dependencies
+  var enabledIndices: [Int] {
+    pids.indices.filter { pids[$0].enabled && pids[$0].kind == .gauge }
+  }
 
-    private let store: PIDStore
-    private var cancellables = Set<AnyCancellable>()
+  var disabledIndices: [Int] {
+    pids.indices.filter { !pids[$0].enabled && pids[$0].kind == .gauge }
+  }
 
-    // MARK: - Init
+  var filteredEnabled: [OBDPID] {
+    let base = pids.filter { $0.enabled && $0.kind == .gauge }
+    return applySearch(base)
+  }
 
-    init() {
-        self.store = .shared
-        self.pids = store.pids      // seed mirror
+  var filteredDisabled: [OBDPID] {
+    let base = pids.filter { !$0.enabled && $0.kind == .gauge }
+    return applySearch(base)
+  }
 
-        // Keep local mirror in sync with the store without mutating during view computation
-        store.$pids
-            .receive(on: RunLoop.main)
-            .sink { [weak self] in self?.pids = $0 }
-            .store(in: &cancellables)
-    }
+  private var normalizedQuery: String {
+    searchText
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+      .lowercased()
+  }
 
-    // MARK: - Section Helpers
+  private func applySearch(_ list: [OBDPID]) -> [OBDPID] {
+    let q = normalizedQuery
+    guard !q.isEmpty else { return list }
+    return list.filter { matchesQuery($0, q) }
+  }
 
-    var enabledIndices: [Int] {
-        pids.indices.filter { pids[$0].enabled && pids[$0].kind == .gauge }
-    }
+  private func matchesQuery(_ pid: OBDPID, _ q: String) -> Bool {
+    // Search label, name, notes, and PID command
+    if pid.label.lowercased().contains(q) { return true }
+    if pid.name.lowercased().contains(q) { return true }
+    if pid.notes?.lowercased().contains(q) == true { return true }
+    if pid.pid.properties.command.lowercased().contains(q) { return true }
+    return false
+  }
 
-    var disabledIndices: [Int] {
-        pids.indices.filter { !pids[$0].enabled && pids[$0].kind == .gauge }
-    }
+  func toggle(at index: Int, to isOn: Bool) {
+    guard pids.indices.contains(index) else { return }
+    let pid = pids[index]
+    guard pid.enabled != isOn else { return }
+    store.toggle(pid)  // subscription will update pids
+  }
 
-    // MARK: - Filtered Lists for UI
-
-    var filteredEnabled: [OBDPID] {
-        let base = pids.filter { $0.enabled && $0.kind == .gauge }
-        return applySearch(base)
-    }
-
-    var filteredDisabled: [OBDPID] {
-        let base = pids.filter { !$0.enabled && $0.kind == .gauge }
-        return applySearch(base)
-    }
-
-    // MARK: - Search Helpers
-
-    private var normalizedQuery: String {
-        searchText
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
-    }
-
-    private func applySearch(_ list: [OBDPID]) -> [OBDPID] {
-        let q = normalizedQuery
-        guard !q.isEmpty else { return list }
-        return list.filter { matchesQuery($0, q) }
-    }
-
-    private func matchesQuery(_ pid: OBDPID, _ q: String) -> Bool {
-        // Search label, name, notes, and PID command
-        if pid.label.lowercased().contains(q) { return true }
-        if pid.name.lowercased().contains(q) { return true }
-        if pid.notes?.lowercased().contains(q) == true { return true }
-        if pid.pid.properties.command.lowercased().contains(q) { return true }
-        return false
-    }
-
-    // MARK: - Intents (User Actions)
-
-    func toggle(at index: Int, to isOn: Bool) {
-        guard pids.indices.contains(index) else { return }
-        let pid = pids[index]
-        guard pid.enabled != isOn else { return }
-        store.toggle(pid) // subscription will update pids
-    }
-
-    func moveEnabled(fromOffsets offsets: IndexSet, toOffset newOffset: Int) {
-        store.moveEnabled(fromOffsets: offsets, toOffset: newOffset) // subscription will update pids
-    }
+  func moveEnabled(fromOffsets offsets: IndexSet, toOffset newOffset: Int) {
+    store.moveEnabled(fromOffsets: offsets, toOffset: newOffset)  // subscription will update pids
+  }
 }

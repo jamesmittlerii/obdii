@@ -17,7 +17,6 @@ import SwiftOBD2
 @MainActor
 final class GaugesViewModelTests: XCTestCase {
 
-    // MARK: - Mocks
 
     final class MockPIDProvider: PIDListProviding {
         let subject = CurrentValueSubject<[OBDPID], Never>([])
@@ -39,7 +38,6 @@ final class GaugesViewModelTests: XCTestCase {
         var unitsPublisher: AnyPublisher<MeasurementUnit, Never> { subject.eraseToAnyPublisher() }
     }
 
-    // MARK: - Test State
 
     var viewModel: GaugesViewModel!
     var pidProvider: MockPIDProvider!
@@ -90,7 +88,6 @@ final class GaugesViewModelTests: XCTestCase {
         )
     }
 
-    // MARK: - Initialization Tests
 
     func testInitialization() {
         XCTAssertNotNil(viewModel, "ViewModel should initialize")
@@ -111,7 +108,6 @@ final class GaugesViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.tiles.first?.pid, pidEnabled)
     }
 
-    // MARK: - Tile Tests
 
     func testTilesHaveValidPIDs() async throws {
         let pid1 = makeGaugePID(command: .mode1(.rpm))

@@ -25,8 +25,7 @@ final class PIDToggleListViewModelTests: XCTestCase {
     override func tearDown() async throws {
         viewModel = nil
     }
-    
-    // MARK: - Initialization Tests
+
     
     func testInitialization() {
         XCTAssertNotNil(viewModel, "ViewModel should initialize")
@@ -38,8 +37,7 @@ final class PIDToggleListViewModelTests: XCTestCase {
         let storePIDCount = PIDStore.shared.pids.count
         XCTAssertEqual(viewModel.pids.count, storePIDCount, "Should mirror PIDStore count")
     }
-    
-    // MARK: - Section Tests
+
     
     func testEnabledIndices() {
         let enabledIndices = viewModel.enabledIndices
@@ -78,8 +76,7 @@ final class PIDToggleListViewModelTests: XCTestCase {
         XCTAssertTrue(filtered.allSatisfy { !$0.enabled }, "Filtered disabled should only contain disabled PIDs")
         XCTAssertTrue(filtered.allSatisfy { $0.kind == .gauge }, "Should only contain gauge PIDs")
     }
-    
-    // MARK: - Search Tests
+
     
     func testEmptySearchReturnsAll() {
         viewModel.searchText = ""
@@ -141,8 +138,7 @@ final class PIDToggleListViewModelTests: XCTestCase {
         // Should find results despite leading/trailing whitespace
         XCTAssertGreaterThanOrEqual(allFiltered.count, 0, "Should trim whitespace from search")
     }
-    
-    // MARK: - Toggle Tests
+
     
     func testTogglePID() throws {
         guard let firstPID = viewModel.pids.first(where: { $0.kind == .gauge }),
@@ -171,8 +167,7 @@ final class PIDToggleListViewModelTests: XCTestCase {
         // Should not change anything
         XCTAssertTrue(true, "Redundant toggle should be ignored")
     }
-    
-    // MARK: - Reordering Tests
+
     
     func testMoveEnabledPIDs() throws {
         let initialEnabledCount = viewModel.filteredEnabled.count

@@ -17,7 +17,6 @@ import SwiftOBD2
 @MainActor
 final class GaugeDetailViewModelTests: XCTestCase {
 
-    // MARK: - Mocks
 
     final class MockStatsProvider: PIDStatsProviding {
         typealias Stats = OBDConnectionManager.PIDStats
@@ -40,7 +39,6 @@ final class GaugeDetailViewModelTests: XCTestCase {
         }
     }
 
-    // MARK: - Test State
 
     var viewModel: GaugeDetailViewModel!
     var testPID: OBDPID!
@@ -77,7 +75,6 @@ final class GaugeDetailViewModelTests: XCTestCase {
         unitsProvider = nil
     }
 
-    // MARK: - Initialization Tests
 
     func testInitialization() {
         XCTAssertNotNil(viewModel, "ViewModel should initialize")
@@ -90,7 +87,6 @@ final class GaugeDetailViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.pid.name, "Engine RPM", "PID name should be accessible")
     }
 
-    // MARK: - Stats Tests
 
     func testInitialStatsState() {
         // Stats may be nil initially if no data has been collected
@@ -127,13 +123,11 @@ final class GaugeDetailViewModelTests: XCTestCase {
         }
     }
 
-    // MARK: - PID Command Tests
 
     func testPIDCommand() {
         XCTAssertEqual(viewModel.pid.pid, .mode1(.rpm), "PID command should match")
     }
 
-    // MARK: - Units Change Handling
 
     func testUnitChangeForcesRefresh() async throws {
         // Seed a stat
@@ -156,7 +150,6 @@ final class GaugeDetailViewModelTests: XCTestCase {
         XCTAssertEqual(before?.latest.value, after?.latest.value, "Unit change should refresh but not alter latest value")
     }
 
-    // MARK: - Deduplication Tests
 
     func testStatsDeduplication() async throws {
         // Send an initial stat

@@ -27,8 +27,7 @@ final class PIDStoreTests: XCTestCase {
     override func tearDown() async throws {
         store = nil
     }
-    
-    // MARK: - Initialization Tests
+
     
     func testSharedInstanceExists() {
         XCTAssertNotNil(PIDStore.shared, "Shared instance should exist")
@@ -37,8 +36,7 @@ final class PIDStoreTests: XCTestCase {
     func testPIDsLoadedFromJSON() {
         XCTAssertGreaterThan(store.pids.count, 0, "Should load PIDs from JSON")
     }
-    
-    // MARK: - PIDs Array Tests
+
     
     func testPIDsContainGauges() {
         let gauges = store.pids.filter { $0.kind == .gauge }
@@ -49,8 +47,7 @@ final class PIDStoreTests: XCTestCase {
         let statusPIDs = store.pids.filter { $0.kind == .status }
         XCTAssertGreaterThanOrEqual(statusPIDs.count, 0, "May have status-type PIDs")
     }
-    
-    // MARK: - Enabled Gauges Tests
+
     
     func testEnabledGaugesFiltering() {
         let enabled = store.enabledGauges
@@ -76,8 +73,7 @@ final class PIDStoreTests: XCTestCase {
             XCTAssertLessThan(firstIndex, secondIndex, "Order should be preserved")
         }
     }
-    
-    // MARK: - Toggle Tests
+
     
     func testTogglePID() throws {
         guard let firstGauge = store.pids.first(where: { $0.kind == .gauge }) else {
@@ -98,8 +94,7 @@ final class PIDStoreTests: XCTestCase {
         // Restore original state
         store.toggle(firstGauge)
     }
-    
-    // MARK: - Reordering Tests
+
     
     func testMoveEnabledPIDs() {
         let initialEnabledCount = store.enabledGauges.count
@@ -116,8 +111,7 @@ final class PIDStoreTests: XCTestCase {
                           "Move should not change count")
         }
     }
-    
-    // MARK: - PID Lookup Tests
+
     
     func testFindPIDByID() throws {
         guard let firstPID = store.pids.first else {
@@ -136,16 +130,14 @@ final class PIDStoreTests: XCTestCase {
         
         XCTAssertEqual(rpmPID.pid, .mode1(.rpm), "Should find RPM PID")
     }
-    
-    // MARK: - Persistence Tests
+
     
     func testPIDOrderPersistence() {
         // PIDStore uses UserDefaults for order persistence
         // This is integration-level testing - just verify structure exists
         XCTAssertNotNil(store.pids, "PIDs array should exist for persistence")
     }
-    
-    // MARK: - Gauge Count Tests
+
     
     func testGaugeCountReasonable() {
         XCTAssertGreaterThan(store.pids.count, 0, "Should have at least some PIDs")

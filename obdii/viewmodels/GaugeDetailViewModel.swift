@@ -1,3 +1,5 @@
+import Combine
+import Observation
 /**
  * __Final Project__
  * Jim Mittler
@@ -11,104 +13,85 @@
  * UI refreshes. Inherits from BaseViewModel for CarPlay integration.
  */
 import SwiftOBD2
-import Combine
-import Observation
 
 @MainActor
 @Observable
 final class GaugeDetailViewModel: BaseViewModel {
 
-    // MARK: - Dependencies
+  let pid: OBDPID
+  private let statsProvider: PIDStatsProviding
+  private let unitsProvider: UnitsProviding
 
-    let pid: OBDPID
-    private let statsProvider: PIDStatsProviding
-    private let unitsProvider: UnitsProviding
-
-    // MARK: - Observable State
-
-    private(set) var stats: OBDConnectionManager.PIDStats? {
-        didSet {
-            if oldValue != stats {
-                onChanged?()
-            }
-        }
+  private(set) var stats: OBDConnectionManager.PIDStats? {
+    didSet {
+      if oldValue != stats {
+        onChanged?()
+      }
     }
+  }
 
-    // MARK: - Combine
+  private var cancellables = Set<AnyCancellable>()
 
-    private var cancellables = Set<AnyCancellable>()
+  init(
+    pid: OBDPID,
+    statsProvider: PIDStatsProviding,
+    unitsProvider: UnitsProviding
+  ) {
+    self.pid = pid
+    self.statsProvider = statsProvider
+    self.unitsProvider = unitsProvider
+    self.stats = statsProvider.currentStats(for: pid.pid)
 
-    // MARK: - Init
+    super.init()
 
-    init(
-        pid: OBDPID,
-        statsProvider: PIDStatsProviding,
-        unitsProvider: UnitsProviding
-    ) {
-        self.pid = pid
-        self.statsProvider = statsProvider
-        self.unitsProvider = unitsProvider
-        self.stats = statsProvider.currentStats(for: pid.pid)
+    bindPIDStats()
+    bindUnits()
+  }
 
-        super.init()
+  convenience init(pid: OBDPID) {
+    self.init(
+      pid: pid,
+      statsProvider: OBDConnectionManager.shared,
+      unitsProvider: ConfigData.shared
+    )
+  }
 
-        bindPIDStats()
-        bindUnits()
+  private func bindPIDStats() {
+    statsProvider.pidStatsPublisher
+      .map { [pid] dict in
+        dict[pid.pid]
+      }
+      .removeDuplicates(by: Self.isSameStats)
+      .sink { [unowned self] newValue in
+        self.stats = newValue
+      }
+      .store(in: &cancellables)
+  }
+
+  private func bindUnits() {
+    unitsProvider.unitsPublisher
+      .removeDuplicates()
+      .sink { [unowned self] _ in
+        // Force a refresh so the UI re-renders with new unit formatting
+        self.stats = self.statsProvider.currentStats(for: self.pid.pid)
+      }
+      .store(in: &cancellables)
+  }
+  // Prevents UI from updating unless the change is meaningful.
+  private static func isSameStats(
+    _ lhs: OBDConnectionManager.PIDStats?,
+    _ rhs: OBDConnectionManager.PIDStats?
+  ) -> Bool {
+    switch (lhs, rhs) {
+    case (nil, nil):
+      return true
+
+    case (let l?, let r?):
+      return l.sampleCount == r.sampleCount && l.latest.value == r.latest.value && l.min == r.min
+        && l.max == r.max
+
+    default:
+      return false
     }
-
-     convenience init(pid: OBDPID) {
-        self.init(
-            pid: pid,
-            statsProvider: OBDConnectionManager.shared,
-            unitsProvider: ConfigData.shared
-        )
-    }
-
-    // MARK: - Combining PID Stats
-
-    private func bindPIDStats() {
-        statsProvider.pidStatsPublisher
-            .map { [pid] dict in
-                dict[pid.pid]
-            }
-            .removeDuplicates(by: Self.isSameStats)
-            .sink { [unowned self] newValue in
-                self.stats = newValue
-            }
-            .store(in: &cancellables)
-    }
-
-    // MARK: - Units Change Handling
-
-    private func bindUnits() {
-        unitsProvider.unitsPublisher
-            .removeDuplicates()
-            .sink { [unowned self] _ in
-                // Force a refresh so the UI re-renders with new unit formatting
-                self.stats = self.statsProvider.currentStats(for: self.pid.pid)
-            }
-            .store(in: &cancellables)
-    }
-
-    // MARK: - Deduplication Logic
-
-    /// Prevents UI from updating unless the change is meaningful.
-    private static func isSameStats(
-        _ lhs: OBDConnectionManager.PIDStats?,
-        _ rhs: OBDConnectionManager.PIDStats?
-    ) -> Bool {
-        switch (lhs, rhs) {
-        case (nil, nil):
-            return true
-
-        case let (l?, r?):
-            return l.sampleCount == r.sampleCount &&
-                   l.latest.value == r.latest.value &&
-                   l.min == r.min &&
-                   l.max == r.max
-
-        default:
-            return false
-        }
-    }
+  }
 }

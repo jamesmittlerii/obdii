@@ -49,8 +49,7 @@ final class OBDConnectionManagerTests: XCTestCase {
         manager = nil
         configData = nil
     }
-    
-    // MARK: - Initialization Tests
+
     
     func testSharedInstanceExists() {
         XCTAssertNotNil(OBDConnectionManager.shared, "Shared instance should exist")
@@ -70,8 +69,7 @@ final class OBDConnectionManagerTests: XCTestCase {
     func testInitialPidStatsEmpty() {
         XCTAssertTrue(manager.pidStats.isEmpty, "PID stats should be empty initially")
     }
-    
-    // MARK: - Connection Lifecycle Tests
+
     
     func testConnectInDemoMode() async {
         let expectation = XCTestExpectation(description: "Should connect in demo mode")
@@ -131,8 +129,7 @@ final class OBDConnectionManagerTests: XCTestCase {
         XCTAssertEqual(firstState, .connected)
         XCTAssertEqual(secondState, .connected)
     }
-    
-    // MARK: - Configuration Update Tests
+
     
     func testUpdateConnectionDetails() {
         configData.connectionType = .wifi
@@ -145,8 +142,7 @@ final class OBDConnectionManagerTests: XCTestCase {
         // If state was connected, it should disconnect first
         XCTAssertEqual(manager.connectionState, .disconnected, "Should be disconnected after config update")
     }
-    
-    // MARK: - PID Statistics Tests
+
     
     func testStatsForPIDWithNoData() {
         let stats = manager.stats(for: .mode1(.rpm))
@@ -188,8 +184,7 @@ final class OBDConnectionManagerTests: XCTestCase {
         PIDInterestRegistry.shared.clear(token: token)
         try? await Task.sleep(nanoseconds: 100_000_000)
     }
-    
-    // MARK: - Trouble Codes Tests
+
     
     func testTroubleCodesPublishing() async {
         let expectation = XCTestExpectation(description: "Should receive trouble codes")
@@ -217,8 +212,7 @@ final class OBDConnectionManagerTests: XCTestCase {
         PIDInterestRegistry.shared.clear(token: token)
         try? await Task.sleep(nanoseconds: 100_000_000)
     }
-    
-    // MARK: - Fuel Status Tests
+
     
     func testFuelStatusPublishing() async {
         let expectation = XCTestExpectation(description: "Should receive fuel status")
@@ -246,8 +240,7 @@ final class OBDConnectionManagerTests: XCTestCase {
         PIDInterestRegistry.shared.clear(token: token)
         try? await Task.sleep(nanoseconds: 100_000_000)
     }
-    
-    // MARK: - MIL Status Tests
+
     
     func testMILStatusPublishing() async {
         let expectation = XCTestExpectation(description: "Should receive MIL status")
@@ -281,8 +274,7 @@ final class OBDConnectionManagerTests: XCTestCase {
         PIDInterestRegistry.shared.clear(token: token)
         try? await Task.sleep(nanoseconds: 100_000_000)
     }
-    
-    // MARK: - Demand-Driven Polling Integration Tests
+
     
     func testDemandDrivenPollingIntegration() async {
         await manager.connect()
@@ -344,8 +336,7 @@ final class OBDConnectionManagerTests: XCTestCase {
         PIDInterestRegistry.shared.clear(token: token)
         try? await Task.sleep(nanoseconds: 100_000_000)
     }
-    
-    // MARK: - ConnectionState Equatable Tests
+
     
     func testConnectionStateEquality() {
         XCTAssertEqual(OBDConnectionManager.ConnectionState.disconnected, .disconnected)
@@ -370,8 +361,7 @@ final class OBDConnectionManagerTests: XCTestCase {
         XCTAssertFalse(OBDConnectionManager.ConnectionState.connecting.isFailed)
         XCTAssertFalse(OBDConnectionManager.ConnectionState.connected.isFailed)
     }
-    
-    // MARK: - PIDStats Tests
+
     
     func testPIDStatsCreation() {
         let unit = Unit(symbol: "rpm")

@@ -17,8 +17,7 @@ import SwiftOBD2
 
 @MainActor
 final class PIDToggleListViewTests: XCTestCase {
-    
-    // MARK: - List Structure Tests
+
     
     func testHasList() throws {
         let view = PIDToggleListView()
@@ -33,8 +32,7 @@ final class PIDToggleListViewTests: XCTestCase {
         // Should have "Enabled" and/or "Disabled" sections
         XCTAssertGreaterThan(sections.count, 0, "Should have at least one section")
     }
-    
-    // MARK: - Toggle Tests
+
     
     func testPIDToggleStructure() throws {
         let view = PIDToggleListView()
@@ -51,8 +49,7 @@ final class PIDToggleListViewTests: XCTestCase {
         let vStacks = try view.inspect().findAll(ViewType.VStack.self)
         XCTAssertGreaterThan(vStacks.count, 0, "Toggles should use VStack for label")
     }
-    
-    // MARK: - Search Tests
+
     
     func testHasSearchButton() throws {
         let view = PIDToggleListView()
@@ -69,8 +66,7 @@ final class PIDToggleListViewTests: XCTestCase {
         // This is controlled by @State variable
         XCTAssertNoThrow(try view.inspect().find(ViewType.List.self))
     }
-    
-    // MARK: - Section Header Tests
+
     
     func testEnabledSectionHeader() throws {
         let view = PIDToggleListView()
@@ -81,8 +77,7 @@ final class PIDToggleListViewTests: XCTestCase {
             XCTAssertNoThrow(try sections[0].header(), "Sections should have headers")
         }
     }
-    
-    // MARK: - Reordering Tests
+
     
     func testEnabledSectionSupportsReordering() throws {
         let view = PIDToggleListView()
@@ -92,8 +87,7 @@ final class PIDToggleListViewTests: XCTestCase {
         let list = try view.inspect().find(ViewType.List.self)
         XCTAssertNotNil(list, "List should support reordering")
     }
-    
-    // MARK: - ViewModel Integration Tests
+
     
     func testViewModelInitialization() throws {
         let viewModel = PIDToggleListViewModel()
@@ -120,8 +114,7 @@ final class PIDToggleListViewTests: XCTestCase {
             XCTAssertTrue(true, "Toggle function should execute without error")
         }
     }
-    
-    // MARK: - Search Filtering Tests
+
     
     func testSearchFiltersResults() throws {
         let viewModel = PIDToggleListViewModel()
@@ -142,8 +135,7 @@ final class PIDToggleListViewTests: XCTestCase {
             XCTAssertTrue(matchesQuery, "Filtered PIDs should match search query")
         }
     }
-    
-    // MARK: - Accessibility Tests
+
     
     func testTogglesHaveAccessibilityIdentifiers() throws {
         let view = PIDToggleListView()

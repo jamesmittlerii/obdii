@@ -15,8 +15,7 @@ import UIKit
 @testable import obdii
 
 final class HelpersTests: XCTestCase {
-    
-    // MARK: - Symbol/Image Tests
+
     
     func testSymbolImageCreation() {
         let image = symbolImage(named: "gear")
@@ -27,8 +26,7 @@ final class HelpersTests: XCTestCase {
         let image = symbolImage(named: "nonexistent_symbol_12345")
         XCTAssertNil(image, "Should return nil for invalid symbol name")
     }
-    
-    // MARK: - Severity Image Name Tests
+
     
     func testImageNameForLowSeverity() {
         let name = imageName(for: .low)
@@ -49,8 +47,7 @@ final class HelpersTests: XCTestCase {
         let name = imageName(for: .critical)
         XCTAssertEqual(name, "xmark.octagon", "Critical severity should use octagon icon")
     }
-    
-    // MARK: - Severity Color Tests
+
     
     func testSeverityColorReturnsUIColor() {
         // Disambiguate to the UIKit version by adding type context
@@ -65,7 +62,6 @@ final class HelpersTests: XCTestCase {
         XCTAssertNotNil(critical, "Critical severity should return a color")
     }
 
-    // MARK: - Tinted Symbol Tests
     
     func testTintedSymbolCreation() {
         let image = tintedSymbol(named: "exclamationmark.circle", severity: .low)
@@ -93,8 +89,7 @@ final class HelpersTests: XCTestCase {
             XCTAssertNotNil(image, "Should create tinted symbol for \(severity) severity")
         }
     }
-    
-    // MARK: - Log Collection Tests
+
     
     func testCollectLogsReturnsJSON() async throws {
         let data = try await collectLogs(since: -60)
@@ -120,7 +115,6 @@ final class HelpersTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(entries.count, 0, "Should handle empty results gracefully")
     }
 
-    // MARK: - LogEntry Tests
 
     func testLogEntryCreation() {
         let entry = LogEntry(
@@ -154,8 +148,7 @@ final class HelpersTests: XCTestCase {
         XCTAssertEqual(decoded.subsystem, entry.subsystem)
         XCTAssertEqual(decoded.message, entry.message)
     }
-    
-    // MARK: - About String Tests
+
     
     func testAboutDetailString() {
         let aboutString = aboutDetailString()

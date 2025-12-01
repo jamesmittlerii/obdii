@@ -1,3 +1,4 @@
+import Combine
 /**
  * __Final Project__
  * Jim Mittler
@@ -11,98 +12,85 @@
  * integration.
  */
 import Foundation
-import SwiftOBD2
 import Observation
-import Combine
-
+import SwiftOBD2
 
 @MainActor
 protocol MILStatusProviding {
-    var milStatusPublisher: AnyPublisher<Status?, Never> { get }
+  var milStatusPublisher: AnyPublisher<Status?, Never> { get }
 }
 
 extension OBDConnectionManager: MILStatusProviding {
-    var milStatusPublisher: AnyPublisher<Status?, Never> {
-        $MILStatus.eraseToAnyPublisher()
-    }
+  var milStatusPublisher: AnyPublisher<Status?, Never> {
+    $MILStatus.eraseToAnyPublisher()
+  }
 }
 
 @MainActor
 @Observable
 final class MILStatusViewModel: BaseViewModel {
 
-    // MARK: - Dependencies
+  private let provider: MILStatusProviding
 
-    private let provider: MILStatusProviding
+  private(set) var status: Status? {
+    didSet {
+      if oldValue != status {
+        onChanged?()
+      }
+    }
+  }
 
-    // MARK: - Published State
+  private var cancellables = Set<AnyCancellable>()
 
-    private(set) var status: Status? {
-        didSet {
-            if oldValue != status {
-                onChanged?()
-            }
+  init(provider: MILStatusProviding) {
+    self.provider = provider
+    super.init()
+
+    provider.milStatusPublisher
+      .removeDuplicates()
+      .sink { [unowned self] newValue in
+        self.status = newValue
+      }
+      .store(in: &cancellables)
+  }
+
+  @MainActor
+  override convenience init() {
+    self.init(provider: OBDConnectionManager.shared)
+  }
+
+  var headerText: String {
+    guard let status else { return "No MIL Status" }
+    let dtcLabel = status.dtcCount == 1 ? "1 DTC" : "\(status.dtcCount) DTCs"
+    return "MIL: \(status.milOn ? "On" : "Off") (\(dtcLabel))"
+  }
+
+  var hasStatus: Bool {
+    status != nil
+  }
+
+  var sortedSupportedMonitors: [ReadinessMonitor] {
+    guard let status else { return [] }
+
+    let supported = status.monitors.filter { $0.supported }
+
+    return supported.sorted { lhs, rhs in
+      // 1. Not Ready → 2. Ready → 3. Unknown
+      func readinessPriority(_ ready: Bool?) -> Int {
+        switch ready {
+        case .some(false): return 0
+        case .some(true): return 1
+        case .none: return 2
         }
+      }
+
+      let lp = readinessPriority(lhs.ready)
+      let rp = readinessPriority(rhs.ready)
+
+      if lp != rp { return lp < rp }
+
+      // Tie-break alphabetically
+      return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
     }
-
-    // MARK: - Combine
-
-    private var cancellables = Set<AnyCancellable>()
-
-    // MARK: - Init
-
-     init(provider: MILStatusProviding) {
-         self.provider = provider
-                super.init()
-
-         provider.milStatusPublisher
-                    .removeDuplicates()
-                    .sink { [unowned self] newValue in
-                        self.status = newValue
-                    }
-                    .store(in: &cancellables)
-    }
-
-    @MainActor
-    override convenience init() {
-        self.init(provider: OBDConnectionManager.shared)
-    }
-  
-
-    // MARK: - Computed UI Helpers
-
-    var headerText: String {
-        guard let status else { return "No MIL Status" }
-        let dtcLabel = status.dtcCount == 1 ? "1 DTC" : "\(status.dtcCount) DTCs"
-        return "MIL: \(status.milOn ? "On" : "Off") (\(dtcLabel))"
-    }
-
-    var hasStatus: Bool {
-        status != nil
-    }
-
-    var sortedSupportedMonitors: [ReadinessMonitor] {
-        guard let status else { return [] }
-
-        let supported = status.monitors.filter { $0.supported }
-
-        return supported.sorted { lhs, rhs in
-            // 1. Not Ready → 2. Ready → 3. Unknown
-            func readinessPriority(_ ready: Bool?) -> Int {
-                switch ready {
-                case .some(false): return 0
-                case .some(true):  return 1
-                case .none:        return 2
-                }
-            }
-
-            let lp = readinessPriority(lhs.ready)
-            let rp = readinessPriority(rhs.ready)
-
-            if lp != rp { return lp < rp }
-
-            // Tie-break alphabetically
-            return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
-        }
-    }
+  }
 }

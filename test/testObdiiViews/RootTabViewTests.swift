@@ -16,16 +16,14 @@ import ViewInspector
 
 @MainActor
 final class RootTabViewTests: XCTestCase {
-    
-    // MARK: - TabView Structure Tests
+
     
     func testHasTabView() throws {
         let view = RootTabView()
         let tabView = try view.inspect().find(ViewType.TabView.self)
         XCTAssertNotNil(tabView, "RootTabView should contain a TabView")
     }
-    
-    // MARK: - Tab Count Tests
+
     
     func testHasFiveTabs() throws {
         let view = RootTabView()
@@ -37,8 +35,7 @@ final class RootTabViewTests: XCTestCase {
         let tabView = try view.inspect().find(ViewType.TabView.self)
         XCTAssertNotNil(tabView, "Should have TabView with 5 tabs")
     }
-    
-    // MARK: - Settings Tab Tests
+
     
     func testSettingsTabExists() throws {
         let view = RootTabView()
@@ -47,8 +44,7 @@ final class RootTabViewTests: XCTestCase {
         // Contains SettingsView
         XCTAssertNoThrow(try view.inspect().find(ViewType.TabView.self))
     }
-    
-    // MARK: - Gauges Tab Tests
+
     
     func testGaugesTabHasNavigationStack() throws {
         let view = RootTabView()
@@ -57,8 +53,7 @@ final class RootTabViewTests: XCTestCase {
         let navigationStacks = try view.inspect().findAll(ViewType.NavigationStack.self)
         XCTAssertGreaterThan(navigationStacks.count, 0, "Should have NavigationStack for tabs")
     }
-    
-    // MARK: - Tab Accessibility Tests
+
     
     func testTabsHaveAccessibilityIdentifiers() throws {
         let view = RootTabView()
@@ -68,8 +63,7 @@ final class RootTabViewTests: XCTestCase {
         let tabView = try view.inspect().find(ViewType.TabView.self)
         XCTAssertNotNil(tabView, "TabView should have accessibility identifiers on tabs")
     }
-    
-    // MARK: - Tab Style Tests
+
     
     func testUsesAutomaticTabViewStyle() throws {
         let view = RootTabView()
@@ -78,8 +72,7 @@ final class RootTabViewTests: XCTestCase {
         let tabView = try view.inspect().find(ViewType.TabView.self)
         XCTAssertNotNil(tabView, "Should use automatic tab view style")
     }
-    
-    // MARK: - Tab Item Structure Tests
+
     
     func testTabItemsHaveLabelsAndIcons() throws {
         let view = RootTabView()
@@ -94,8 +87,7 @@ final class RootTabViewTests: XCTestCase {
         let tabView = try view.inspect().find(ViewType.TabView.self)
         XCTAssertNotNil(tabView, "Tabs should have labels and icons")
     }
-    
-    // MARK: - Integration Tests
+
     
     func testAllTabsContainValidViews() throws {
         let view = RootTabView()

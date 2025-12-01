@@ -37,16 +37,14 @@ final class MILStatusViewModelTests: XCTestCase {
         viewModel = nil
         mockProvider = nil
     }
-    
-    // MARK: - Initialization Tests
+
     
     func testInitialization() {
         XCTAssertNotNil(viewModel, "ViewModel should initialize")
         XCTAssertNil(viewModel.status, "Status should be nil initially")
         XCTAssertFalse(viewModel.hasStatus, "hasStatus should be false initially")
     }
-    
-    // MARK: - Status Tests
+
     
     func testHasStatusWhenNil() {
         XCTAssertNil(viewModel.status, "Status should be nil")
@@ -72,8 +70,7 @@ final class MILStatusViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.sortedSupportedMonitors.isEmpty, 
                      "Sorted monitors should be empty initially")
     }
-    
-    // MARK: - Monitor Sorting Tests
+
     
     func testMonitorSortingLogic() {
         // Create supported monitors with varying readiness and names
@@ -93,8 +90,7 @@ final class MILStatusViewModelTests: XCTestCase {
         let names = sorted.map { $0.name }
         XCTAssertEqual(names, ["A Monitor", "C Monitor", "B Monitor"])
     }
-    
-    // MARK: - MIL Status Structure Tests
+
     
     func testMILStatusProperties() {
         XCTAssertNil(viewModel.status, "Status should be nil initially")
@@ -105,8 +101,7 @@ final class MILStatusViewModelTests: XCTestCase {
         XCTAssertNotNil(viewModel.status)
         XCTAssertEqual(viewModel.headerText, "MIL: Off (1 DTC)")
     }
-    
-    // MARK: - Monitor Structure Tests
+
     
     func testMonitorHasName() {
         let monitors: [ReadinessMonitor] = [
@@ -119,8 +114,7 @@ final class MILStatusViewModelTests: XCTestCase {
             XCTAssertFalse(monitor.name.isEmpty, "Monitor should have a name")
         }
     }
-    
-    // MARK: - Header Text Formatting Tests
+
     
     func testHeaderTextWithNoStatus() {
         XCTAssertNil(viewModel.status, "Status should be nil initially")
@@ -141,15 +135,13 @@ final class MILStatusViewModelTests: XCTestCase {
             XCTAssertEqual(viewModel.headerText, expected, "Should format correctly for milOn=\(milOn), dtcCount=\(dtcCount)")
         }
     }
-    
-    // MARK: - Sorted Monitors Tests
+
     
     func testSortedSupportedMonitorsIsArray() {
         let monitors = viewModel.sortedSupportedMonitors
         XCTAssertNotNil(monitors, "Should return monitors array")
     }
-    
-    // MARK: - Callback Tests
+
     
     func testOnChangedCallback() {
         var callbackFired = false

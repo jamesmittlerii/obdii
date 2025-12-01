@@ -84,8 +84,7 @@ final class SettingsViewModelTests: XCTestCase {
         mockConfig = nil
         mockConnection = nil
     }
-    
-    // MARK: - Initialization Tests
+
     
     func testInitialization() {
         XCTAssertNotNil(viewModel, "ViewModel should initialize")
@@ -96,8 +95,7 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.units, .metric)
         XCTAssertEqual(viewModel.connectionState, .disconnected)
     }
-    
-    // MARK: - WiFi Configuration Tests
+
     
     func testWiFiHostUpdate() async {
         let newHost = "192.168.1.100"
@@ -146,8 +144,7 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertEqual(mockConnection.updateConnectionDetailsCallCount, 0, 
                       "Should not call updateConnectionDetails when Bluetooth is active")
     }
-    
-    // MARK: - Connection Type Tests
+
     
     func testConnectionTypeChange() {
         viewModel.connectionType = .wifi
@@ -168,8 +165,7 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertEqual(mockConnection.updateConnectionDetailsCallCount, 0, 
                       "Should not call updateConnectionDetails for redundant update")
     }
-    
-    // MARK: - Units Tests
+
     
     func testUnitsChange() {
         viewModel.units = .imperial
@@ -186,8 +182,7 @@ final class SettingsViewModelTests: XCTestCase {
         
         XCTAssertEqual(viewModel.units, initialUnits, "Redundant update should be handled")
     }
-    
-    // MARK: - Auto-Connect Tests
+
     
     func testAutoConnectToggle() {
         viewModel.autoConnectToOBD = true
@@ -195,8 +190,7 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.autoConnectToOBD, true)
         XCTAssertEqual(mockConfig.autoConnectToOBD, true, "Config should be updated")
     }
-    
-    // MARK: - Connection State Tests
+
     
     func testConnectionStateUpdateFromPublisher() async {
         mockConnection.connectionStateSubject.send(.connecting)
@@ -229,8 +223,7 @@ final class SettingsViewModelTests: XCTestCase {
         viewModel = SettingsViewModel(config: mockConfig, connection: mockConnection)
         XCTAssertTrue(viewModel.isConnectButtonDisabled)
     }
-    
-    // MARK: - Publisher Binding Tests
+
     
     func testUnitsPublisherUpdatesViewModel() async {
         mockConfig.unitsSubject.send(.imperial)
@@ -247,8 +240,7 @@ final class SettingsViewModelTests: XCTestCase {
         
         XCTAssertEqual(viewModel.connectionType, .wifi)
     }
-    
-    // MARK: - Number Formatter Tests
+
     
     func testNumberFormatter() {
         let formatter = viewModel.numberFormatter
@@ -263,8 +255,7 @@ final class SettingsViewModelTests: XCTestCase {
         
         XCTAssertTrue(formatter1 === formatter2, "Should return same static instance")
     }
-    
-    // MARK: - Connection Button Tap Tests
+
     
     func testHandleConnectionButtonTapWhenDisconnected() async {
         mockConnection.connectionState = .disconnected

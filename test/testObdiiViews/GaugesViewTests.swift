@@ -18,8 +18,7 @@ import Combine
 
 @MainActor
 final class GaugesViewTests: XCTestCase {
-    
-    // MARK: - Mocks
+
     
     private struct MockPIDListProvider: PIDListProviding {
         let pidsPublisher: AnyPublisher<[OBDPID], Never>
@@ -46,8 +45,7 @@ final class GaugesViewTests: XCTestCase {
             self.unitsPublisher = Just(units).eraseToAnyPublisher()
         }
     }
-    
-    // MARK: - Helpers
+
     
     private func makeViewModelWithMocks(
         pids: [OBDPID],
@@ -87,8 +85,7 @@ final class GaugesViewTests: XCTestCase {
         try? await Task.sleep(nanoseconds: 10_000_000) // ~10 ms
         await Task.yield()
     }
-    
-    // MARK: - Setup & Teardown
+
     
     override func setUp() {
         super.setUp()
@@ -98,16 +95,14 @@ final class GaugesViewTests: XCTestCase {
     override func tearDown() {
         super.tearDown()
     }
-    
-    // MARK: - ScrollView Structure Tests
+
     
     func testHasScrollView() throws {
         let view = makeViewWithMocks(pids: [])
         let scrollView = try view.inspect().find(ViewType.ScrollView.self)
         XCTAssertNotNil(scrollView, "GaugesView should contain a ScrollView")
     }
-    
-    // MARK: - Grid Layout Tests
+
     
     func testUsesLazyVGrid() throws {
         let view = makeViewWithMocks(pids: [])
@@ -116,8 +111,7 @@ final class GaugesViewTests: XCTestCase {
         // We don’t assert LazyVGrid presence directly since ViewInspector traversal may vary,
         // but the grid is inside the ScrollView per implementation.
     }
-    
-    // MARK: - Gauge Tile Tests
+
     
     func testGaugeTilesAreNavigationLinks_WithMocks() async throws {
         let rpm = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
@@ -136,8 +130,7 @@ final class GaugesViewTests: XCTestCase {
         let vStacks = try view.inspect().findAll(ViewType.VStack.self)
         XCTAssertGreaterThanOrEqual(vStacks.count, 0, "Gauge tiles use VStack")
     }
-    
-    // MARK: - ViewModel Integration Tests
+
     
     func testViewModelInitialization_Empty() {
         let viewModel = makeViewModelWithMocks(pids: [])
@@ -152,8 +145,7 @@ final class GaugesViewTests: XCTestCase {
         XCTAssertEqual(vm.tiles.count, 1, "Should build one tile for one PID")
         XCTAssertEqual(vm.tiles.first?.pid.pid, .mode1(.rpm))
     }
-    
-    // MARK: - Navigation Tests
+
     
     func testNavigationToGaugeDetail_WithMocks() async throws {
         let rpm = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
@@ -165,8 +157,7 @@ final class GaugesViewTests: XCTestCase {
             XCTAssertNoThrow(try navLink.labelView(), "NavigationLink should have label")
         }
     }
-    
-    // MARK: - Text Content Tests
+
     
     func testGaugeTilesHaveLabels_WithMocks() async throws {
         let rpm = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
@@ -176,31 +167,27 @@ final class GaugesViewTests: XCTestCase {
         let texts = try view.inspect().findAll(ViewType.Text.self)
         XCTAssertGreaterThanOrEqual(texts.count, 0, "Gauge tiles should have text labels")
     }
-    
-    // MARK: - Tile Identity Tests
+
     
     func testTileIdentityStructure() throws {
         let tile1 = TileIdentity(id: UUID(), name: "Engine RPM")
         let tile2 = TileIdentity(id: UUID(), name: "Engine RPM")
         XCTAssertNotEqual(tile1.id, tile2.id)
     }
-    
-    // MARK: - Demand-Driven PID Tests (API surface only)
+
     
     func testUpdateInterestMechanism_StructureOnly() throws {
         let view = makeViewWithMocks(pids: [])
         XCTAssertNoThrow(try view.inspect().find(ViewType.ScrollView.self))
     }
-    
-    // MARK: - Layout Tests
+
     
     func testAdaptiveGridColumns() throws {
         let view = makeViewWithMocks(pids: [])
         let scrollView = try view.inspect().find(ViewType.ScrollView.self)
         XCTAssertNotNil(scrollView, "Should have scrollable grid layout")
     }
-    
-    // MARK: - Accessibility Tests
+
     
     func testGaugeTilesHaveIdentifiers_WithMocks() async throws {
         let rpm = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
@@ -210,8 +197,7 @@ final class GaugesViewTests: XCTestCase {
         let navLinks = try view.inspect().findAll(ViewType.NavigationLink.self)
         XCTAssertGreaterThanOrEqual(navLinks.count, 0, "Tiles should have accessibility identifiers")
     }
-    
-    // MARK: - Mocked ViewModel Tests
+
     
     func testRendersGaugeTilesWithMeasurements_UsingMocks() async throws {
         // Provide one PID with a stat so measurement is non-nil

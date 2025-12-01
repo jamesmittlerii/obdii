@@ -52,8 +52,7 @@ final class RingGaugeViewTests: XCTestCase {
     override func tearDown() async throws {
         testPID = nil
     }
-    
-    // MARK: - View Structure Tests
+
     
     func testHasGeometryReader() throws {
         let view = RingGaugeView(pid: testPID, measurement: nil)
@@ -75,8 +74,7 @@ final class RingGaugeViewTests: XCTestCase {
         let vStack = try view.inspect().find(ViewType.VStack.self)
         XCTAssertNotNil(vStack, "Should have VStack for text display")
     }
-    
-    // MARK: - Text Display Tests
+
     
     func testDisplaysTextWhenNoMeasurement() throws {
         let view = RingGaugeView(pid: testPID, measurement: nil)
@@ -107,8 +105,7 @@ final class RingGaugeViewTests: XCTestCase {
             XCTAssertFalse(textString.isEmpty, "Text should have content")
         }
     }
-    
-    // MARK: - Range Initialization Tests
+
     
     func testInitWithTypicalRange() {
         let pid = OBDPID(
@@ -169,8 +166,7 @@ final class RingGaugeViewTests: XCTestCase {
         let view = RingGaugeView(pid: pid, measurement: nil)
         XCTAssertNotNil(view, "Should initialize without ranges defined")
     }
-    
-    // MARK: - Unit System Tests
+
     
     func testMetricUnits() throws {
         ConfigData.shared.units = .metric
@@ -225,8 +221,7 @@ final class RingGaugeViewTests: XCTestCase {
         
         XCTAssertGreaterThan(texts.count, 0, "Should display with imperial units")
     }
-    
-    // MARK: - Edge Case Value Tests
+
     
     func testZeroValue() throws {
         let unit = Unit(symbol: "rpm")
@@ -269,8 +264,7 @@ final class RingGaugeViewTests: XCTestCase {
         let texts = try view.inspect().findAll(ViewType.Text.self)
         XCTAssertGreaterThan(texts.count, 0, "Should display max value")
     }
-    
-    // MARK: - Color Computation Tests
+
     
     func testColorForTypicalValue() {
         let color = testPID.color(for: 2000.0, unit: .metric)
@@ -286,8 +280,7 @@ final class RingGaugeViewTests: XCTestCase {
         let color = testPID.color(for: 6000.0, unit: .metric)
         XCTAssertNotNil(color, "Should compute color for danger value")
     }
-    
-    // MARK: - Different PID Types
+
     
     func testRPMGauge() throws {
         let view = RingGaugeView(pid: testPID, measurement: nil)

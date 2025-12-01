@@ -1,3 +1,4 @@
+import SwiftOBD2
 /**
  * __Final Project__
  * Jim Mittler
@@ -11,101 +12,97 @@
  * initial data load and empty state if no status codes are available.
  */
 import SwiftUI
-import SwiftOBD2
 
+// show the Fuel System status
 struct FuelStatusView: View {
 
-    @State private var viewModel: FuelStatusViewModel
-    @State private var interestToken = PIDInterestRegistry.shared.makeToken()
+  @State private var viewModel: FuelStatusViewModel
+  @State private var interestToken = PIDInterestRegistry.shared.makeToken()
 
-    // Default initializer preserves existing app behavior
-    init() {
-        _viewModel = State(initialValue: FuelStatusViewModel())
-    }
+  // Default initializer preserves existing app behavior
+  init() {
+    _viewModel = State(initialValue: FuelStatusViewModel())
+  }
 
-    // Injectable initializer for tests or previews
-    init(viewModel: FuelStatusViewModel) {
-        _viewModel = State(initialValue: viewModel)
-    }
+  // Injectable initializer for tests or previews
+  init(viewModel: FuelStatusViewModel) {
+    _viewModel = State(initialValue: viewModel)
+  }
 
-    var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    content
-                }
-            }
-            .navigationTitle("Fuel Control Status")
+  var body: some View {
+    NavigationStack {
+      List {
+        Section {
+          content
         }
-        .onAppear {
-            PIDInterestRegistry.shared.replace(
-                pids: [.mode1(.fuelStatus)],
-                for: interestToken
-            )
-        }
-        .onDisappear {
-            PIDInterestRegistry.shared.clear(token: interestToken)
-        }
+      }
+      .navigationTitle("Fuel Control Status")
     }
-
-    // MARK: - Main Content
-
-    @ViewBuilder
-    private var content: some View {
-
-        // 1) Waiting state
-        if viewModel.status == nil {
-            waitingRow
-
-        // 2) Loaded content
-        } else {
-            if let b1 = viewModel.bank1 {
-                fuelRow(title: "Bank 1", description: b1.description)
-                    .accessibilityLabel("Bank 1, \(b1.description)")
-            }
-
-            if let b2 = viewModel.bank2 {
-                fuelRow(title: "Bank 2", description: b2.description)
-                    .accessibilityLabel("Bank 2, \(b2.description)")
-            }
-
-            if !viewModel.hasAnyStatus {
-                Label("No Fuel System Status Codes", systemImage: "info.circle")
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel("No Fuel System Status Codes")
-            }
-        }
+    .onAppear {
+      PIDInterestRegistry.shared.replace(
+        pids: [.mode1(.fuelStatus)],
+        for: interestToken
+      )
     }
-
-    // MARK: - Rows
-
-    private var waitingRow: some View {
-        HStack(spacing: 12) {
-            ProgressView()
-                .progressViewStyle(.circular)
-            Text("Waiting for data…")
-                .foregroundStyle(.secondary)
-        }
-        .accessibilityLabel("Waiting for data")
+    .onDisappear {
+      PIDInterestRegistry.shared.clear(token: interestToken)
     }
+  }
 
-    private func fuelRow(title: String, description: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: "fuelpump.fill")
-                .foregroundStyle(.blue)
-                .imageScale(.large)
+  @ViewBuilder
+  private var content: some View {
 
-            Text(title)
+    // 1) Waiting state
+    if viewModel.status == nil {
+      waitingRow
 
-            Spacer()
+      // 2) Loaded content
+    } else {
+      if let b1 = viewModel.bank1 {
+        fuelRow(title: "Bank 1", description: b1.description)
+          .accessibilityLabel("Bank 1, \(b1.description)")
+      }
 
-            Text(description)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.trailing)
-        }
+      if let b2 = viewModel.bank2 {
+        fuelRow(title: "Bank 2", description: b2.description)
+          .accessibilityLabel("Bank 2, \(b2.description)")
+      }
+
+      if !viewModel.hasAnyStatus {
+        Label("No Fuel System Status Codes", systemImage: "info.circle")
+          .foregroundStyle(.secondary)
+          .accessibilityLabel("No Fuel System Status Codes")
+      }
     }
+  }
+
+  private var waitingRow: some View {
+    HStack(spacing: 12) {
+      ProgressView()
+        .progressViewStyle(.circular)
+      Text("Waiting for data…")
+        .foregroundStyle(.secondary)
+    }
+    .accessibilityLabel("Waiting for data")
+  }
+
+  private func fuelRow(title: String, description: String) -> some View {
+    HStack(spacing: 12) {
+      Image(systemName: "fuelpump.fill")
+        .foregroundStyle(.blue)
+        .imageScale(.large)
+
+      Text(title)
+
+      Spacer()
+
+      Text(description)
+        .foregroundStyle(.secondary)
+        .multilineTextAlignment(.trailing)
+    }
+  }
 }
 
 #Preview {
-    FuelStatusView()
+  FuelStatusView()
 }

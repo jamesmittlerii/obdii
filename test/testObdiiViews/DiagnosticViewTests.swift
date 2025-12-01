@@ -34,8 +34,7 @@ final class DiagnosticsViewTests: XCTestCase {
         let view = DiagnosticsView(viewModel: vm)
         return (view, vm, mock)
     }
-    
-    // MARK: - Navigation Structure Tests
+
     
     func testHasNavigationStack() throws {
         let (view, _, _) = makeView(with: MockDiagnosticsProvider())
@@ -59,8 +58,7 @@ final class DiagnosticsViewTests: XCTestCase {
         let list = try stack.find(ViewType.List.self)
         XCTAssertNotNil(list, "NavigationStack should contain a List")
     }
-    
-    // MARK: - Waiting State Tests
+
     
     func testWaitingStateDisplaysProgressView() throws {
         let (view, _, _) = makeView(with: MockDiagnosticsProvider())
@@ -79,16 +77,14 @@ final class DiagnosticsViewTests: XCTestCase {
         }
         XCTAssertNotNil(waitingText, "Should display 'Waiting for data' text in waiting state")
     }
-    
-    // MARK: - Empty State Tests
+
     
     func testEmptyStateDisplaysNoCodesMessage() throws {
         _ = DiagnosticsViewModel()
         _ = DiagnosticsView()
         // Documented expected behavior; injection would be needed to force empty state.
     }
-    
-    // MARK: - Sections Display Tests
+
     
     func testSectionsDisplayWhenCodesExist() throws {
         let (view, _, _) = makeView(with: MockDiagnosticsProvider())
@@ -101,16 +97,14 @@ final class DiagnosticsViewTests: XCTestCase {
         let list = try view.inspect().find(ViewType.List.self)
         XCTAssertNotNil(list, "List should exist")
     }
-    
-    // MARK: - Code Row Tests
+
     
     func testCodeRowStructure() throws {
         let (view, _, _) = makeView(with: MockDiagnosticsProvider())
         let hstacks = try view.inspect().findAll(ViewType.HStack.self)
         XCTAssertGreaterThanOrEqual(hstacks.count, 0, "Should contain HStack elements")
     }
-    
-    // MARK: - ViewModel Integration Tests
+
     
     func testViewModelInitializesWithNilCodes() throws {
         let viewModel = DiagnosticsViewModel()
@@ -128,8 +122,7 @@ final class DiagnosticsViewTests: XCTestCase {
         _ = DiagnosticsViewModel()
         // Documented; see severity ordering test for structure.
     }
-    
-    // MARK: - Severity Ordering Tests
+
     
     func testSeverityOrderisCriticalHighModerateLow() throws {
         let criticalCode = TroubleCodeMetadata(
@@ -151,8 +144,7 @@ final class DiagnosticsViewTests: XCTestCase {
         XCTAssertTrue(criticalCode.severity.rawValue < lowCode.severity.rawValue,
                      "Critical severity should have lower raw value than low severity")
     }
-    
-    // MARK: - Navigation Link Tests
+
     
     func testCodeRowsAreNavigationLinks() async throws {
         // Use injected mock provider instead of OBDConnectionManager.shared
@@ -177,8 +169,7 @@ final class DiagnosticsViewTests: XCTestCase {
         // Cleanup: trigger onDisappear on the NavigationStack
         try stack.callOnDisappear()
     }
-    
-    // MARK: - Section Header Tests
+
     
     func testSectionHeadersDisplaySeverityTitles() throws {
         let (view, _, _) = makeView(with: MockDiagnosticsProvider())
@@ -187,24 +178,21 @@ final class DiagnosticsViewTests: XCTestCase {
             XCTAssertNoThrow(try section.header())
         }
     }
-    
-    // MARK: - Accessibility Tests
+
     
     func testWaitingRowHasAccessibilityLabel() throws {
         let (view, _, _) = makeView(with: MockDiagnosticsProvider())
         let hstacks = try view.inspect().findAll(ViewType.HStack.self)
         XCTAssertGreaterThanOrEqual(hstacks.count, 0)
     }
-    
-    // MARK: - List Content Tests
+
     
     func testListExistsInAllStates() throws {
         let (view, _, _) = makeView(with: MockDiagnosticsProvider())
         let list = try view.inspect().find(ViewType.List.self)
         XCTAssertNotNil(list, "List should exist in all view states")
     }
-    
-    // MARK: - Mock Data Helper Tests
+
     
     func testCreateMockDTCs() throws {
         let mockCodes = createMockDTCs()
@@ -214,8 +202,7 @@ final class DiagnosticsViewTests: XCTestCase {
         XCTAssertTrue(mockCodes.contains { $0.severity == .low },
                      "Mock codes should include low severity")
     }
-    
-    // MARK: - Helper Methods
+
     
     private func createMockDTCs() -> [TroubleCodeMetadata] {
         return [
@@ -253,8 +240,7 @@ final class DiagnosticsViewTests: XCTestCase {
             )
         ]
     }
-    
-    // MARK: - Mocked ViewModel Tests
+
     
     func testDisplaysDTCsGroupedBySeverity() {
         let mockDTCs = createMockDTCs()

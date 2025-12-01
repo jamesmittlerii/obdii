@@ -37,7 +37,6 @@ final class FuelStatusViewTests: XCTestCase {
         return (view, vm, mock)
     }
 
-    // MARK: - Navigation Structure Tests
 
     func testHasNavigationStack() throws {
         let (view, _, _) = makeView(with: MockFuelStatusProvider())
@@ -54,7 +53,6 @@ final class FuelStatusViewTests: XCTestCase {
         XCTAssertNotNil(list, "NavigationStack should contain a List")
     }
 
-    // MARK: - List Structure Tests
 
     func testContainsList() throws {
         let (view, _, _) = makeView(with: MockFuelStatusProvider())
@@ -62,7 +60,6 @@ final class FuelStatusViewTests: XCTestCase {
         XCTAssertNotNil(list, "FuelStatusView should contain a List")
     }
 
-    // MARK: - Waiting State Tests
 
     func testWaitingStateDisplaysProgressView() throws {
         let (view, _, _) = makeView(with: MockFuelStatusProvider())
@@ -86,7 +83,6 @@ final class FuelStatusViewTests: XCTestCase {
         XCTAssertGreaterThan(hStacks.count, 0, "Should have HStack for waiting row")
     }
 
-    // MARK: - ViewModel Integration Tests
 
     func testViewModelInitializesWithNilStatus() throws {
         let mock = MockFuelStatusProvider()
@@ -97,7 +93,6 @@ final class FuelStatusViewTests: XCTestCase {
         XCTAssertFalse(viewModel.hasAnyStatus, "hasAnyStatus should be false when status is nil")
     }
 
-    // MARK: - Loaded State Tests (with mock)
 
     func testLoadedStateDisplaysBank1Only() throws {
         let mock = MockFuelStatusProvider()
@@ -144,7 +139,6 @@ final class FuelStatusViewTests: XCTestCase {
         XCTAssertFalse(labels.isEmpty, "Should display empty state Label when no status codes")
     }
 
-    // MARK: - Image Tests
 
     func testContainsFuelPumpImagesWhenLoaded() throws {
         let mock = MockFuelStatusProvider()
@@ -159,7 +153,6 @@ final class FuelStatusViewTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(images.count, 1, "View should contain fuel pump image when showing a bank row")
     }
 
-    // MARK: - Accessibility Tests
 
     func testWaitingRowHasAccessibilityLabel() throws {
         let (view, _, _) = makeView(with: MockFuelStatusProvider())

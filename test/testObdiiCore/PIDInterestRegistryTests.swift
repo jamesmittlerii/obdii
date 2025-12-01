@@ -37,14 +37,12 @@ final class PIDInterestRegistryTests: XCTestCase {
         testTokens.removeAll()
         registry = nil
     }
-    
-    // MARK: - Initialization Tests
+
     
     func testSharedInstanceExists() {
         XCTAssertNotNil(PIDInterestRegistry.shared, "Shared instance should exist")
     }
-    
-    // MARK: - Token Creation Tests
+
     
     func testMakeToken() {
         let token1 = registry.makeToken()
@@ -54,8 +52,7 @@ final class PIDInterestRegistryTests: XCTestCase {
         
         XCTAssertNotEqual(token1, token2, "Each token should be unique")
     }
-    
-    // MARK: - Replace PIDs Tests
+
     
     func testReplacePIDsForToken() {
         let token = registry.makeToken()
@@ -95,8 +92,7 @@ final class PIDInterestRegistryTests: XCTestCase {
         registry.replace(pids: [], for: token)
         XCTAssertFalse(registry.interested.contains(.mode1(.rpm)), "Should clear token's PIDs")
     }
-    
-    // MARK: - Multiple Tokens Tests
+
     
     func testMultipleTokensCanRegisterSamePID() {
         let token1 = registry.makeToken()
@@ -125,8 +121,7 @@ final class PIDInterestRegistryTests: XCTestCase {
         XCTAssertTrue(registry.interested.contains(.mode1(.speed)))
         XCTAssertEqual(registry.interested.count, 2, "Should have 2 interested PIDs")
     }
-    
-    // MARK: - Clear Token Tests
+
     
     func testClearToken() async {
         let token = registry.makeToken()
@@ -182,8 +177,7 @@ final class PIDInterestRegistryTests: XCTestCase {
         XCTAssertTrue(registry.interested.contains(.mode1(.rpm)), 
                      "Shared PID should remain while other token holds it")
     }
-    
-    // MARK: - Interested PIDs Tests
+
     
     func testInterestedPIDsUnion() {
         let token1 = registry.makeToken()
@@ -200,8 +194,7 @@ final class PIDInterestRegistryTests: XCTestCase {
         XCTAssertTrue(registry.interested.contains(.mode1(.speed)))
         XCTAssertTrue(registry.interested.contains(.mode1(.coolantTemp)))
     }
-    
-    // MARK: - Published Property Tests
+
     
     func testInterestedIsPublished() {
         var changeCount = 0

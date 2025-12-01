@@ -15,8 +15,7 @@ import SwiftOBD2
 @testable import obdii
 
 final class OBDIIPIDTests: XCTestCase {
-    
-    // MARK: - ValueRange Tests
+
     
     func testValueRangeCreation() {
         let range = ValueRange(min: 0, max: 100)
@@ -63,8 +62,7 @@ final class OBDIIPIDTests: XCTestCase {
         XCTAssertTrue(range1.overlaps(range2), "Should overlap")
         XCTAssertFalse(range1.overlaps(range3), "Should not overlap")
     }
-    
-    // MARK: - OBDPID Creation Tests
+
     
     func testOBDPIDCreation() {
         let pid = OBDPID(
@@ -94,8 +92,7 @@ final class OBDIIPIDTests: XCTestCase {
         
         XCTAssertEqual(pid.name, "Test", "Name should default to label")
     }
-    
-    // MARK: - Combined Range Tests
+
     
     func testCombinedRange() {
         let pid = OBDPID(
@@ -126,8 +123,7 @@ final class OBDIIPIDTests: XCTestCase {
         XCTAssertEqual(combined.min, 0, "Should default to 0")
         XCTAssertEqual(combined.max, 1, "Should default to 1")
     }
-    
-    // MARK: - Color Tests
+
     
     @MainActor
     func testColorForValue() {
@@ -146,8 +142,7 @@ final class OBDIIPIDTests: XCTestCase {
         XCTAssertEqual(pid.color(for: 5000, unit: .metric), .red, "Danger range should be red")
         XCTAssertEqual(pid.color(for: 9000, unit: .metric), .gray, "Outside all ranges should be gray")
     }
-    
-    // MARK: - Display Range Tests
+
     
     @MainActor
     func testDisplayRange() {
@@ -164,8 +159,7 @@ final class OBDIIPIDTests: XCTestCase {
         XCTAssertTrue(display.contains("0"), "Should contain min value")
         XCTAssertTrue(display.contains("8"), "Should contain max value")
     }
-    
-    // MARK: - Equatable/Hashable Tests
+
     
     func testOBDPIDEquality() {
         let id = UUID()

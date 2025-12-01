@@ -60,8 +60,7 @@ final class DTCDetailViewTests: XCTestCase {
         testDTCWithCausesAndRemedies = nil
         testDTCNoCausesOrRemedies = nil
     }
-    
-    // MARK: - View Structure Tests
+
     
     func testHasList() throws {
         let view = DTCDetailView(code: testDTC)
@@ -76,8 +75,7 @@ final class DTCDetailViewTests: XCTestCase {
         let sections = try view.inspect().findAll(ViewType.Section.self)
         XCTAssertGreaterThan(sections.count, 0, "Should have at least one section")
     }
-    
-    // MARK: - Navigation Title Tests
+
     
     func testNavigationTitleIsCode() throws {
         let view = DTCDetailView(code: testDTC)
@@ -85,8 +83,7 @@ final class DTCDetailViewTests: XCTestCase {
         // Navigation title should be the DTC code
         XCTAssertNotNil(view, "View should initialize with DTC code as title")
     }
-    
-    // MARK: - Overview Section Tests
+
     
     func testOverviewSectionExists() throws {
         let view = DTCDetailView(code: testDTC)
@@ -102,8 +99,7 @@ final class DTCDetailViewTests: XCTestCase {
         let labeledContents = try view.inspect().findAll(ViewType.LabeledContent.self)
         XCTAssertGreaterThanOrEqual(labeledContents.count, 3, "Overview should have at least 3 LabeledContent items")
     }
-    
-    // MARK: - Description Section Tests
+
     
     func testDescriptionSectionExists() throws {
         let view = DTCDetailView(code: testDTC)
@@ -128,8 +124,7 @@ final class DTCDetailViewTests: XCTestCase {
         let texts = try view.inspect().findAll(ViewType.Text.self)
         XCTAssertGreaterThan(texts.count, 0, "Should have text elements")
     }
-    
-    // MARK: - Causes Section Tests
+
     
     func testCausesSectionWithCauses() throws {
         let view = DTCDetailView(code: testDTCWithCausesAndRemedies)
@@ -164,8 +159,7 @@ final class DTCDetailViewTests: XCTestCase {
         // Should have no bullets for causes section when causes are empty
         XCTAssertEqual(bulletCount, 0, "Should not display causes section when empty")
     }
-    
-    // MARK: - Remedies Section Tests
+
     
     func testRemediesSectionWithRemedies() throws {
         let view = DTCDetailView(code: testDTCWithCausesAndRemedies)
@@ -190,8 +184,7 @@ final class DTCDetailViewTests: XCTestCase {
         // View should still render without remedies
         XCTAssertNoThrow(try view.inspect(), "Should render without remedies")
     }
-    
-    // MARK: - Conditional Rendering Tests
+
     
     func testRenderWithAllData() throws {
         let view = DTCDetailView(code: testDTCWithCausesAndRemedies)
@@ -206,8 +199,7 @@ final class DTCDetailViewTests: XCTestCase {
         // Should render successfully with minimal data
         XCTAssertNoThrow(try view.inspect(), "Should render with minimal data")
     }
-    
-    // MARK: - Severity Display Tests
+
     
     func testSeverityMinorDisplay() throws {
         let minorDTC = TroubleCodeMetadata(
@@ -250,8 +242,7 @@ final class DTCDetailViewTests: XCTestCase {
         let view = DTCDetailView(code: severeDTC)
         XCTAssertNoThrow(try view.inspect(), "Should render severe severity")
     }
-    
-    // MARK: - Multiple Causes and Remedies Tests
+
     
     func testMultipleCausesDisplay() throws {
         let dtcWithManyCauses = TroubleCodeMetadata(
@@ -314,8 +305,7 @@ final class DTCDetailViewTests: XCTestCase {
         
         XCTAssertGreaterThanOrEqual(bulletCount, 5, "Should display all remedies")
     }
-    
-    // MARK: - Different DTC Code Formats Tests
+
     
     func testPCodeFormat() throws {
         let pCode = TroubleCodeMetadata(

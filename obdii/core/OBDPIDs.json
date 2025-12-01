@@ -514,8 +514,8 @@
     "formula": "A",
     "units": "kPa",
     "typicalRange": {
-      "min": 80,
-      "max": 105
+      "min": 70,
+      "max": 115
     },
     "notes": "Convert to inHg elsewhere if needed",
     "kind": "gauge"

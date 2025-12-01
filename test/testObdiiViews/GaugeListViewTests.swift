@@ -29,8 +29,7 @@ import Combine
 
 @MainActor
 final class GaugeListViewTests: XCTestCase {
-    
-    // MARK: - Mocks
+
     
     private struct MockPIDListProvider: PIDListProviding {
         let pidsPublisher: AnyPublisher<[OBDPID], Never>
@@ -57,8 +56,7 @@ final class GaugeListViewTests: XCTestCase {
             self.unitsPublisher = Just(units).eraseToAnyPublisher()
         }
     }
-    
-    // MARK: - Helpers
+
     
     private func makeViewModelWithMocks(
         pids: [OBDPID],
@@ -90,8 +88,7 @@ final class GaugeListViewTests: XCTestCase {
         // One more yield to ensure SwiftUI state propagation
         await Task.yield()
     }
-    
-    // MARK: - View Structure Tests
+
     
     func testHasList() async throws {
         let view = makeViewWithMocks(pids: [])
@@ -109,8 +106,7 @@ final class GaugeListViewTests: XCTestCase {
         let view = makeViewWithMocks(pids: [])
         XCTAssertNotNil(view, "View should be created with navigation title")
     }
-    
-    // MARK: - NavigationLink Tests
+
     
     func testGaugesWrappedInNavigationLinks() async throws {
         let pid = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
@@ -120,8 +116,7 @@ final class GaugeListViewTests: XCTestCase {
         let navLinks = try view.inspect().findAll(ViewType.NavigationLink.self)
         XCTAssertGreaterThanOrEqual(navLinks.count, 0, "Should have NavigationLink elements for gauges")
     }
-    
-    // MARK: - Row Display Tests
+
     
     func testRowStructureHasHStack() async throws {
         let pid = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
@@ -167,8 +162,7 @@ final class GaugeListViewTests: XCTestCase {
         let texts = try view.inspect().findAll(ViewType.Text.self)
         XCTAssertGreaterThanOrEqual(texts.count, 0, "Should display current values")
     }
-    
-    // MARK: - Value Formatting Tests
+
     
     func testCurrentValueTextWithMeasurement() {
         let testPID = OBDPID(
@@ -221,8 +215,7 @@ final class GaugeListViewTests: XCTestCase {
         XCTAssertTrue(valueText.contains("—"), "Should show placeholder dash")
         XCTAssertTrue(valueText.contains("°C"), "Should show units from mocks")
     }
-    
-    // MARK: - Color Coding Tests
+
     
     func testCurrentValueColorWithMeasurement() {
         let testPID = OBDPID(
@@ -251,8 +244,7 @@ final class GaugeListViewTests: XCTestCase {
         let expectedColor = Color.secondary
         XCTAssertNotNil(expectedColor, "Should use secondary color when no measurement")
     }
-    
-    // MARK: - PID Interest Management Tests
+
     
     func testPIDInterestRegistrationOnAppear() {
         let token = PIDInterestRegistry.shared.makeToken()
@@ -269,15 +261,13 @@ final class GaugeListViewTests: XCTestCase {
         PIDInterestRegistry.shared.clear(token: token)
         XCTAssertTrue(true, "Should clear PID interest on disappear")
     }
-    
-    // MARK: - onChange Behavior Tests
+
     
     func testUpdateInterestCalled() {
         let view = makeViewWithMocks(pids: [])
         XCTAssertNotNil(view, "View should handle tile identity changes")
     }
-    
-    // MARK: - Navigation Tests
+
     
     func testNavigationToGaugeDetailView() async throws {
         let pid = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
@@ -287,8 +277,7 @@ final class GaugeListViewTests: XCTestCase {
         let navLinks = try view.inspect().findAll(ViewType.NavigationLink.self)
         XCTAssertGreaterThanOrEqual(navLinks.count, 0, "Should have navigation to detail views")
     }
-    
-    // MARK: - Accessibility Tests
+
     
     func testAccessibilityLabels() async throws {
         let pid = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
@@ -298,15 +287,13 @@ final class GaugeListViewTests: XCTestCase {
         let texts = try view.inspect().findAll(ViewType.Text.self)
         XCTAssertGreaterThanOrEqual(texts.count, 0, "Should have accessible text elements")
     }
-    
-    // MARK: - Empty State Tests
+
     
     func testEmptyGaugesList() async {
         let view = makeViewWithMocks(pids: [])
         XCTAssertNotNil(view, "Should handle empty gauges list")
     }
-    
-    // MARK: - ViewModel Integration Tests
+
     
     func testViewModelInitialization() {
         let view = makeViewWithMocks(pids: [])
@@ -318,8 +305,7 @@ final class GaugeListViewTests: XCTestCase {
         XCTAssertNotNil(token, "Should create interest token")
         PIDInterestRegistry.shared.clear(token: token)
     }
-    
-    // MARK: - TileIdentity Tests
+
     
     func testTileIdentityTracking() {
         struct TileIdentity: Equatable {
@@ -335,8 +321,7 @@ final class GaugeListViewTests: XCTestCase {
         XCTAssertEqual(identity1, identity2, "Same ID and name should be equal")
         XCTAssertNotEqual(identity1, identity3, "Different IDs should not be equal")
     }
-    
-    // MARK: - Spacer Tests
+
     
     func testRowHasSpacer() async throws {
         let pid = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
@@ -346,8 +331,7 @@ final class GaugeListViewTests: XCTestCase {
         let spacers = try view.inspect().findAll(ViewType.Spacer.self)
         XCTAssertGreaterThanOrEqual(spacers.count, 0, "Should use Spacer in row layout")
     }
-    
-    // MARK: - ContentShape Tests
+
     
     func testRowUsesContentShape() async {
         let pid = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
@@ -355,8 +339,7 @@ final class GaugeListViewTests: XCTestCase {
         await pumpMainRunLoop()
         XCTAssertNotNil(view, "Should use content shape for tap area")
     }
-    
-    // MARK: - Private Method Coverage Tests (via View Inspection)
+
     
     func testTileRowRendering() async throws {
         let pid = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
@@ -401,8 +384,7 @@ final class GaugeListViewTests: XCTestCase {
         let vstacks = try view.inspect().findAll(ViewType.VStack.self)
         XCTAssertGreaterThanOrEqual(vstacks.count, 0, "tileRow should create VStack for content")
     }
-    
-    // MARK: - Enhanced tileRow Tests
+
     
     func testTileRow_DisplaysCorrectNameAndRange() throws {
         let testPID = OBDPID(
@@ -539,8 +521,7 @@ final class GaugeListViewTests: XCTestCase {
         PIDInterestRegistry.shared.clear(token: token1)
         PIDInterestRegistry.shared.clear(token: token2)
     }
-    
-    // MARK: - Enhanced updateInterest Tests
+
     
     func testUpdateInterest_RegistersPIDsOnAppear() async throws {
         let view = makeViewWithMocks(pids: [])
@@ -609,8 +590,7 @@ final class GaugeListViewTests: XCTestCase {
         XCTAssertNotNil(view, "View should clear PID interest on disappear")
         PIDInterestRegistry.shared.clear(token: token)
     }
-    
-    // MARK: - Mocked Data Tests for Coverage
+
     
     func testListRowsWithMeasurements() {
         let testPID = OBDPID(

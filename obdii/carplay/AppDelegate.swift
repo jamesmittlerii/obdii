@@ -1,3 +1,4 @@
+import OSLog
 /**
  * __Final Project__
  * Jim Mittler
@@ -12,18 +13,18 @@
  * CarPlaySceneDelegate, as configured in the app's Info.plist.
  */
 import UIKit
-import OSLog
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
+  // App-wide logger for initialization and startup events
+  static let logger = Logger(subsystem: "com.rheosoft.obdii", category: "AppInit")
 
-    /// App-wide logger for initialization and startup events
-    static let logger = Logger(subsystem: "com.rheosoft.obdii", category: "AppInit")
+  func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  ) -> Bool {
 
-    func application(_ application: UIApplication,
-                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-
-        // App-level setup (scene-specific setup is in CarPlaySceneDelegate)
-        return true
-    }
+    // App-level setup (scene-specific setup is in CarPlaySceneDelegate)
+    return true
+  }
 }

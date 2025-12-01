@@ -40,8 +40,7 @@ final class CarPlayHelpersTests: XCTestCase {
     override func tearDown() async throws {
         testPID = nil
     }
-    
-    // MARK: - drawGaugeImage() Tests
+
     
     func testDrawGaugeImageCreatesImage() {
         let size = CGSize(width: 100, height: 100)
@@ -129,8 +128,7 @@ final class CarPlayHelpersTests: XCTestCase {
         
         XCTAssertNotNil(image, "Should handle negative values")
     }
-    
-    // MARK: - Range-Based Color Tests
+
     
     func testDrawGaugeImageTypicalRangeValue() {
         let size = CGSize(width: 100, height: 100)
@@ -167,8 +165,7 @@ final class CarPlayHelpersTests: XCTestCase {
         
         XCTAssertNotNil(image, "Should create image for danger range value")
     }
-    
-    // MARK: - PID Without Ranges Tests
+
     
     func testDrawGaugeImagePIDWithoutRanges() {
         let size = CGSize(width: 100, height: 100)
@@ -195,8 +192,7 @@ final class CarPlayHelpersTests: XCTestCase {
         
         XCTAssertNotNil(image, "Should handle PID without defined ranges")
     }
-    
-    // MARK: - Unit System Tests
+
     
     func testDrawGaugeImageMetricTemperature() {
         ConfigData.shared.units = .metric
@@ -253,8 +249,7 @@ final class CarPlayHelpersTests: XCTestCase {
         
         XCTAssertNotNil(image, "Should create image for imperial speed")
     }
-    
-    // MARK: - Image Properties Tests
+
     
     func testDrawGaugeImageIsTransparent() {
         let size = CGSize(width: 100, height: 100)
@@ -275,8 +270,7 @@ final class CarPlayHelpersTests: XCTestCase {
         // Image should have a scale (typically 1.0, 2.0, or 3.0 for retina)
         XCTAssertGreaterThan(image.scale, 0, "Image scale should be valid")
     }
-    
-    // MARK: - CodeSeverity Color Extension Tests
+
     
     func testCodeSeverityLowColor() {
         let severity = CodeSeverity.low
@@ -327,8 +321,7 @@ final class CarPlayHelpersTests: XCTestCase {
         XCTAssertNotEqual(high, critical, "High and critical should have different colors")
         XCTAssertNotEqual(low, high, "Low and high should have different colors")
     }
-    
-    // MARK: - Edge Case Tests
+
     
     func testDrawGaugeImageVerySmallSize() {
         let size = CGSize(width: 10, height: 10)
@@ -371,8 +364,7 @@ final class CarPlayHelpersTests: XCTestCase {
         
         XCTAssertNotNil(image, "Should handle value below min range")
     }
-    
-    // MARK: - Different PID Types Tests
+
     
     func testDrawGaugeImageForSpeedPID() {
         let size = CGSize(width: 100, height: 100)

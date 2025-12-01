@@ -11,85 +11,73 @@
  * for CarPlay integration.
  */
 import Combine
-import SwiftOBD2
 import Foundation
 import Observation
+import SwiftOBD2
 
 @MainActor
 protocol FuelStatusProviding {
-    var fuelStatusPublisher: AnyPublisher<[StatusCodeMetadata?]?, Never> { get }
+  var fuelStatusPublisher: AnyPublisher<[StatusCodeMetadata?]?, Never> { get }
 }
 
 extension OBDConnectionManager: FuelStatusProviding {
-    var fuelStatusPublisher: AnyPublisher<[StatusCodeMetadata?]?, Never> {
-        $fuelStatus.eraseToAnyPublisher()
-    }
+  var fuelStatusPublisher: AnyPublisher<[StatusCodeMetadata?]?, Never> {
+    $fuelStatus.eraseToAnyPublisher()
+  }
 }
 
 @MainActor
 @Observable
 final class FuelStatusViewModel: BaseViewModel {
 
-    // MARK: - Published state
-    private let provider: FuelStatusProviding
-    
-    /// nil = waiting for first update
-    /// non-nil = data received (may contain nils for missing banks)
-    private(set) var status: [StatusCodeMetadata?]? = nil {
-        didSet {
-            if oldValue != status {  // avoid duplicate updates
-                onChanged?()
-            }
-        }
+  private let provider: FuelStatusProviding
+  // nil = waiting for first update
+  // non-nil = data received (may contain nils for missing banks)
+  private(set) var status: [StatusCodeMetadata?]? = nil {
+    didSet {
+      if oldValue != status {  // avoid duplicate updates
+        onChanged?()
+      }
     }
+  }
 
-    // MARK: - Combine
-    private var cancellables = Set<AnyCancellable>()
+  private var cancellables = Set<AnyCancellable>()
 
-    // MARK: - Init
+  // Designated initializer without default argument (nonisolated-safe)
+  init(provider: FuelStatusProviding) {
+    self.provider = provider
+    super.init()
 
-    // Designated initializer without default argument (nonisolated-safe)
-    init(provider: FuelStatusProviding) {
-        self.provider = provider
-        super.init()
+    provider.fuelStatusPublisher
+      .removeDuplicates()
+      .sink { [unowned self] newValue in
+        self.status = newValue
+      }
+      .store(in: &cancellables)
+  }
 
-        provider.fuelStatusPublisher
-            .removeDuplicates()
-            .sink { [unowned self] newValue in
-                self.status = newValue
-            }
-            .store(in: &cancellables)
-    }
-
-    // Convenience initializer that supplies the main-actor-isolated singleton
-    @MainActor
-    override convenience init() {
-        self.init(provider: OBDConnectionManager.shared)
-    }
-
-    // MARK: - Accessors
-
-    /// Fuel system status for Bank 1
-    var bank1: StatusCodeMetadata? {
-        status?[safe: 0] ?? nil
-    }
-
-    /// Fuel system status for Bank 2
-    var bank2: StatusCodeMetadata? {
-        status?[safe: 1] ?? nil
-    }
-
-    /// True if any bank contains a non-nil status value
-    var hasAnyStatus: Bool {
-        guard let status else { return false }
-        return status.contains { $0 != nil }
-    }
+  // Convenience initializer that supplies the main-actor-isolated singleton
+  @MainActor
+  override convenience init() {
+    self.init(provider: OBDConnectionManager.shared)
+  }
+  // Fuel system status for Bank 1
+  var bank1: StatusCodeMetadata? {
+    status?[safe: 0] ?? nil
+  }
+  // Fuel system status for Bank 2
+  var bank2: StatusCodeMetadata? {
+    status?[safe: 1] ?? nil
+  }
+  // True if any bank contains a non-nil status value
+  var hasAnyStatus: Bool {
+    guard let status else { return false }
+    return status.contains { $0 != nil }
+  }
 }
 
-// MARK: - Safe indexing helper
-
-private extension Array {
-    subscript(safe index: Int) -> Element? {
-        indices.contains(index) ? self[index] : nil
-    }
+extension Array {
+  fileprivate subscript(safe index: Int) -> Element? {
+    indices.contains(index) ? self[index] : nil
+  }
 }

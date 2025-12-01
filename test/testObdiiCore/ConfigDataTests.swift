@@ -31,8 +31,7 @@ final class ConfigDataTests: XCTestCase {
         configData.connectionType = .bluetooth
         configData.setUnits(.metric)
     }
-    
-    // MARK: - Initialization Tests
+
     
     func testSharedInstanceExists() {
         XCTAssertNotNil(ConfigData.shared, "Shared instance should exist")
@@ -44,8 +43,6 @@ final class ConfigDataTests: XCTestCase {
         XCTAssertEqual(configData.wifiPort, 35000, "Default WiFi port")
         XCTAssertTrue(configData.autoConnectToOBD, "Default auto-connect")
     }
-    
-    //MARK: - WiFi Configuration Tests
     
     func testWiFiHostUpdate() {
         let newHost = "192.168.1.100"
@@ -69,8 +66,7 @@ final class ConfigDataTests: XCTestCase {
         XCTAssertGreaterThan(configData.wifiPort, 0, "Port should be positive")
         XCTAssertLessThanOrEqual(configData.wifiPort, 65535, "Port should be within valid range")
     }
-    
-    // MARK: - Connection Type Tests
+
     
     func testConnectionTypeDefault() {
         // Should default to bluetooth
@@ -95,8 +91,7 @@ final class ConfigDataTests: XCTestCase {
         XCTAssertEqual(configData.publishedConnectionType, ConnectionType.demo.rawValue, 
                       "Published connection type should sync")
     }
-    
-    // MARK: - Units Tests
+
     
     func testUnitsDefault() {
         // Should default to metric
@@ -110,8 +105,7 @@ final class ConfigDataTests: XCTestCase {
         configData.setUnits(.metric)
         XCTAssertEqual(configData.units, .metric, "Should switch back to metric")
     }
-    
-    // MARK: - Auto-Connect Tests
+
     
     func testAutoConnectToggle() {
         configData.autoConnectToOBD = false
@@ -120,8 +114,7 @@ final class ConfigDataTests: XCTestCase {
         configData.autoConnectToOBD = true
         XCTAssertTrue(configData.autoConnectToOBD, "Should enable auto-connect")
     }
-    
-    // MARK: - Persistence Tests
+
     
     func testPersistenceViaAppStorage() {
         let testHost = "10.0.0.1"

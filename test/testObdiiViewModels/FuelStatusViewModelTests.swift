@@ -36,8 +36,7 @@ final class FuelStatusViewModelTests: XCTestCase {
         viewModel = nil
         mockProvider = nil
     }
-    
-    // MARK: - Initialization Tests
+
     
     func testInitialization() {
         XCTAssertNotNil(viewModel, "ViewModel should initialize")
@@ -45,8 +44,7 @@ final class FuelStatusViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.bank1, "Bank 1 should be nil initially")
         XCTAssertNil(viewModel.bank2, "Bank 2 should be nil initially")
     }
-    
-    // MARK: - Status State Tests
+
     
     func testHasAnyStatusWithNilStatus() {
         // When status is nil, hasAnyStatus should be false
@@ -58,8 +56,7 @@ final class FuelStatusViewModelTests: XCTestCase {
         // We can't easily set this without mocking, but we can test the logic
         XCTAssertFalse(viewModel.hasAnyStatus, "hasAnyStatus should be false with no bank data")
     }
-    
-    // MARK: - Bank Status Tests
+
     
     func testFuelStatusUpdates() {
         XCTAssertNil(viewModel.status)
@@ -80,8 +77,7 @@ final class FuelStatusViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.bank1 == nil || viewModel.bank1 != nil, "Bank 1 can be nil or have value")
         XCTAssertTrue(viewModel.bank2 == nil || viewModel.bank2 != nil, "Bank 2 can be nil or have value")
     }
-    
-    // MARK: - Status Description Tests
+
     
     func testBankStatusStructure() {
         // Bank statuses should be optional and independent

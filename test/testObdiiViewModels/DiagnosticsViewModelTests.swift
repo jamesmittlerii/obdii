@@ -36,8 +36,7 @@ final class DiagnosticsViewModelTests: XCTestCase {
         viewModel = nil
         mockProvider = nil
     }
-    
-    // MARK: - Initialization Tests
+
     
     func testInitialization() {
         XCTAssertNotNil(viewModel, "ViewModel should initialize")
@@ -45,8 +44,7 @@ final class DiagnosticsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.sections.count, 0, "Should have no sections initially")
         XCTAssertTrue(viewModel.sections.isEmpty, "Sections should be empty when codes is nil")
     }
-    
-    // MARK: - State Tests
+
     
     func testNilCodesState() {
         // codes = nil represents waiting state
@@ -57,8 +55,7 @@ final class DiagnosticsViewModelTests: XCTestCase {
     func testSectionsInitiallyEmpty() {
         XCTAssertEqual(viewModel.sections.count, 0, "Should have no sections initially")
     }
-    
-    // MARK: - Section Struct Tests
+
     
     func testSectionEquality() {
         let code1 = createMockDTC(code: "P0001", severity: .high)
@@ -85,8 +82,7 @@ final class DiagnosticsViewModelTests: XCTestCase {
         XCTAssertEqual(section1, section2, "Sections with same data should be equal")
         XCTAssertNotEqual(section1, section3, "Sections with different items should not be equal")
     }
-    
-    // MARK: - Helper Methods
+
     
     private func createMockDTC(code: String, severity: CodeSeverity) -> TroubleCodeMetadata {
         return TroubleCodeMetadata(

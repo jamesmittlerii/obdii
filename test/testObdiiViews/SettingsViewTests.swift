@@ -16,7 +16,6 @@ import Combine
 import SwiftOBD2
 @testable import obdii
 
-// MARK: - Mock Providers for View Testing
 
 final class MockSettingsConfigForView: SettingsConfigProviding {
     var wifiHost: String = "192.168.0.10"
@@ -57,8 +56,7 @@ final class MockOBDConnectionForView: OBDConnectionControlling {
 
 @MainActor
 final class SettingsViewTests: XCTestCase {
-    
-    // MARK: - Navigation Structure Tests
+
     
     func testHasNavigationStack() throws {
         let view = SettingsView()
@@ -76,8 +74,7 @@ final class SettingsViewTests: XCTestCase {
         let form = try stack.find(ViewType.Form.self)
         XCTAssertNotNil(form, "NavigationStack should contain a Form")
     }
-    
-    // MARK: - Form Structure Tests
+
     
     func testHasForm() throws {
         let view = SettingsView()
@@ -92,8 +89,7 @@ final class SettingsViewTests: XCTestCase {
         // Form should have multiple sections
         XCTAssertGreaterThan(sections.count, 0, "Form should have sections")
     }
-    
-    // MARK: - Unit Picker Tests
+
     
     func testHasUnitPicker() throws {
         let view = SettingsView()
@@ -102,8 +98,7 @@ final class SettingsViewTests: XCTestCase {
         let pickers = try view.inspect().findAll(ViewType.Picker.self)
         XCTAssertGreaterThan(pickers.count, 0, "Should have pickers including unit picker")
     }
-    
-    // MARK: - Connection Type Picker Tests
+
     
     func testHasConnectionTypePicker() throws {
         let view = SettingsView()
@@ -112,8 +107,7 @@ final class SettingsViewTests: XCTestCase {
         let pickers = try view.inspect().findAll(ViewType.Picker.self)
         XCTAssertGreaterThan(pickers.count, 0, "Should have connection type picker")
     }
-    
-    // MARK: - Toggle Tests
+
     
     func testHasAutoConnectToggle() throws {
         let view = SettingsView()
@@ -122,8 +116,7 @@ final class SettingsViewTests: XCTestCase {
         let toggles = try view.inspect().findAll(ViewType.Toggle.self)
         XCTAssertGreaterThanOrEqual(toggles.count, 0, "Should have auto-connect toggle")
     }
-    
-    // MARK: - Connection Status Tests
+
     
     func testDisplaysConnectionStatus() throws {
         let view = SettingsView()
@@ -132,8 +125,7 @@ final class SettingsViewTests: XCTestCase {
         let hStacks = try view.inspect().findAll(ViewType.HStack.self)
         XCTAssertGreaterThan(hStacks.count, 0, "Should have HStack for connection status")
     }
-    
-    // MARK: - Button Tests
+
     
     func testHasConnectButton() throws {
         let view = SettingsView()
@@ -150,8 +142,7 @@ final class SettingsViewTests: XCTestCase {
         let buttons = try view.inspect().findAll(ViewType.Button.self)
         XCTAssertGreaterThan(buttons.count, 0, "Should have share logs button")
     }
-    
-    // MARK: - Wi-Fi Details Tests
+
     
     func testWiFiDetailsWhenWiFiSelected() throws {
         let view = SettingsView()
@@ -162,8 +153,7 @@ final class SettingsViewTests: XCTestCase {
         // TextFields exist when Wi-Fi is selected
         XCTAssertGreaterThanOrEqual(textFields.count, 0, "May have Wi-Fi detail fields")
     }
-    
-    // MARK: - Navigation Link Tests
+
     
     func testHasGaugesConfigLink() throws {
         let view = SettingsView()
@@ -172,8 +162,7 @@ final class SettingsViewTests: XCTestCase {
         let navLinks = try view.inspect().findAll(ViewType.NavigationLink.self)
         XCTAssertGreaterThan(navLinks.count, 0, "Should have navigation link to Gauges config")
     }
-    
-    // MARK: - ViewModel Integration Tests
+
     
     func testViewModelInitializationWithMocks() {
         let mockConfig = MockSettingsConfigForView()
@@ -210,8 +199,7 @@ final class SettingsViewTests: XCTestCase {
         XCTAssertEqual(viewModel.connectionState, .connected)
         XCTAssertFalse(viewModel.isConnectButtonDisabled)
     }
-    
-    // MARK: - Accessibility Tests
+
     
     func testElementsHaveAccessibilityIdentifiers() throws {
         let view = SettingsView()
