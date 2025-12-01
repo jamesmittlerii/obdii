@@ -2,11 +2,12 @@
 
 The application exercises several features...
 
-* SwiftUI and UIKit/CarPlay screens.
-* MVVM architecture with shared View Models.
-* Tabbed Navigation.
+* SwiftUI and UIKit/CarPlay screens. Multiple use of HStack/VStack/ZStack container views.
+* MVVM architecture with shared view models utilizing @State/@Observable constructs.
+* Tabbed Navigation and NavigationLink/NavigationStack organization.
+* Gauges can be considered an "enhanced" progress view with limits and color indicators for ranges.
 * Settings saved via [@AppStorage](https://www.hackingwithswift.com/quick-start/swiftui/what-is-the-appstorage-property-wrapper).
-* Facility to export logs via JSON APIs.
+* PIDs are loaded and logs exported via JSON APIs.
 * Dynamic support for Metric/Imperial units.
 * Support for Bluetooth, Wifi and demo mode OBDII adapters.
 
