@@ -11,6 +11,7 @@ The application is designed to run on iPhone and connect to a car's OBD-II port 
 **Explore**
 
 - [Features](./features.md)
+- [Orchestration](./orchestration.md)
 - [Architecture](./architecture.md)
 - [Optimizations](./optimization.md)
 
