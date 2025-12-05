@@ -88,7 +88,8 @@ struct RingGaugeView: View {
 
   var body: some View {
     GeometryReader { proxy in
-      let dim = min(proxy.size.width, proxy.size.height)
+      // Use width as the master dimension so we can crop height without shrinking
+      let dim = proxy.size.width
       let lineWidth = max(4, dim * lineWidthRatio)
 
       ZStack {
@@ -132,7 +133,8 @@ struct RingGaugeView: View {
             .lineLimit(1)
         }
       }
-      .frame(width: proxy.size.width, height: proxy.size.height)
+      .frame(width: dim, height: dim)
+      .position(x: proxy.frame(in: .local).midX, y: dim / 2)
     }
     .accessibilityLabel(pid.name)
     .accessibilityValue(displayText)
