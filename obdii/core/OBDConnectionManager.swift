@@ -235,7 +235,7 @@ final class OBDConnectionManager: ObservableObject {
 
     do {
       _ = try await obdService.startConnection(
-        preferedProtocol: .protocol6,
+        // preferedProtocol: .protocol6,
         timeout: 30,
         querySupportedPIDs: querySupportedPids
       )
