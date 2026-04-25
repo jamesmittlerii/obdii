@@ -1,0 +1,335 @@
+// Port of GaugesContainerView + GaugesView + GaugeListView — Jim Mittler
+// Provides a segmented picker (Gauges | List) at the top.
+// Gauges mode: adaptive grid of ring gauge tiles, each tappable → GaugeDetailView
+// List mode:   inset list, full PID name + range subtitle, colored value trailing
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../core/config_data.dart';
+import '../viewmodels/gauges_viewmodel.dart';
+import 'gauge_detail_view.dart';
+import 'ring_gauge_widget.dart';
+
+// ─────────────────────────────────────────────
+// Display mode (persisted, mirrors @AppStorage)
+// ─────────────────────────────────────────────
+
+enum _GaugesDisplayMode { gauges, list }
+
+// ─────────────────────────────────────────────
+// Container — holds the segmented picker
+// ─────────────────────────────────────────────
+
+class GaugesView extends StatefulWidget {
+  final bool isActive;
+
+  const GaugesView({super.key, this.isActive = true});
+
+  @override
+  State<GaugesView> createState() => _GaugesViewState();
+}
+
+class _GaugesViewState extends State<GaugesView> {
+  _GaugesDisplayMode _mode = _GaugesDisplayMode.gauges;
+  static const _prefKey = 'gaugesDisplayMode';
+
+  void _syncVisibility() {
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<GaugesViewModel>().setVisible(widget.isActive);
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMode();
+  }
+
+  Future<void> _loadMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_prefKey);
+    if (raw != null && mounted) {
+      setState(() {
+        _mode = raw == 'list' ? _GaugesDisplayMode.list : _GaugesDisplayMode.gauges;
+      });
+    }
+  }
+
+  Future<void> _setMode(_GaugesDisplayMode mode) async {
+    setState(() => _mode = mode);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefKey, mode == _GaugesDisplayMode.list ? 'list' : 'gauges');
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncVisibility();
+  }
+
+  @override
+  void didUpdateWidget(covariant GaugesView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isActive != widget.isActive) {
+      _syncVisibility();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_mode == _GaugesDisplayMode.gauges ? 'Gauges' : 'List'),
+        centerTitle: false,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: SegmentedButton<_GaugesDisplayMode>(
+              style: const ButtonStyle(
+                visualDensity: VisualDensity(horizontal: -2, vertical: -2),
+              ),
+              segments: const [
+                ButtonSegment(
+                  value: _GaugesDisplayMode.gauges,
+                  label: Text('Gauges'),
+                ),
+                ButtonSegment(
+                  value: _GaugesDisplayMode.list,
+                  label: Text('List'),
+                ),
+              ],
+              selected: {_mode},
+              onSelectionChanged: (s) => _setMode(s.first),
+            ),
+          ),
+        ),
+      ),
+      body: Consumer<GaugesViewModel>(
+        builder: (context, vm, _) {
+          if (vm.isEmpty) {
+            return _emptyState();
+          }
+          return _mode == _GaugesDisplayMode.gauges
+              ? _GaugesGrid(vm: vm)
+              : _GaugesList(vm: vm);
+        },
+      ),
+    );
+  }
+
+  Widget _emptyState() {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.speed_outlined, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            'No gauges enabled.\nGo to Settings → Gauges to add some.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Grid mode
+// ─────────────────────────────────────────────
+
+class _GaugesGrid extends StatelessWidget {
+  final GaugesViewModel vm;
+
+  const _GaugesGrid({required this.vm});
+
+  @override
+  Widget build(BuildContext context) {
+    final isMetric =
+        context.watch<ConfigData>().units == MeasurementUnit.metric;
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(12),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 200,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 0.9,
+      ),
+      itemCount: vm.tiles.length,
+      itemBuilder: (context, index) {
+        final tile = vm.tiles[index];
+        return GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => GaugeDetailView(pid: tile.pid),
+            ),
+          ),
+          child: _GaugeTile(tile: tile, isMetric: isMetric),
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Individual grid tile — ring gauge + label below
+// ─────────────────────────────────────────────
+
+class _GaugeTile extends StatelessWidget {
+  final GaugeTile tile;
+  final bool isMetric;
+
+  const _GaugeTile({required this.tile, required this.isMetric});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          children: [
+            Expanded(
+              child: RingGaugeWidget(
+                pid: tile.pid,
+                stats: tile.stats,
+                isMetric: isMetric,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              tile.pid.label,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// List mode — matches GaugeListView.swift
+// ─────────────────────────────────────────────
+
+class _GaugesList extends StatelessWidget {
+  final GaugesViewModel vm;
+
+  const _GaugesList({required this.vm});
+
+  @override
+  Widget build(BuildContext context) {
+    final isMetric =
+        context.watch<ConfigData>().units == MeasurementUnit.metric;
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(12),
+      itemCount: vm.tiles.length + 1, // +1 for section header
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8, top: 4),
+            child: Text(
+              'GAUGES',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+                letterSpacing: 0.8,
+              ),
+            ),
+          );
+        }
+        final tile = vm.tiles[index - 1];
+        return _GaugeListRow(tile: tile, isMetric: isMetric);
+      },
+    );
+  }
+}
+
+class _GaugeListRow extends StatelessWidget {
+  final GaugeTile tile;
+  final bool isMetric;
+
+  const _GaugeListRow({required this.tile, required this.isMetric});
+
+  @override
+  Widget build(BuildContext context) {
+    final pid = tile.pid;
+    final stats = tile.stats;
+
+    final valueText = stats != null
+        ? pid.formattedValue(stats.latest.value, isMetric, includeUnits: true)
+        : '— ${pid.unitLabel(isMetric)}';
+
+    final valueColor = stats != null
+        ? pid.colorForValue(stats.latest.value, isMetric)
+        : Colors.grey;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 1),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      elevation: 0,
+      child: InkWell(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => GaugeDetailView(pid: pid)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      pid.name,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      pid.displayRange(isMetric),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    valueText,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: valueColor,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.chevron_right, color: Colors.grey.shade600, size: 20),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
