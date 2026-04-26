@@ -4,7 +4,7 @@
 # gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
 
 # keep this out of main
-flutter_obdii/
+#flutter_obdii/
 
 
 ## User settings
