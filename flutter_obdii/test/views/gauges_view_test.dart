@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show Colors;
 import 'package:flutter_obd2/flutter_obd2.dart' as obd2lib;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
