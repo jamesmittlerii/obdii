@@ -20,19 +20,82 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy-beta:
-    name: Deploy Flutter to TestFlight
+  prepare:
+    name: Prepare Flutter version
     runs-on: macos-26
-    timeout-minutes: 45
+    timeout-minutes: 20
+    outputs:
+      commit_sha: ${{ steps.capture_sha.outputs.commit_sha }}
     env:
       CURRENT_BRANCH: ${{ github.ref_name }}
-      APP_ID: ${{ vars.APP_ID }}
-      #APP_IDENTIFIER: com.rheosoft.obdiif
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          submodules: recursive
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Bump Flutter version from pubspec
+        working-directory: flutter_obdii
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys
+
+          path = pathlib.Path("pubspec.yaml")
+          text = path.read_text(encoding="utf-8")
+          m = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$", text, re.MULTILINE)
+          if not m:
+            print("Could not parse pubspec version line", file=sys.stderr)
+            sys.exit(1)
+
+          major, minor, patch, build = map(int, m.groups())
+          new_minor = minor
+          new_patch = patch + 1
+          new_build = build + 1
+          new_version = f"{major}.{new_minor}.{new_patch}+{new_build}"
+          updated = re.sub(r"^version:\s*.*$", f"version: {new_version}", text, count=1, flags=re.MULTILINE)
+          path.write_text(updated, encoding="utf-8")
+
+          with open(pathlib.Path("../.github_version_env"), "w", encoding="utf-8") as f:
+            f.write(f"FLUTTER_BUILD_NAME={major}.{new_minor}.{new_patch}\n")
+            f.write(f"FLUTTER_BUILD_NUMBER={new_build}\n")
+            f.write(f"PUBSPEC_VERSION={new_version}\n")
+          PY
+          cat ../.github_version_env >> "$GITHUB_ENV"
+
+      - name: Commit bumped pubspec version
+        if: github.event_name == 'push'
+        run: |
+          git add flutter_obdii/pubspec.yaml
+          git commit -m "ci: bump flutter version to ${PUBSPEC_VERSION} [skip ci]" || echo "No version changes to commit"
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: Capture commit SHA for downstream jobs
+        id: capture_sha
+        run: echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  deploy-beta:
+    name: Deploy ${{ matrix.display_name }} to TestFlight
+    needs: prepare
+    runs-on: macos-26
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project_name: obdiif
+            display_name: Material
+          - project_name: obdiic
+            display_name: Cupertino
+    env:
+      CURRENT_BRANCH: ${{ github.ref_name }}
+      APP_ID: ${{ vars.APP_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.commit_sha }}
           submodules: recursive
           fetch-depth: 0
           token: ${{ secrets.PAT_TOKEN }}
@@ -81,42 +144,6 @@ jobs:
             echo "No Podfile present in flutter_obdii/ios; skipping pod install."
           fi
 
-      - name: Bump Flutter version from pubspec
-        id: bump_version
-        working-directory: flutter_obdii
-        run: |
-          python3 - <<'PY'
-          import pathlib, re, sys
-
-          path = pathlib.Path("pubspec.yaml")
-          text = path.read_text(encoding="utf-8")
-          m = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$", text, re.MULTILINE)
-          if not m:
-            print("Could not parse pubspec version line", file=sys.stderr)
-            sys.exit(1)
-
-          major, minor, patch, build = map(int, m.groups())
-          new_minor = minor
-          new_patch = patch + 1
-          new_build = build + 1
-          new_version = f"{major}.{new_minor}.{new_patch}+{new_build}"
-          updated = re.sub(r"^version:\s*.*$", f"version: {new_version}", text, count=1, flags=re.MULTILINE)
-          path.write_text(updated, encoding="utf-8")
-
-          with open(pathlib.Path("../.github_version_env"), "w", encoding="utf-8") as f:
-            f.write(f"FLUTTER_BUILD_NAME={major}.{new_minor}.{new_patch}\n")
-            f.write(f"FLUTTER_BUILD_NUMBER={new_build}\n")
-            f.write(f"PUBSPEC_VERSION={new_version}\n")
-          PY
-          cat ../.github_version_env >> "$GITHUB_ENV"
-
-      - name: Commit bumped pubspec version
-        if: github.event_name == 'push'
-        run: |
-          git add flutter_obdii/pubspec.yaml
-          git commit -m "ci: bump flutter version to ${PUBSPEC_VERSION} [skip ci]" || echo "No version changes to commit"
-          git push origin HEAD:${{ github.ref_name }}
-
       - name: Flutter pub get
         working-directory: flutter_obdii
         run: flutter pub get
@@ -124,20 +151,6 @@ jobs:
       - name: Flutter analyze
         working-directory: flutter_obdii
         run: flutter analyze
-
-      #- name: Flutter tests
-      #  working-directory: flutter_obdii
-      #   run: flutter test
-
-      - name: Build iOS Material (no codesign)
-        if: ${{ false }} # Temporarily skipped; fastlane beta builds with target.
-        working-directory: flutter_obdii
-        run: flutter build ios --release --no-codesign -t lib/main_material.dart
-
-      - name: Build iOS Cupertino (no codesign)
-        if: ${{ false }} # Temporarily skipped; fastlane beta builds with target.
-        working-directory: flutter_obdii
-        run: flutter build ios --release --no-codesign -t lib/main_cupertino.dart
 
       - name: Prepare Fastlane config for Flutter iOS project
         working-directory: flutter_obdii/ios
@@ -148,25 +161,15 @@ jobs:
           ls fastlane
          # sed -i '' "s|^app_id = .*|app_id = ENV['APP_IDENTIFIER'] || \"com.rheosoft.#{ENV['PROJECT_NAME']}\"|" fastlane/Appfile
 
-      - name: Run Fastlane beta lane (Material -> obdiif)
+      - name: Run Fastlane beta lane
         working-directory: flutter_obdii/ios
         run: |
           set -euo pipefail
-          echo "Running fastlane via bws for PROJECT_NAME=obdiif..."
+          echo "Running fastlane via bws for PROJECT_NAME=${PROJECT_NAME}..."
           bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta
         env:
           BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
-          PROJECT_NAME: obdiif
-
-      - name: Run Fastlane beta lane (Cupertino -> obdiic)
-        working-directory: flutter_obdii/ios
-        run: |
-          set -euo pipefail
-          echo "Running fastlane via bws for PROJECT_NAME=obdiic..."
-          bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta
-        env:
-          BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
-          PROJECT_NAME: obdiic
+          PROJECT_NAME: ${{ matrix.project_name }}
 
       - name: Dump gym log on failure
         if: failure()
