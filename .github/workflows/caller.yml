@@ -1,4 +1,4 @@
-name: Shared IOS build/test/deploy Workflow
+name: Swift IOS Fastlane Workflow
 
 permissions:
       contents: write
