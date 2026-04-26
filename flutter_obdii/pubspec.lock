@@ -225,9 +225,11 @@ packages:
   flutter_obd2:
     dependency: "direct main"
     description:
-      path: "../../SwiftOBD2/flutterobd2"
-      relative: true
-    source: path
+      path: flutterobd2
+      ref: flutter
+      resolved-ref: a953532868de719162309703820c63d960bc3ac5
+      url: "https://github.com/jamesmittlerii/SwiftOBD2.git"
+    source: git
     version: "0.1.0"
   flutter_test:
     dependency: "direct dev"

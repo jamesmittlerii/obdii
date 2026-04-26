@@ -40,7 +40,10 @@ dependencies:
   share_plus: ^10.1.4
   package_info_plus: ^8.3.0
   flutter_obd2:
-    path: ../../SwiftOBD2/flutterobd2
+    git:
+      url: https://github.com/jamesmittlerii/SwiftOBD2.git
+      ref: flutter
+      path: flutterobd2
 
 dev_dependencies:
   flutter_test:
