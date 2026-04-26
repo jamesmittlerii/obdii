@@ -29,7 +29,20 @@ platform :ios do
     #setup_ci if ENV['CI']
     #match(type: 'appstore')
 
-    #project_file = "#{ENV['PROJECT_NAME']}.xcodeproj"
+    project_name = ENV['PROJECT_NAME'].to_s.strip
+    flutter_target =
+      case project_name
+      when 'obdiic'
+        'lib/main_cupertino.dart'
+      else
+        'lib/main_material.dart'
+      end
+
+    bundle_id = ENV['APP_IDENTIFIER'].to_s.strip
+    bundle_id = "com.rheosoft.#{project_name}" if bundle_id.empty?
+
+    provisioning_profile = ENV['PROVISIONING_PROFILE_SPECIFIER'].to_s.strip
+    provisioning_profile = "match AppStore #{bundle_id}" if provisioning_profile.empty?
 
     project_file = "flutter_obdii/ios/Runner.xcodeproj"
    # increment_build_number(xcodeproj: project_file)
@@ -44,7 +57,7 @@ platform :ios do
           
     # Build Flutter iOS artifacts without signing, then let fastlane/gym
     # perform archive + App Store signing using match-provided credentials.
-    sh "cd .. && flutter build ios --release --no-codesign"
+    sh "cd .. && flutter build ios --release --no-codesign -t #{flutter_target}"
 
     build_app(
       workspace: "Runner.xcworkspace",
@@ -53,7 +66,7 @@ platform :ios do
       export_options: {
         signingStyle: "manual",
         provisioningProfiles: {
-          "com.rheosoft.obdii" => "match AppStore com.rheosoft.obdii",
+          bundle_id => provisioning_profile,
         },
       },
       xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' DEVELOPMENT_TEAM=L97LVVC8Y4"

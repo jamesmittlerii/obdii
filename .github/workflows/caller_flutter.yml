@@ -128,10 +128,12 @@ jobs:
       #   run: flutter test
 
       - name: Build iOS Material (no codesign)
+        if: ${{ false }} # Temporarily skipped; fastlane beta builds with target.
         working-directory: flutter_obdii
         run: flutter build ios --release --no-codesign -t lib/main_material.dart
 
       - name: Build iOS Cupertino (no codesign)
+        if: ${{ false }} # Temporarily skipped; fastlane beta builds with target.
         working-directory: flutter_obdii
         run: flutter build ios --release --no-codesign -t lib/main_cupertino.dart
 
