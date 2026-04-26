@@ -32,15 +32,15 @@ platform :ios do
     #project_file = "#{ENV['PROJECT_NAME']}.xcodeproj"
 
     project_file = "flutter_obdii/ios/Runner.xcodeproj"
-    increment_build_number(xcodeproj: project_file)
-    commit_version_bump(
-      message: "Bump version from Fastlane [skip ci]",
-      force: true,
-      xcodeproj: project_file
-    )
-    push_to_git_remote(  # Push the committed changes
-        remote_branch: ENV['CURRENT_BRANCH']
-    )
+   # increment_build_number(xcodeproj: project_file)
+   # commit_version_bump(
+   #   message: "Bump version from Fastlane [skip ci]",
+   #   force: true,
+   #   xcodeproj: project_file
+   # )
+   # push_to_git_remote(  # Push the committed changes
+   #     remote_branch: ENV['CURRENT_BRANCH']
+   # )
           
     sh "flutter build ipa --release --export-method=app-store"
 

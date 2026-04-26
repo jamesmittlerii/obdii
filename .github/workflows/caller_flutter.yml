@@ -62,8 +62,45 @@ jobs:
         run: |
           bundle install
 
+      - name: Bump Flutter version from pubspec
+        id: bump_version
+        working-directory: flutter_obdii
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys
+
+          path = pathlib.Path("pubspec.yaml")
+          text = path.read_text(encoding="utf-8")
+          m = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$", text, re.MULTILINE)
+          if not m:
+            print("Could not parse pubspec version line", file=sys.stderr)
+            sys.exit(1)
+
+          major, minor, patch, build = map(int, m.groups())
+          new_minor = minor
+          new_patch = patch + 1
+          new_build = build + 1
+          new_version = f"{major}.{new_minor}.{new_patch}+{new_build}"
+          updated = re.sub(r"^version:\s*.*$", f"version: {new_version}", text, count=1, flags=re.MULTILINE)
+          path.write_text(updated, encoding="utf-8")
+
+          with open(pathlib.Path("../.github_version_env"), "w", encoding="utf-8") as f:
+            f.write(f"FLUTTER_BUILD_NAME={major}.{new_minor}.{new_patch}\n")
+            f.write(f"FLUTTER_BUILD_NUMBER={new_build}\n")
+            f.write(f"PUBSPEC_VERSION={new_version}\n")
+          PY
+          cat ../.github_version_env >> "$GITHUB_ENV"
+
+      - name: Commit bumped pubspec version
+        if: github.event_name == 'push'
+        run: |
+          git add flutter_obdii/pubspec.yaml
+          git commit -m "ci: bump flutter version to ${PUBSPEC_VERSION} [skip ci]" || echo "No version changes to commit"
+          git push origin HEAD:${{ github.ref_name }}
+
       - name: Set PROJECT_NAME environment variable
         id: set_project_name # Add an ID to the step to create an output variable
+        working-directory: flutter_obdii/ios
         run: |
           # Find the .xcodeproj file, remove the .xcodeproj extension, and assign it to the variable.
           PROJECT_NAME=$(basename *.xcodeproj .xcodeproj)
