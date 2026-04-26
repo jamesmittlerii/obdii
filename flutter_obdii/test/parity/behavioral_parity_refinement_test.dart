@@ -8,7 +8,7 @@ import 'package:flutter_obdii/core/pid_store.dart';
 import 'package:flutter_obdii/models/obdii_pid.dart';
 
 class _SeededPidStore extends ChangeNotifier implements PidStore {
-  List<ObdiiPid> _pids;
+  final List<ObdiiPid> _pids;
   _SeededPidStore(this._pids);
   @override
   List<ObdiiPid> get pids => _pids;

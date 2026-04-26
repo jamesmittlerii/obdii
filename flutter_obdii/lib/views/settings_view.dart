@@ -338,9 +338,11 @@ class _SettingsViewState extends State<SettingsView> {
       final file = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(bytes);
 
-      await Share.shareXFiles(
-        [XFile(file.path, mimeType: 'application/json')],
-        subject: fileName,
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path, mimeType: 'application/json')],
+          subject: fileName,
+        ),
       );
     } catch (e) {
       if (mounted) {

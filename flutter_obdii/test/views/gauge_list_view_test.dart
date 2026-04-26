@@ -46,7 +46,7 @@ class _MockStatsProvider implements PidStatsProviding {
 }
 
 class _MockUnitsProvider implements UnitsProviding {
-  MeasurementUnit _units = MeasurementUnit.metric;
+  final MeasurementUnit _units = MeasurementUnit.metric;
   final _ctrl = StreamController<MeasurementUnit>.broadcast();
   @override
   MeasurementUnit get units => _units;
@@ -111,7 +111,7 @@ void main() {
     units.dispose();
   });
 
-  Future<void> _toListMode(WidgetTester tester) async {
+  Future<void> toListMode(WidgetTester tester) async {
     await tester.tap(find.text('List'));
     await tester.pump(const Duration(milliseconds: 200));
   }
@@ -125,13 +125,13 @@ void main() {
     pids.send([_pid()]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
-    await _toListMode(tester);
+    await toListMode(tester);
     expect(find.text('GAUGES'), findsOneWidget);
   });
 
   testWidgets('testNavigationTitle', (tester) async {
     await tester.pumpWidget(_build(vm));
-    await _toListMode(tester);
+    await toListMode(tester);
     expect(find.text('List'), findsWidgets);
   });
 
@@ -139,7 +139,7 @@ void main() {
     pids.send([_pid()]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
-    await _toListMode(tester);
+    await toListMode(tester);
     expect(find.byIcon(Icons.chevron_right), findsWidgets);
   });
 
@@ -147,7 +147,7 @@ void main() {
     pids.send([_pid(name: 'Engine RPM')]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
-    await _toListMode(tester);
+    await toListMode(tester);
     expect(find.text('Engine RPM'), findsOneWidget);
   });
 
@@ -155,7 +155,7 @@ void main() {
     pids.send([_pid()]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
-    await _toListMode(tester);
+    await toListMode(tester);
     expect(find.textContaining('0'), findsWidgets);
   });
 
@@ -169,7 +169,7 @@ void main() {
     });
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
-    await _toListMode(tester);
+    await toListMode(tester);
     expect(find.textContaining('2500'), findsOneWidget);
   });
 
@@ -182,7 +182,7 @@ void main() {
     pids.send([_pid(units: '°C')]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
-    await _toListMode(tester);
+    await toListMode(tester);
     expect(find.textContaining('—'), findsWidgets);
   });
 
@@ -228,7 +228,7 @@ void main() {
     pids.send([_pid()]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
-    await _toListMode(tester);
+    await toListMode(tester);
     await tester.tap(find.byType(InkWell).first);
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('Engine RPM'), findsWidgets);
@@ -267,7 +267,7 @@ void main() {
     pids.send([_pid(label: 'TestGauge', name: 'Test Gauge Name')]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
-    await _toListMode(tester);
+    await toListMode(tester);
     expect(find.text('Test Gauge Name'), findsOneWidget);
   });
 

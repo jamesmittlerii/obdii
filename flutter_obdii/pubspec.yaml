@@ -36,9 +36,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   provider: ^6.1.5+1
   shared_preferences: ^2.5.5
-  flutter_blue_plus: ^1.31.18
-  share_plus: ^10.1.4
-  package_info_plus: ^8.3.0
+  flutter_blue_plus: ^2.2.1
+  share_plus: ^13.1.0
+  package_info_plus: ^10.1.0
   flutter_obd2:
     git:
       url: https://github.com/jamesmittlerii/SwiftOBD2.git

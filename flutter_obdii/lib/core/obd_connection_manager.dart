@@ -454,6 +454,7 @@ class OBDConnectionManager extends ChangeNotifier
   // Uses the same speed→RPM model and time-based warmup curves so the
   // Flutter demo behaves identically to the original Swift app.
 
+  // ignore: unused_element
   void _startDemoData() {
     _demoTimer?.cancel();
     final sessionStart = DateTime.now();

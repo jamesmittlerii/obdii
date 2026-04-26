@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_obd2/flutter_obd2.dart' as obd2lib;
 import 'package:shared_preferences/shared_preferences.dart';
