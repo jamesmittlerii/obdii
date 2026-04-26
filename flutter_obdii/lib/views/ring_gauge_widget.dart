@@ -49,35 +49,54 @@ class RingGaugeWidget extends StatelessWidget {
         ? ((currentValue - minV) / (maxV == minV ? 1 : maxV - minV)).clamp(0.0, 1.0)
         : 0.0;
 
-    return CustomPaint(
-      painter: _RingGaugePainter(
-        normalized: normalized,
-        progressColor: progressColor,
-      ),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              valueLine,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                fontFeatures: [FontFeature.tabularFigures()],
-              ),
-            ),
-            if (unitLine.isNotEmpty)
-              Text(
-                unitLine,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade400,
-                  fontFeatures: const [FontFeature.tabularFigures()],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Match Swift approach: width is the master dimension so reducing
+        // effective height crops open-arc whitespace instead of shrinking gauge.
+        final width = constraints.maxWidth.isFinite ? constraints.maxWidth : 120.0;
+        final dim = width;
+        return ClipRect(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: dim,
+              height: dim,
+              child: CustomPaint(
+                painter: _RingGaugePainter(
+                  normalized: normalized,
+                  progressColor: progressColor,
+                ),
+                child: Align(
+                  // Downward nudge to visually center value+unit in the ring.
+                  alignment: const Alignment(0, 0.39),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        valueLine,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          fontFeatures: [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                      if (unitLine.isNotEmpty)
+                        Text(
+                          unitLine,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade400,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
-          ],
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -112,9 +131,11 @@ class _RingGaugePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final strokeWidth = math.max(4.0, size.shortestSide * 0.18);
-    final radius = (size.shortestSide / 2) - strokeWidth / 2;
+    // Width drives geometry to avoid shrinkage when parent height is cropped.
+    final dim = size.width;
+    final center = Offset(dim / 2, dim / 2);
+    final strokeWidth = math.max(4.0, dim * 0.18);
+    final radius = (dim / 2) - strokeWidth / 2;
 
     final trackPaint = Paint()
       ..color = Colors.grey.shade700
