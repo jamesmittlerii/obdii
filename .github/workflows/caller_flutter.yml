@@ -123,6 +123,17 @@ jobs:
           ruby-version: "3.2"
           bundler-cache: true
 
+      - name: Cache CocoaPods artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            flutter_obdii/ios/Pods
+            ~/.cocoapods
+            ~/Library/Caches/CocoaPods
+          key: ${{ runner.os }}-cocoapods-${{ hashFiles('flutter_obdii/ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cocoapods-
+
       - name: Install Fastlane dependencies
         run: |
           bundle install
