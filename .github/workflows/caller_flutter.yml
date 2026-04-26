@@ -65,7 +65,17 @@ jobs:
       - name: Install CocoaPods for CI Ruby
         run: |
           gem install cocoapods -N
+          echo "$(ruby -e 'print Gem.bindir')" >> "$GITHUB_PATH"
+          which ruby
+          ruby -v
+          which pod
           pod --version
+
+      - name: Pod install sanity check
+        working-directory: flutter_obdii/ios
+        run: |
+          pod repo update
+          pod install
 
       - name: Bump Flutter version from pubspec
         id: bump_version
