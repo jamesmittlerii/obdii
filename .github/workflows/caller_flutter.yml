@@ -121,7 +121,7 @@ jobs:
         run: |
           # Find the .xcodeproj file, remove the .xcodeproj extension, and assign it to the variable.
           #PROJECT_NAME=$(basename *.xcodeproj .xcodeproj)
-          PROJECT_NAME="obdiif"
+          PROJECT_NAME="obdiic"
           # Write the variable to the GITHUB_ENV file so it's available to subsequent steps.
           echo "PROJECT_NAME=$PROJECT_NAME" >> "$GITHUB_ENV"
           
