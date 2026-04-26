@@ -42,13 +42,18 @@ platform :ios do
    #     remote_branch: ENV['CURRENT_BRANCH']
    # )
           
-    sh "flutter build ipa --release --export-method=app-store"
+    # Build Flutter iOS artifacts without signing, then let fastlane/gym
+    # perform archive + App Store signing using match-provided credentials.
+    sh "cd .. && flutter build ios --release --no-codesign"
 
-   # build_app(scheme: ENV['PROJECT_NAME'])
+    build_app(
+      project: "Runner.xcodeproj",
+      scheme: "Runner",
+      export_method: "app-store"
+    )
 
     app_store_connect_api_key
     upload_to_testflight(
-      ipa: "../build/ios/ipa/Runner.ipa",
     #    api_key: api_key,
 #      apple_id: ENV['FASTLANE_APPLE_APPLICATION_ID'],
       skip_waiting_for_build_processing: false
