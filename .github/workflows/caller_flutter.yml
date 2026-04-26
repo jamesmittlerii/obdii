@@ -62,21 +62,24 @@ jobs:
         run: |
           bundle install
 
-      - name: Install CocoaPods for CI Ruby
+      - name: Install CocoaPods for Bundler Ruby
         run: |
-          gem install cocoapods -N
-          echo "$(ruby -e 'print Gem.bindir')" >> "$GITHUB_PATH"
+          bundle add cocoapods --skip-install
+          bundle install
+          BUNDLE_GEM_BINDIR="$(bundle exec ruby -e 'print Gem.bindir')"
+          echo "$BUNDLE_GEM_BINDIR" >> "$GITHUB_PATH"
+          echo "BUNDLE_GEM_BINDIR=$BUNDLE_GEM_BINDIR" >> "$GITHUB_ENV"
           which ruby
           ruby -v
-          which pod
-          pod --version
+          bundle exec pod --version
+          "$BUNDLE_GEM_BINDIR/pod" --version
 
       - name: Pod install sanity check
         working-directory: flutter_obdii/ios
         run: |
           if [ -f Podfile ]; then
-            pod repo update
-            pod install
+            "$BUNDLE_GEM_BINDIR/pod" repo update
+            "$BUNDLE_GEM_BINDIR/pod" install
           else
             echo "No Podfile present in flutter_obdii/ios; skipping pod install."
           fi
