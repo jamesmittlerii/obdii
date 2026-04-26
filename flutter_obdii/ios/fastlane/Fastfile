@@ -56,7 +56,7 @@ platform :ios do
           "com.rheosoft.obdii" => "match AppStore com.rheosoft.obdii",
         },
       },
-      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' DEVELOPMENT_TEAM=L97LVVC8Y4 PROVISIONING_PROFILE_SPECIFIER='match AppStore com.rheosoft.obdii'"
+      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' DEVELOPMENT_TEAM=L97LVVC8Y4"
     )
 
     app_store_connect_api_key
