@@ -25,6 +25,7 @@ jobs:
     env:
       CURRENT_BRANCH: ${{ github.ref_name }}
       APP_ID: ${{ vars.APP_ID }}
+      PROJECT_NAME: Runner
 
     steps:
       - name: Checkout repository
@@ -76,16 +77,8 @@ jobs:
         working-directory: flutter_obdii
         run: flutter build ios --release --no-codesign
 
-      - name: Set PROJECT_NAME environment variable
-        id: set_project_name
-        working-directory: flutter_obdii/ios
-        run: |
-          PROJECT_NAME=$(basename *.xcodeproj .xcodeproj)
-          echo "PROJECT_NAME=$PROJECT_NAME" >> "$GITHUB_ENV"
-          echo "project_name=$PROJECT_NAME" >> "$GITHUB_OUTPUT"
-
       - name: Run Fastlane beta lane
         working-directory: flutter_obdii/ios
-        run: bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta
+        run: bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta --fastfile ../../fastlane/Fastfile
         env:
           BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
