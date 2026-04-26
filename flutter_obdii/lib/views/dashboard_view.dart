@@ -160,7 +160,7 @@ class _GaugesGrid extends StatelessWidget {
         maxCrossAxisExtent: 200,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 0.9,
+        childAspectRatio: 1.0,
       ),
       itemCount: vm.tiles.length,
       itemBuilder: (context, index) {
@@ -194,26 +194,34 @@ class _GaugeTile extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(8),
-        child: Column(
-          children: [
-            Expanded(
-              child: RingGaugeWidget(
-                pid: tile.pid,
-                stats: tile.stats,
-                isMetric: isMetric,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              tile.pid.label,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // 98/120 ratio from Swift tweak to reduce bottom whitespace.
+            final gaugeHeight = constraints.maxWidth * 0.8167;
+            return Column(
+              children: [
+                SizedBox(
+                  height: gaugeHeight,
+                  child: RingGaugeWidget(
+                    pid: tile.pid,
+                    stats: tile.stats,
+                    isMetric: isMetric,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  tile.pid.label,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+              ],
+            );
+          },
         ),
       ),
     );
