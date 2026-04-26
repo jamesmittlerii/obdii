@@ -25,15 +25,25 @@ final class PIDStore: ObservableObject {
   private static let disabledGaugesOrderKey = "PIDStore.disabledGaugesOrder"
 
   private init() {
+    let all = Self.loadMergedPIDsFromDefaults()
+    self.pids = all
+    persistEnabledFlags(pids)
+    persistGaugeOrders(pids)
+  }
 
-    // 1. Load PIDs from JSON source
+  /// Reloads gauge enablement and ordering from `UserDefaults` (Swift `Data` or Flutter `String` JSON).
+  func reloadFromUserDefaults() {
+    let all = Self.loadMergedPIDsFromDefaults()
+    pids = all
+    persistEnabledFlags(pids)
+    persistGaugeOrders(pids)
+  }
+
+  /// Builds the master PID list from JSON plus saved flags/order. Accepts Swift-written `Data` or Flutter `SharedPreferences` UTF-8 strings.
+  private static func loadMergedPIDsFromDefaults() -> [OBDPID] {
     var all = OBDPIDLibrary.loadFromJSON()
 
-    // 2. Restore enabled/disabled flags
-    if let data = UserDefaults.standard.data(forKey: Self.enabledKey),
-      let saved = try? JSONDecoder().decode([String: Bool].self, from: data)
-    {
-
+    if let saved = decodeStringBoolMap(forKey: Self.enabledKey) {
       for i in all.indices {
         let command = all[i].pid.properties.command
         if let enabledFlag = saved[command] {
@@ -42,11 +52,9 @@ final class PIDStore: ObservableObject {
       }
     }
 
-    // 3. Load persisted ordering for only gauges
-    let savedEnabledOrder = Self.loadOrder(forKey: Self.enabledGaugesOrderKey)
-    let savedDisabledOrder = Self.loadOrder(forKey: Self.disabledGaugesOrderKey)
+    let savedEnabledOrder = loadOrder(forKey: Self.enabledGaugesOrderKey)
+    let savedDisabledOrder = loadOrder(forKey: Self.disabledGaugesOrderKey)
 
-    // 4. Apply ordering (only if either list exists)
     if savedEnabledOrder != nil || savedDisabledOrder != nil {
       all = Self.applySavedOrdering(
         to: all,
@@ -55,11 +63,23 @@ final class PIDStore: ObservableObject {
       )
     }
 
-    self.pids = all
+    return all
+  }
 
-    // 5. Persist state on first boot to lock in structure
-    persistEnabledFlags(pids)
-    persistGaugeOrders(pids)
+  private static func decodeStringBoolMap(forKey key: String) -> [String: Bool]? {
+    let defaults = UserDefaults.standard
+    if let data = defaults.data(forKey: key),
+      let saved = try? JSONDecoder().decode([String: Bool].self, from: data)
+    {
+      return saved
+    }
+    if let str = defaults.string(forKey: key),
+      let data = str.data(using: .utf8),
+      let saved = try? JSONDecoder().decode([String: Bool].self, from: data)
+    {
+      return saved
+    }
+    return nil
   }
 
   // toggle enabled/disabled
@@ -135,10 +155,21 @@ final class PIDStore: ObservableObject {
     }
   }
 
-    // load the order of gauges
+    // load the order of gauges (Swift `Data` JSON or Flutter UTF-8 string JSON)
   private static func loadOrder(forKey key: String) -> [String]? {
-    guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
-    return try? JSONDecoder().decode([String].self, from: data)
+    let defaults = UserDefaults.standard
+    if let data = defaults.data(forKey: key),
+      let order = try? JSONDecoder().decode([String].self, from: data)
+    {
+      return order
+    }
+    if let str = defaults.string(forKey: key),
+      let data = str.data(using: .utf8),
+      let order = try? JSONDecoder().decode([String].self, from: data)
+    {
+      return order
+    }
+    return nil
   }
   // Applies saved ordering to the gauge subsets only.
   private static func applySavedOrdering(

@@ -64,6 +64,10 @@ class CarPlayBaseTemplateController<VM: BaseViewModel>: NSObject, @MainActor Car
     }
   }
 
+  func refreshFromHandsetBridge() {
+    performRefresh()
+  }
+
   // Subclasses should override this to perform their own refresh (e.g., refreshSection/refreshTemplate).
   func performRefresh() {
     // Default does nothing. subclass should override it.

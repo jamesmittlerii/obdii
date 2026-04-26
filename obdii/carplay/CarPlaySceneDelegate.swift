@@ -30,6 +30,8 @@ protocol CarPlayTabControlling: AnyObject {
   func makeRootTemplate() -> CPTemplate
   // Called when the CarPlaySceneDelegate supplies the active interface controller.
   func setInterfaceController(_ interfaceController: CPInterfaceController)
+  /// Refresh list/information templates after handset (Flutter) changes settings or gauge prefs.
+  func refreshFromHandsetBridge()
 }
 
 class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate,
@@ -43,6 +45,8 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate,
   // Registry mapping templates to their owning controllers for visibility event forwarding.
   // Allows the scene delegate to notify controllers when their templates appear/disappear.
   private var ownerByTemplateID: [ObjectIdentifier: AnyObject] = [:]
+  /// Observers for Flutter → native bridge notifications (registered while CarPlay is connected).
+  private var handsetBridgeObservers: [NSObjectProtocol] = []
   // All tab controllers in display order (Gauges, Fuel Status, MIL, DTCs, Settings)
   private lazy var controllers: [any CarPlayTabControlling] = [
     CarPlayGaugesController(),
@@ -91,12 +95,16 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate,
     if ConfigData.shared.autoConnectToOBD {
       Task { await connectionManager.connect() }
     }
+
+    // 8) Handset (Flutter) may change settings/gauges while CarPlay is active — observe bridge notifications.
+    registerHandsetBridgeObservers()
   }
 
   func templateApplicationScene(
     _ templateApplicationScene: CPTemplateApplicationScene,
     didDisconnectInterfaceController interfaceController: CPInterfaceController
   ) {
+    unregisterHandsetBridgeObservers()
     self.interfaceController = nil
     ownerByTemplateID.removeAll()
   }
@@ -139,5 +147,43 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate,
   // Remove a template from the registry when it's dismissed or deallocated
   func unregister(template: CPTemplate) {
     ownerByTemplateID.removeValue(forKey: ObjectIdentifier(template))
+  }
+
+  // MARK: - Flutter handset bridge
+
+  private func registerHandsetBridgeObservers() {
+    unregisterHandsetBridgeObservers()
+    let center = NotificationCenter.default
+
+    handsetBridgeObservers.append(
+      center.addObserver(
+        forName: CarPlayBridgeNotifications.settingsChanged,
+        object: nil,
+        queue: .main
+      ) { [weak self] note in
+        guard let self else { return }
+        CarPlayHandsetBridge.applySettings(userInfo: note.userInfo)
+        OBDConnectionManager.shared.updateConnectionDetails()
+        self.controllers.forEach { $0.refreshFromHandsetBridge() }
+      }
+    )
+
+    handsetBridgeObservers.append(
+      center.addObserver(
+        forName: CarPlayBridgeNotifications.gaugePreferencesChanged,
+        object: nil,
+        queue: .main
+      ) { [weak self] _ in
+        guard let self else { return }
+        PIDStore.shared.reloadFromUserDefaults()
+        self.controllers.forEach { $0.refreshFromHandsetBridge() }
+      }
+    )
+  }
+
+  private func unregisterHandsetBridgeObservers() {
+    let center = NotificationCenter.default
+    handsetBridgeObservers.forEach { center.removeObserver($0) }
+    handsetBridgeObservers.removeAll()
   }
 }

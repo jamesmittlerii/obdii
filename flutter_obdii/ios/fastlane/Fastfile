@@ -1,0 +1,82 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:ios)
+
+platform :ios do
+  before_all do
+    # Run setup_ci for any CI environment
+    setup_ci if ENV['CI']
+    #is_ci? 
+    match(type: 'appstore')
+  end
+
+  desc "Push a new beta build to TestFlight"
+  lane :beta do
+
+    #setup_ci if ENV['CI']
+    #match(type: 'appstore')
+
+    project_name = ENV['PROJECT_NAME'].to_s.strip
+    flutter_target =
+      case project_name
+      when 'obdiic'
+        'lib/main_cupertino.dart'
+      else
+        'lib/main_material.dart'
+      end
+
+    bundle_id = ENV['APP_IDENTIFIER'].to_s.strip
+    bundle_id = "com.rheosoft.#{project_name}" if bundle_id.empty?
+
+    provisioning_profile = ENV['PROVISIONING_PROFILE_SPECIFIER'].to_s.strip
+    provisioning_profile = "match AppStore #{bundle_id}" if provisioning_profile.empty?
+
+    project_file = "flutter_obdii/ios/Runner.xcodeproj"
+   # increment_build_number(xcodeproj: project_file)
+   # commit_version_bump(
+   #   message: "Bump version from Fastlane [skip ci]",
+   #   force: true,
+   #   xcodeproj: project_file
+   # )
+   # push_to_git_remote(  # Push the committed changes
+   #     remote_branch: ENV['CURRENT_BRANCH']
+   # )
+          
+    # Build Flutter iOS artifacts without signing, then let fastlane/gym
+    # perform archive + App Store signing using match-provided credentials.
+    sh "cd .. && flutter build ios --release --no-codesign -t #{flutter_target}"
+
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "app-store",
+      export_options: {
+        signingStyle: "manual",
+        provisioningProfiles: {
+          bundle_id => provisioning_profile,
+        },
+      },
+      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' DEVELOPMENT_TEAM=L97LVVC8Y4"
+    )
+
+    app_store_connect_api_key
+    upload_to_testflight(
+    #    api_key: api_key,
+#      apple_id: ENV['FASTLANE_APPLE_APPLICATION_ID'],
+      skip_waiting_for_build_processing: false
+    )
+  end
+end
