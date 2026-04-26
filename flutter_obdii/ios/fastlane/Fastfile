@@ -38,6 +38,14 @@ platform :ios do
         'lib/main_material.dart'
       end
 
+    app_display_name =
+      case project_name
+      when 'obdiic'
+        'Cupertino Obdii'
+      else
+        'Material Obdii'
+      end
+
     bundle_id = ENV['APP_IDENTIFIER'].to_s.strip
     bundle_id = "com.rheosoft.#{project_name}" if bundle_id.empty?
 
@@ -69,7 +77,7 @@ platform :ios do
           bundle_id => provisioning_profile,
         },
       },
-      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' DEVELOPMENT_TEAM=L97LVVC8Y4"
+      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' DEVELOPMENT_TEAM=L97LVVC8Y4 APP_DISPLAY_NAME='#{app_display_name}'"
     )
 
     app_store_connect_api_key
