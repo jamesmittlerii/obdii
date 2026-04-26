@@ -20,7 +20,8 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
-    registerCarPlayBridgeChannel(on: engineBridge.binaryMessenger)
+    let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "CarPlayBridge")
+    registerCarPlayBridgeChannel(on: registrar.messenger())
   }
 
   private func registerCarPlayBridgeChannel(on messenger: FlutterBinaryMessenger) {
