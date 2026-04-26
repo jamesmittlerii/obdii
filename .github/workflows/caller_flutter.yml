@@ -1,0 +1,53 @@
+name: Flutter iOS build/testflight workflow
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["flutter"]
+    paths:
+      - "flutter_obdii/**"
+      - ".github/workflows/caller_flutter.yml"
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flutter-ios:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: flutter_obdii
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Flutter analyze
+        run: flutter analyze
+
+      - name: Flutter tests
+        run: flutter test
+
+      - name: Build iOS (no codesign)
+        run: flutter build ios --release --no-codesign
+
+      - name: Upload iOS build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-ios-release-no-codesign
+          path: flutter_obdii/build/ios/iphoneos
