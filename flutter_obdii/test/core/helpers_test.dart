@@ -69,7 +69,7 @@ void main() {
   test('testLogEntryCodable', () {
     final map = <String, dynamic>{
       'category': 'AppInit',
-      'subsystem': 'com.rheosoft.obdii',
+      'subsystem': 'com.rheosoft.obdiif',
       'message': 'App started',
     };
     expect(map['category'], 'AppInit');
