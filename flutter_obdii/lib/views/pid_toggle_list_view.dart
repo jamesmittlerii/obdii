@@ -2,7 +2,9 @@
 // Lists all available gauge PIDs in Enabled / Disabled sections.
 // Supports drag-to-reorder (Enabled only), toggling, and search via AppBar icon.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart'
+    show ReorderableListView, ReorderableDragStartListener;
 import 'package:provider/provider.dart';
 
 import '../core/config_data.dart';
@@ -35,24 +37,22 @@ class _PidToggleListViewState extends State<PidToggleListView> {
           final isMetric =
               context.watch<ConfigData>().units == MeasurementUnit.metric;
 
-          return Scaffold(
-            appBar: AppBar(
-              title: _isSearching
-                  ? TextField(
+          return CupertinoPageScaffold(
+            navigationBar: CupertinoNavigationBar(
+              middle: _isSearching
+                  ? CupertinoTextField(
                       controller: _searchController,
-                      autofocus: true,
-                      decoration: const InputDecoration(
-                        hintText: 'Search PIDs…',
-                        border: InputBorder.none,
-                      ),
+                      placeholder: 'Search PIDs…',
                       onChanged: (q) => vm.searchText = q,
                     )
                   : const Text('Gauges'),
-              actions: [
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                 if (_isSearching)
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    tooltip: 'Cancel search',
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: const Icon(CupertinoIcons.clear),
                     onPressed: () {
                       setState(() => _isSearching = false);
                       _searchController.clear();
@@ -60,14 +60,15 @@ class _PidToggleListViewState extends State<PidToggleListView> {
                     },
                   )
                 else
-                  IconButton(
-                    icon: const Icon(Icons.search),
-                    tooltip: 'Search PIDs',
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: const Icon(CupertinoIcons.search),
                     onPressed: () => setState(() => _isSearching = true),
                   ),
-              ],
+                ],
+              ),
             ),
-            body: _buildList(vm, isMetric),
+            child: _buildList(vm, isMetric),
           );
         },
       ),
@@ -83,7 +84,7 @@ class _PidToggleListViewState extends State<PidToggleListView> {
       return Center(
         child: Text(
           'No results for "${vm.searchText}"',
-          style: const TextStyle(color: Colors.grey),
+          style: const TextStyle(color: CupertinoColors.secondaryLabel),
         ),
       );
     }
@@ -153,14 +154,15 @@ class _PidToggleListViewState extends State<PidToggleListView> {
   Widget _sectionHeader(BuildContext context, String title, {required Key key}) {
     return Container(
       key: key,
-      color: Theme.of(context).scaffoldBackgroundColor,
+      color: CupertinoColors.systemGroupedBackground.resolveFrom(context),
+      
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
       child: Text(
         title.toUpperCase(),
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.bold,
-          color: Theme.of(context).colorScheme.primary,
+          color: CupertinoTheme.of(context).primaryColor,
           letterSpacing: 0.8,
         ),
       ),
@@ -192,8 +194,7 @@ class _PidToggleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+    return CupertinoListTile(
       title: Text(pid.name, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(
         pid.displayRange(isMetric),
@@ -202,11 +203,11 @@ class _PidToggleRow extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Switch(value: isOn, onChanged: onToggle),
+          CupertinoSwitch(value: isOn, onChanged: onToggle),
           if (canReorder && reorderIndex != null)
             ReorderableDragStartListener(
               index: reorderIndex! + 1, // +1 because index 0 is the header
-              child: const Icon(Icons.drag_handle, color: Colors.grey),
+              child: const Icon(CupertinoIcons.line_horizontal_3, color: CupertinoColors.secondaryLabel),
             ),
         ],
       ),

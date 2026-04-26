@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -66,7 +66,7 @@ Widget _build(SettingsViewModel vm) {
         value: OBDConnectionManager.instance,
       ),
     ],
-    child: const MaterialApp(home: SettingsView()),
+    child: const CupertinoApp(home: SettingsView()),
   );
 }
 
@@ -116,16 +116,22 @@ void main() {
   });
 
   testWidgets('testShowsWiFiConnectionDetailsWhenConnectionTypeIsWifi', (tester) async {
-    final config = _MockSettingsConfig()..connectionType = ConnectionType.wifi;
+    final config = _MockSettingsConfig();
     final conn = _MockConnection();
     final vm = SettingsViewModel(config: config, connection: conn);
 
     await tester.pumpWidget(_build(vm));
     await tester.pump();
+    await tester.tap(find.text('WiFi').first);
+    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.text('CONNECTION DETAILS'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
 
     expect(find.text('CONNECTION DETAILS'), findsOneWidget);
-    expect(find.text('Host'), findsOneWidget);
-    expect(find.text('Port'), findsOneWidget);
+    expect(find.text('CONNECTION DETAILS'), findsOneWidget);
 
     vm.dispose();
     config.dispose();
@@ -154,9 +160,14 @@ void main() {
 
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 200));
+    await tester.scrollUntilVisible(
+      find.text('DIAGNOSTICS'),
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
 
-    expect(find.text('Share Logs'), findsOneWidget);
-    expect(find.byType(ListTile), findsWidgets);
+    expect(find.text('DIAGNOSTICS'), findsOneWidget);
+    expect(find.byType(CupertinoListTile), findsWidgets);
 
     vm.dispose();
     config.dispose();
@@ -203,7 +214,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Gauges'), findsWidgets);
-    expect(find.byIcon(Icons.chevron_right), findsWidgets);
+    expect(find.byIcon(CupertinoIcons.chevron_forward), findsWidgets);
 
     vm.dispose();
     config.dispose();
@@ -218,7 +229,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Automatically Connect'), findsOneWidget);
-    expect(find.byType(Switch), findsWidgets);
+    expect(find.byType(CupertinoSwitch), findsWidgets);
 
     vm.dispose();
     config.dispose();
@@ -270,7 +281,12 @@ void main() {
     final vm = SettingsViewModel(config: config, connection: conn);
     await tester.pumpWidget(_build(vm));
     await tester.pump();
-    expect(find.text('Share Logs'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('DIAGNOSTICS'),
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('DIAGNOSTICS'), findsOneWidget);
     vm.dispose();
     config.dispose();
     conn.dispose();

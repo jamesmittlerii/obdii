@@ -2,7 +2,7 @@
 // Detail screen for a single gauge/PID.
 // Displays Current value, Statistics (min/max/samples), and Maximum Range.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
 import '../core/config_data.dart';
@@ -68,81 +68,81 @@ class _GaugeDetailInterestScopeState extends State<_GaugeDetailInterestScope> {
     final isMetric = context.watch<ConfigData>().units == MeasurementUnit.metric;
     final pid = widget.pid;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(pid.name),
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: Text(pid.name),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 100, 16, 16),
         children: [
           // ── Current ──────────────────────────────────
           _sectionHeader(context, 'Current'),
-          Card(
-            child: ListTile(
-              title: vm.stats != null
-                  ? Text(
-                      pid.formattedValue(vm.stats!.latest.value, isMetric,
-                          includeUnits: true),
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: pid.colorForValue(vm.stats!.latest.value, isMetric),
-                        fontFeatures: const [FontFeature.tabularFigures()],
+          CupertinoListSection.insetGrouped(
+            children: [
+              CupertinoListTile(
+                title: vm.stats != null
+                    ? Text(
+                        pid.formattedValue(vm.stats!.latest.value, isMetric,
+                            includeUnits: true),
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: pid.colorForValue(vm.stats!.latest.value, isMetric),
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      )
+                    : Text(
+                        '— ${pid.unitLabel(isMetric)}',
+                        style: TextStyle(
+                          fontSize: 28,
+                          color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                        ),
                       ),
-                    )
-                  : Text(
-                      '— ${pid.unitLabel(isMetric)}',
-                      style: TextStyle(
-                        fontSize: 28,
-                        color: Colors.grey.shade500,
-                      ),
-                    ),
-            ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
 
           // ── Statistics ───────────────────────────────
           _sectionHeader(context, 'Statistics'),
-          Card(
-            child: Column(
-              children: [
-                if (vm.stats != null) ...[
-                  ListTile(
-                    title: const Text('Min'),
-                    trailing: Text(
-                      pid.formattedValue(vm.stats!.min, isMetric, includeUnits: true),
-                      style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
-                    ),
+          CupertinoListSection.insetGrouped(
+            children: [
+              if (vm.stats != null) ...[
+                CupertinoListTile(
+                  title: const Text('Min'),
+                  trailing: Text(
+                    pid.formattedValue(vm.stats!.min, isMetric, includeUnits: true),
+                    style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
                   ),
-                  const Divider(height: 1),
-                  ListTile(
-                    title: const Text('Max'),
-                    trailing: Text(
-                      pid.formattedValue(vm.stats!.max, isMetric, includeUnits: true),
-                      style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
-                    ),
+                ),
+                CupertinoListTile(
+                  title: const Text('Max'),
+                  trailing: Text(
+                    pid.formattedValue(vm.stats!.max, isMetric, includeUnits: true),
+                    style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
                   ),
-                  const Divider(height: 1),
-                  ListTile(
-                    title: const Text('Samples'),
-                    trailing: Text('${vm.stats!.sampleCount}'),
-                  ),
-                ] else
-                  const ListTile(
-                    title: Text('No data yet',
-                        style: TextStyle(color: Colors.grey)),
-                  ),
-              ],
-            ),
+                ),
+                CupertinoListTile(
+                  title: const Text('Samples'),
+                  trailing: Text('${vm.stats!.sampleCount}'),
+                ),
+              ] else
+                const CupertinoListTile(
+                  title: Text('No data yet',
+                      style: TextStyle(color: CupertinoColors.secondaryLabel)),
+                ),
+            ],
           ),
           const SizedBox(height: 16),
 
           // ── Maximum Range ─────────────────────────────
           _sectionHeader(context, 'Maximum Range'),
-          Card(
-            child: ListTile(
-              title: Text(pid.displayRange(isMetric)),
-            ),
+          CupertinoListSection.insetGrouped(
+            children: [
+              CupertinoListTile(
+                title: Text(pid.displayRange(isMetric)),
+              ),
+            ],
           ),
         ],
       ),
@@ -154,8 +154,8 @@ class _GaugeDetailInterestScopeState extends State<_GaugeDetailInterestScope> {
       padding: const EdgeInsets.only(left: 4, bottom: 8, top: 4),
       child: Text(
         title.toUpperCase(),
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
+        style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+              color: CupertinoTheme.of(context).primaryColor,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.8,
             ),

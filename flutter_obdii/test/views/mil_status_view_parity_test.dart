@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show Colors;
 import 'package:flutter_obd2/flutter_obd2.dart' as obd2lib;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -27,7 +28,7 @@ class _MockMilProvider implements MilStatusProviding {
 Widget _build(MilStatusViewModel vm) {
   return ChangeNotifierProvider<MilStatusViewModel>.value(
     value: vm,
-    child: const MaterialApp(home: MilStatusView()),
+    child: const CupertinoApp(home: MilStatusView()),
   );
 }
 
@@ -36,7 +37,7 @@ void main() {
     final p = _MockMilProvider();
     final vm = MilStatusViewModel(provider: p, interestRegistry: PidInterestRegistry());
     await tester.pumpWidget(_build(vm));
-    expect(find.byType(Scaffold), findsOneWidget);
+    expect(find.byType(CupertinoPageScaffold), findsOneWidget);
     vm.dispose();
     p.dispose();
   });
@@ -72,7 +73,7 @@ void main() {
     final p = _MockMilProvider();
     final vm = MilStatusViewModel(provider: p, interestRegistry: PidInterestRegistry());
     await tester.pumpWidget(_build(vm));
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(CupertinoActivityIndicator), findsOneWidget);
     vm.dispose();
     p.dispose();
   });
@@ -99,9 +100,17 @@ void main() {
     final p = _MockMilProvider();
     final vm = MilStatusViewModel(provider: p, interestRegistry: PidInterestRegistry());
     await tester.pumpWidget(_build(vm));
-    p.send(obd2lib.Status(milOn: true, dtcCount: 1, monitors: const []));
+    p.send(
+      obd2lib.Status(
+        milOn: true,
+        dtcCount: 1,
+        monitors: [
+          obd2lib.ReadinessMonitor(name: 'Misfire', supported: true, ready: true),
+        ],
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 80));
-    expect(find.byType(ListTile), findsWidgets);
+    expect(find.byType(CupertinoListTile), findsWidgets);
     vm.dispose();
     p.dispose();
   });
@@ -110,9 +119,17 @@ void main() {
     final p = _MockMilProvider();
     final vm = MilStatusViewModel(provider: p, interestRegistry: PidInterestRegistry());
     await tester.pumpWidget(_build(vm));
-    p.send(obd2lib.Status(milOn: true, dtcCount: 1, monitors: const []));
+    p.send(
+      obd2lib.Status(
+        milOn: true,
+        dtcCount: 1,
+        monitors: [
+          obd2lib.ReadinessMonitor(name: 'Misfire', supported: true, ready: true),
+        ],
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 80));
-    expect(find.byIcon(Icons.build), findsOneWidget);
+    expect(find.byIcon(CupertinoIcons.exclamationmark_triangle_fill), findsOneWidget);
     vm.dispose();
     p.dispose();
   });
@@ -155,7 +172,7 @@ void main() {
       ],
     ));
     await tester.pump(const Duration(milliseconds: 80));
-    expect(find.byType(ListTile), findsWidgets);
+    expect(find.byType(CupertinoListTile), findsWidgets);
     vm.dispose();
     p.dispose();
   });

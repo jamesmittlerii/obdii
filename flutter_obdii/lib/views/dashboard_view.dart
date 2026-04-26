@@ -3,7 +3,7 @@
 // Gauges mode: adaptive grid of ring gauge tiles, each tappable → GaugeDetailView
 // List mode:   inset list, full PID name + range subtitle, colored value trailing
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -81,35 +81,33 @@ class _GaugesViewState extends State<GaugesView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_mode == _GaugesDisplayMode.gauges ? 'Gauges' : 'List'),
-        centerTitle: false,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: SegmentedButton<_GaugesDisplayMode>(
-              style: const ButtonStyle(
-                visualDensity: VisualDensity(horizontal: -2, vertical: -2),
-              ),
-              segments: const [
-                ButtonSegment(
-                  value: _GaugesDisplayMode.gauges,
-                  label: Text('Gauges'),
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: Text(_mode == _GaugesDisplayMode.gauges ? 'Gauges' : 'List'),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 96, 16, 8),
+            child: CupertinoSlidingSegmentedControl<_GaugesDisplayMode>(
+              groupValue: _mode,
+              children: const {
+                _GaugesDisplayMode.gauges: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10),
+                  child: Text('Gauges'),
                 ),
-                ButtonSegment(
-                  value: _GaugesDisplayMode.list,
-                  label: Text('List'),
+                _GaugesDisplayMode.list: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10),
+                  child: Text('List'),
                 ),
-              ],
-              selected: {_mode},
-              onSelectionChanged: (s) => _setMode(s.first),
+              },
+              onValueChanged: (v) {
+                if (v != null) _setMode(v);
+              },
             ),
           ),
-        ),
-      ),
-      body: Consumer<GaugesViewModel>(
+          Expanded(
+            child: Consumer<GaugesViewModel>(
         builder: (context, vm, _) {
           if (vm.isEmpty) {
             return _emptyState();
@@ -118,6 +116,9 @@ class _GaugesViewState extends State<GaugesView> {
               ? _GaugesGrid(vm: vm)
               : _GaugesList(vm: vm);
         },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -127,12 +128,12 @@ class _GaugesViewState extends State<GaugesView> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.speed_outlined, size: 64, color: Colors.grey),
+          Icon(CupertinoIcons.speedometer, size: 64, color: CupertinoColors.secondaryLabel),
           SizedBox(height: 16),
           Text(
             'No gauges enabled.\nGo to Settings → Gauges to add some.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: CupertinoColors.secondaryLabel),
           ),
         ],
       ),
@@ -168,7 +169,7 @@ class _GaugesGrid extends StatelessWidget {
         return GestureDetector(
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(
+            CupertinoPageRoute(
               builder: (_) => GaugeDetailView(pid: tile.pid),
             ),
           ),
@@ -191,7 +192,11 @@ class _GaugeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(context),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(8),
         child: Column(
@@ -246,7 +251,7 @@ class _GaugesList extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
+                color: CupertinoTheme.of(context).primaryColor,
                 letterSpacing: 0.8,
               ),
             ),
@@ -276,58 +281,58 @@ class _GaugeListRow extends StatelessWidget {
 
     final valueColor = stats != null
         ? pid.colorForValue(stats.latest.value, isMetric)
-        : Colors.grey;
+        : CupertinoColors.secondaryLabel;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 1),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-      elevation: 0,
-      child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => GaugeDetailView(pid: pid)),
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        CupertinoPageRoute(builder: (_) => GaugeDetailView(pid: pid)),
+      ),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 1),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(context),
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      pid.name,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      pid.displayRange(isMetric),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    valueText,
+                    pid.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    pid.displayRange(isMetric),
                     style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: valueColor,
-                      fontFeatures: const [FontFeature.tabularFigures()],
+                      fontSize: 12,
+                      color: CupertinoColors.secondaryLabel.resolveFrom(context),
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  Icon(Icons.chevron_right, color: Colors.grey.shade600, size: 20),
                 ],
               ),
-            ],
-          ),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  valueText,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: valueColor,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(CupertinoIcons.chevron_forward, color: CupertinoColors.secondaryLabel, size: 18),
+              ],
+            ),
+          ],
         ),
       ),
     );

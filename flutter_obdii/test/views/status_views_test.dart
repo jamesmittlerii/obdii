@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_obd2/flutter_obd2.dart' as obd2lib;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -82,7 +82,7 @@ void main() {
             value: OBDConnectionManager.instance,
           ),
         ],
-        child: const MaterialApp(home: DiagnosticsView()),
+        child: const CupertinoApp(home: DiagnosticsView()),
       ),
     );
     expect(find.text('Waiting for data…'), findsOneWidget);
@@ -105,7 +105,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<FuelStatusViewModel>.value(
         value: vm,
-        child: const MaterialApp(home: FuelStatusView()),
+        child: const CupertinoApp(home: FuelStatusView()),
       ),
     );
     expect(find.text('Waiting for data…'), findsOneWidget);
@@ -128,7 +128,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<FuelStatusViewModel>.value(
         value: vm,
-        child: const MaterialApp(home: FuelStatusView()),
+        child: const CupertinoApp(home: FuelStatusView()),
       ),
     );
 
@@ -155,7 +155,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<MilStatusViewModel>.value(
         value: vm,
-        child: const MaterialApp(home: MilStatusView()),
+        child: const CupertinoApp(home: MilStatusView()),
       ),
     );
     expect(find.text('Waiting for data…'), findsOneWidget);
@@ -197,7 +197,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<FuelStatusViewModel>.value(
         value: vm,
-        child: const MaterialApp(home: FuelStatusView()),
+        child: const CupertinoApp(home: FuelStatusView()),
       ),
     );
     await tester.pump();
@@ -217,7 +217,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<MilStatusViewModel>.value(
         value: vm,
-        child: const MaterialApp(home: MilStatusView()),
+        child: const CupertinoApp(home: MilStatusView()),
       ),
     );
     await tester.pump();
@@ -243,7 +243,7 @@ void main() {
             value: OBDConnectionManager.instance,
           ),
         ],
-        child: const MaterialApp(home: DiagnosticsView()),
+        child: const CupertinoApp(home: DiagnosticsView()),
       ),
     );
     await tester.pump();
@@ -263,7 +263,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<MilStatusViewModel>.value(
         value: vm,
-        child: const MaterialApp(home: MilStatusView()),
+        child: const CupertinoApp(home: MilStatusView()),
       ),
     );
     provider.send(
@@ -297,7 +297,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<FuelStatusViewModel>.value(
         value: vm,
-        child: const MaterialApp(home: FuelStatusView()),
+        child: const CupertinoApp(home: FuelStatusView()),
       ),
     );
     provider.send([null, null]);

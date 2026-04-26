@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
 import 'core/config_data.dart';
@@ -54,25 +54,13 @@ class ObdApp extends StatelessWidget {
       ],
       child: Consumer<ConfigData>(
         builder: (context, config, _) {
-          return MaterialApp(
+          return CupertinoApp(
             title: 'OBDII',
             debugShowCheckedModeBanner: false,
-            theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFF00C2FF),
-                brightness: Brightness.light,
-              ),
-              useMaterial3: true,
-              fontFamily: 'SF Pro Display',
+            theme: const CupertinoThemeData(
+              brightness: Brightness.light,
+              primaryColor: Color(0xFF00C2FF),
             ),
-            darkTheme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFF00C2FF),
-                brightness: Brightness.dark,
-              ),
-              useMaterial3: true,
-            ),
-            themeMode: ThemeMode.light,
             home: const MainScaffold(),
           );
         },

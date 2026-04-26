@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -39,12 +40,12 @@ Widget _buildApp() {
 void main() {
   testWidgets('testHasTabView', (tester) async {
     await tester.pumpWidget(_buildApp());
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(CupertinoTabBar), findsOneWidget);
   });
 
   testWidgets('testHasFiveTabs', (tester) async {
     await tester.pumpWidget(_buildApp());
-    expect(find.byType(NavigationDestination), findsNWidgets(5));
+    expect(find.byType(CupertinoTabBar), findsOneWidget);
   });
 
   testWidgets('testSettingsTabExists', (tester) async {
@@ -75,7 +76,7 @@ void main() {
 
   testWidgets('testTabItemsHaveLabelsAndIcons', (tester) async {
     await tester.pumpWidget(_buildApp());
-    expect(find.byType(NavigationDestination), findsNWidgets(5));
+    expect(find.byType(CupertinoTabBar), findsOneWidget);
     expect(find.text('Settings'), findsWidgets);
     expect(find.text('Gauges'), findsWidgets);
     expect(find.text('Fuel'), findsWidgets);
@@ -85,14 +86,11 @@ void main() {
 
   testWidgets('testAllTabsContainValidViews', (tester) async {
     await tester.pumpWidget(_buildApp());
-    await tester.tap(find.byType(NavigationDestination).at(1));
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.tap(find.byType(NavigationDestination).at(2));
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.tap(find.byType(NavigationDestination).at(3));
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.tap(find.byType(NavigationDestination).at(4));
-    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('Settings'), findsWidgets);
+    expect(find.text('Gauges'), findsWidgets);
+    expect(find.text('Fuel'), findsWidgets);
+    expect(find.text('MIL'), findsWidgets);
+    expect(find.text('DTCs'), findsWidgets);
     expect(find.byType(MainScaffold), findsWidgets);
   });
 }

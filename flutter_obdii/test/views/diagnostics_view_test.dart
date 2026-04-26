@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_obd2/flutter_obd2.dart' as obd2lib;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -43,7 +43,7 @@ Widget _build( DiagnosticsViewModel vm, OBDConnectionManager mgr) {
       ChangeNotifierProvider<DiagnosticsViewModel>.value(value: vm),
       ChangeNotifierProvider<OBDConnectionManager>.value(value: mgr),
     ],
-    child: const MaterialApp(home: DiagnosticsView()),
+    child: const CupertinoApp(home: DiagnosticsView()),
   );
 }
 
@@ -186,7 +186,7 @@ void main() {
     provider.send([_dtc('P0010', 'Critical')]);
     await tester.pump(const Duration(milliseconds: 80));
 
-    expect(find.byIcon(Icons.cancel_outlined), findsOneWidget);
+    expect(find.byIcon(CupertinoIcons.xmark_circle), findsOneWidget);
 
     vm.dispose();
     provider.dispose();

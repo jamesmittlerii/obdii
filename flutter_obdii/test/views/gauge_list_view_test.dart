@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show Colors;
 import 'package:flutter_obd2/flutter_obd2.dart' as obd2lib;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -81,7 +82,7 @@ Widget _build(GaugesViewModel vm) {
       ChangeNotifierProvider<PidStore>.value(value: PidStore.instance),
       ChangeNotifierProvider<GaugesViewModel>.value(value: vm),
     ],
-    child: const MaterialApp(home: GaugesView()),
+    child: const CupertinoApp(home: GaugesView()),
   );
 }
 
@@ -140,7 +141,7 @@ void main() {
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
     await toListMode(tester);
-    expect(find.byIcon(Icons.chevron_right), findsWidgets);
+    expect(find.byIcon(CupertinoIcons.chevron_forward), findsWidgets);
   });
 
   testWidgets('testRowDisplaysGaugeName', (tester) async {
@@ -229,7 +230,7 @@ void main() {
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
     await toListMode(tester);
-    await tester.tap(find.byType(InkWell).first);
+    await tester.tap(find.byType(GestureDetector).first);
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('Engine RPM'), findsWidgets);
   });

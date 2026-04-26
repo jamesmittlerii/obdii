@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_obd2/flutter_obd2.dart' as obd2lib;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -41,7 +41,7 @@ Widget _build(DiagnosticsViewModel vm, OBDConnectionManager mgr) {
       ChangeNotifierProvider<DiagnosticsViewModel>.value(value: vm),
       ChangeNotifierProvider<OBDConnectionManager>.value(value: mgr),
     ],
-    child: const MaterialApp(home: DiagnosticsView()),
+    child: const CupertinoApp(home: DiagnosticsView()),
   );
 }
 
@@ -51,7 +51,7 @@ void main() {
     final vm = DiagnosticsViewModel(provider: p, interestRegistry: PidInterestRegistry());
     final mgr = OBDConnectionManager.instance..connectionState = OBDConnectionState.connected;
     await tester.pumpWidget(_build(vm, mgr));
-    expect(find.byType(Scaffold), findsOneWidget);
+    expect(find.byType(CupertinoPageScaffold), findsOneWidget);
     vm.dispose();
     p.dispose();
   });
@@ -71,7 +71,7 @@ void main() {
     final vm = DiagnosticsViewModel(provider: p, interestRegistry: PidInterestRegistry());
     final mgr = OBDConnectionManager.instance..connectionState = OBDConnectionState.disconnected;
     await tester.pumpWidget(_build(vm, mgr));
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(CupertinoActivityIndicator), findsOneWidget);
     vm.dispose();
     p.dispose();
   });
@@ -118,7 +118,7 @@ void main() {
     await tester.pumpWidget(_build(vm, mgr));
     p.send([_dtc('P0301', 'High')]);
     await tester.pump(const Duration(milliseconds: 80));
-    expect(find.byType(ListTile), findsWidgets);
+    expect(find.byType(CupertinoListTile), findsWidgets);
     vm.dispose();
     p.dispose();
   });

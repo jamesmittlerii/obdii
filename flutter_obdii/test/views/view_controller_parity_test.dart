@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -51,7 +52,7 @@ void main() {
 
   testWidgets('testViewDidLoadAddsHostingController', (tester) async {
     await tester.pumpWidget(_buildShell());
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(CupertinoTabBar), findsOneWidget);
   });
 
   testWidgets('testHostingControllerIsAdded', (tester) async {
@@ -61,7 +62,7 @@ void main() {
 
   testWidgets('testHostingControllerViewIsAdded', (tester) async {
     await tester.pumpWidget(_buildShell());
-    expect(find.byType(Scaffold), findsWidgets);
+    expect(find.byType(CupertinoPageScaffold), findsWidgets);
   });
 
   testWidgets('testHostingControllerUsesAutoresizingMask', (tester) async {
@@ -76,7 +77,7 @@ void main() {
 
   testWidgets('testHostingControllerDidMoveToParent', (tester) async {
     await tester.pumpWidget(_buildShell());
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(CupertinoTabBar), findsOneWidget);
   });
 
   test('testSafetyPromptShownFirstTime', () async {
@@ -122,12 +123,12 @@ void main() {
 
   testWidgets('testViewControllerCanPresent', (tester) async {
     await tester.pumpWidget(_buildShell());
-    expect(find.byType(Dialog), findsNothing);
+    expect(find.byType(CupertinoAlertDialog), findsNothing);
   });
 
   testWidgets('testPresentationCheckBeforePresenting', (tester) async {
     await tester.pumpWidget(_buildShell());
-    expect(find.byType(Dialog), findsNothing);
+    expect(find.byType(CupertinoAlertDialog), findsNothing);
   });
 }
 

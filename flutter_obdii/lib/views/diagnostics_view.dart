@@ -3,7 +3,7 @@
 // Each row: severity icon + "P0xxx • Title" + severity subtitle + disclosure arrow.
 // Tapping navigates to DTCDetailView (Overview, Description, Causes, Remedies).
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
 import '../core/obd_connection_manager.dart';
@@ -43,12 +43,11 @@ class _DiagnosticsViewState extends State<DiagnosticsView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Diagnostic Codes'),
-        centerTitle: false,
+    return CupertinoPageScaffold(
+      navigationBar: const CupertinoNavigationBar(
+        middle: Text('Diagnostic Codes'),
       ),
-      body: Consumer2<DiagnosticsViewModel, OBDConnectionManager>(
+      child: Consumer2<DiagnosticsViewModel, OBDConnectionManager>(
         builder: (context, vm, mgr, _) {
           // 1) Waiting for first data
           if (vm.codes == null) {
@@ -59,18 +58,18 @@ class _DiagnosticsViewState extends State<DiagnosticsView> {
                   const SizedBox(
                     width: 36,
                     height: 36,
-                    child: CircularProgressIndicator(strokeWidth: 3),
+                    child: CupertinoActivityIndicator(radius: 18),
                   ),
                   const SizedBox(height: 16),
                   const Text('Waiting for data…',
-                      style: TextStyle(color: Colors.grey)),
+                      style: TextStyle(color: CupertinoColors.secondaryLabel)),
                   if (mgr.connectionState != OBDConnectionState.connected)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
                         'Connect to a vehicle in Settings.',
                         style: TextStyle(
-                            color: Colors.grey.shade600, fontSize: 12),
+                            color: CupertinoColors.secondaryLabel.resolveFrom(context), fontSize: 12),
                       ),
                     ),
                 ],
@@ -84,14 +83,14 @@ class _DiagnosticsViewState extends State<DiagnosticsView> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.check_circle_outline,
-                      size: 64, color: Colors.green),
+                  Icon(CupertinoIcons.check_mark_circled_solid,
+                      size: 64, color: CupertinoColors.activeGreen),
                   SizedBox(height: 16),
                   Text('No Trouble Codes Found',
                       style: TextStyle(fontSize: 18)),
                   SizedBox(height: 4),
                   Text('All systems normal.',
-                      style: TextStyle(color: Colors.grey)),
+                      style: TextStyle(color: CupertinoColors.secondaryLabel)),
                 ],
               ),
             );
@@ -99,7 +98,7 @@ class _DiagnosticsViewState extends State<DiagnosticsView> {
 
           // 3) Sections by severity
           return ListView.builder(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(12, 100, 12, 12),
             itemCount: vm.sections.length,
             itemBuilder: (context, index) {
               final section = vm.sections[index];
@@ -107,15 +106,11 @@ class _DiagnosticsViewState extends State<DiagnosticsView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _SectionHeader(severity: section.severity),
-                  Card(
-                    child: Column(
-                      children: [
-                        for (int i = 0; i < section.items.length; i++) ...[
-                          if (i > 0) const Divider(height: 1),
-                          _DtcRow(dtc: section.items[i]),
-                        ],
-                      ],
-                    ),
+                  CupertinoListSection.insetGrouped(
+                    children: [
+                      for (int i = 0; i < section.items.length; i++)
+                        _DtcRow(dtc: section.items[i]),
+                    ],
                   ),
                   const SizedBox(height: 8),
                 ],
@@ -156,15 +151,15 @@ class _SectionHeader extends StatelessWidget {
   Color _severityColor(String s) {
     switch (s.toLowerCase()) {
       case 'critical':
-        return Colors.red;
+        return CupertinoColors.destructiveRed;
       case 'high':
-        return Colors.orange;
+        return CupertinoColors.systemOrange;
       case 'moderate':
-        return Colors.amber;
+        return CupertinoColors.systemYellow;
       case 'low':
-        return Colors.blue;
+        return CupertinoColors.activeBlue;
       default:
-        return Colors.grey;
+        return CupertinoColors.secondaryLabel;
     }
   }
 }
@@ -180,7 +175,7 @@ class _DtcRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
+    return CupertinoListTile(
       leading: _severityIcon(dtc.severity?.toString() ?? ''),
       title: Text(
         '${dtc.code} • ${dtc.title ?? dtc.code}',
@@ -192,10 +187,10 @@ class _DtcRow extends StatelessWidget {
         dtc.severity?.toString() ?? '',
         style: const TextStyle(fontSize: 12),
       ),
-      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+      trailing: const Icon(CupertinoIcons.chevron_forward, color: CupertinoColors.secondaryLabel),
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => _DtcDetailView(dtc: dtc)),
+        CupertinoPageRoute(builder: (_) => _DtcDetailView(dtc: dtc)),
       ),
     );
   }
@@ -203,14 +198,14 @@ class _DtcRow extends StatelessWidget {
   Widget _severityIcon(String severity) {
     switch (severity.toLowerCase()) {
       case 'critical':
-        return const Icon(Icons.cancel_outlined, color: Colors.red);
+        return const Icon(CupertinoIcons.xmark_circle, color: CupertinoColors.destructiveRed);
       case 'high':
-        return const Icon(Icons.electric_bolt, color: Colors.orange);
+        return const Icon(CupertinoIcons.exclamationmark_triangle, color: CupertinoColors.systemOrange);
       case 'moderate':
-        return const Icon(Icons.warning_amber_outlined, color: Colors.amber);
+        return const Icon(CupertinoIcons.exclamationmark_triangle_fill, color: CupertinoColors.systemYellow);
       case 'low':
       default:
-        return const Icon(Icons.info_outline, color: Colors.blue);
+        return const Icon(CupertinoIcons.info_circle, color: CupertinoColors.activeBlue);
     }
   }
 }
@@ -230,55 +225,48 @@ class _DtcDetailView extends StatelessWidget {
     final causes = _stringList(dtc.causes);
     final remedies = _stringList(dtc.remedies);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(dtc.code as String? ?? ''),
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: Text(dtc.code as String? ?? ''),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 100, 16, 16),
         children: [
           // Overview
           _sectionHeader(context, 'Overview'),
-          Card(
-            child: Column(
-              children: [
-                _labeledRow('Code', dtc.code as String? ?? ''),
-                const Divider(height: 1),
-                _labeledRow('Title', dtc.title as String? ?? ''),
-                const Divider(height: 1),
-                _labeledRow('Severity', dtc.severity?.toString() ?? ''),
-              ],
-            ),
+          CupertinoListSection.insetGrouped(
+            children: [
+              _labeledRow('Code', dtc.code as String? ?? ''),
+              _labeledRow('Title', dtc.title as String? ?? ''),
+              _labeledRow('Severity', dtc.severity?.toString() ?? ''),
+            ],
           ),
           const SizedBox(height: 16),
 
           // Description
           _sectionHeader(context, 'Description'),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(dtc.description as String? ?? ''),
-            ),
+          CupertinoListSection.insetGrouped(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(dtc.description as String? ?? ''),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
 
           // Causes
           if (causes.isNotEmpty) ...[
             _sectionHeader(context, 'Potential Causes'),
-            Card(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (int i = 0; i < causes.length; i++) ...[
-                    if (i > 0) const Divider(height: 1),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
-                      child: Text('• ${causes[i]}'),
-                    ),
-                  ],
-                ],
-              ),
+            CupertinoListSection.insetGrouped(
+              children: [
+                for (int i = 0; i < causes.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    child: Text('• ${causes[i]}'),
+                  ),
+              ],
             ),
             const SizedBox(height: 16),
           ],
@@ -286,20 +274,15 @@ class _DtcDetailView extends StatelessWidget {
           // Remedies
           if (remedies.isNotEmpty) ...[
             _sectionHeader(context, 'Possible Remedies'),
-            Card(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (int i = 0; i < remedies.length; i++) ...[
-                    if (i > 0) const Divider(height: 1),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
-                      child: Text('• ${remedies[i]}'),
-                    ),
-                  ],
-                ],
-              ),
+            CupertinoListSection.insetGrouped(
+              children: [
+                for (int i = 0; i < remedies.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    child: Text('• ${remedies[i]}'),
+                  ),
+              ],
             ),
           ],
         ],
@@ -315,7 +298,7 @@ class _DtcDetailView extends StatelessWidget {
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.bold,
-          color: Theme.of(context).colorScheme.primary,
+          color: CupertinoTheme.of(context).primaryColor,
           letterSpacing: 0.8,
         ),
       ),
@@ -323,14 +306,11 @@ class _DtcDetailView extends StatelessWidget {
   }
 
   Widget _labeledRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Text(label, style: const TextStyle(color: Colors.grey)),
-          const Spacer(),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
-        ],
+    return CupertinoListTile(
+      title: Text(label, style: const TextStyle(color: CupertinoColors.secondaryLabel)),
+      trailing: Text(
+        value,
+        style: const TextStyle(fontWeight: FontWeight.w500),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show Colors;
 import 'package:flutter_obd2/flutter_obd2.dart' as obd2lib;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -93,7 +94,7 @@ Widget _build(GaugesViewModel vm) {
       ChangeNotifierProvider<ConfigData>.value(value: ConfigData.instance),
       ChangeNotifierProvider<GaugesViewModel>.value(value: vm),
     ],
-    child: const MaterialApp(home: GaugesView()),
+    child: const CupertinoApp(home: GaugesView()),
   );
 }
 
@@ -234,6 +235,6 @@ void main() {
   testWidgets('testEmptyStateIconIsRenderedWhenNoGauges', (tester) async {
     await tester.pumpWidget(_build(viewModel));
     await tester.pump();
-    expect(find.byIcon(Icons.speed_outlined), findsOneWidget);
+    expect(find.byIcon(CupertinoIcons.speedometer), findsOneWidget);
   });
 }

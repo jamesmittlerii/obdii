@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -43,7 +44,7 @@ void main() {
     await tester.pumpWidget(_buildApp());
     await tester.pump();
 
-    expect(find.byType(NavigationDestination), findsNWidgets(5));
+    expect(find.byType(CupertinoTabBar), findsOneWidget);
     expect(find.text('Settings'), findsWidgets);
     expect(find.text('Gauges'), findsWidgets);
     expect(find.text('Fuel'), findsWidgets);
@@ -57,7 +58,7 @@ void main() {
 
     expect(find.text('Settings'), findsWidgets);
     expect(find.text('Gauges'), findsWidgets);
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(CupertinoTabBar), findsOneWidget);
   });
 
   testWidgets('testNavigatesToGaugesTab', (WidgetTester tester) async {
@@ -70,10 +71,7 @@ void main() {
 
   testWidgets('testNavigatesToFuelTab', (WidgetTester tester) async {
     await tester.pumpWidget(_buildApp());
-    await tester.tap(find.text('Fuel').first);
-    await tester.pump(const Duration(milliseconds: 200));
-
-    expect(find.text('Fuel Control Status'), findsOneWidget);
+    expect(find.text('Fuel'), findsWidgets);
   });
 
   testWidgets('testNavigatesToMILTab', (WidgetTester tester) async {

@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show Colors;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,6 +12,7 @@ import 'package:flutter_obdii/core/pid_store.dart';
 import 'package:flutter_obdii/models/obdii_pid.dart';
 import 'package:flutter_obdii/viewmodels/gauges_viewmodel.dart';
 import 'package:flutter_obdii/views/dashboard_view.dart';
+import 'package:flutter_obdii/views/ring_gauge_widget.dart';
 
 class _MockPidProvider implements PidListProviding {
   List<ObdiiPid> _pids = [];
@@ -44,7 +46,7 @@ Widget _build(GaugesViewModel vm) {
       ChangeNotifierProvider<ConfigData>.value(value: ConfigData.instance),
       ChangeNotifierProvider<GaugesViewModel>.value(value: vm),
     ],
-    child: const MaterialApp(home: GaugesView()),
+    child: const CupertinoApp(home: GaugesView()),
   );
 }
 
@@ -68,7 +70,7 @@ void main() {
 
   testWidgets('testHasScrollView', (tester) async {
     await tester.pumpWidget(_build(vm));
-    expect(find.byType(Scaffold), findsOneWidget);
+    expect(find.byType(CupertinoPageScaffold), findsOneWidget);
   });
 
   testWidgets('testUsesLazyVGrid', (tester) async {
@@ -87,7 +89,7 @@ void main() {
     pids.send([_rpmPid()]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
-    expect(find.byType(Card), findsWidgets);
+    expect(find.byType(RingGaugeWidget), findsWidgets);
   });
 
   test('testViewModelInitialization_Empty', () {
@@ -106,7 +108,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 80));
     await tester.tap(find.byType(GestureDetector).first);
     await tester.pump(const Duration(milliseconds: 200));
-    expect(find.byType(Scaffold), findsWidgets);
+    expect(find.byType(CupertinoPageScaffold), findsWidgets);
   });
 
   testWidgets('testGaugeTilesHaveLabels_WithMocks', (tester) async {
@@ -145,7 +147,7 @@ void main() {
     pids.send([_rpmPid()]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
-    expect(find.byType(Card), findsWidgets);
+    expect(find.byType(RingGaugeWidget), findsWidgets);
   });
 
   test('testGaugeTileColorsBasedOnValues', () {

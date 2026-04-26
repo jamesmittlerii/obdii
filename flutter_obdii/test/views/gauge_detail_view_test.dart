@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
@@ -22,7 +22,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<ConfigData>.value(
         value: ConfigData.instance,
-        child: MaterialApp(home: GaugeDetailView(pid: _pid())),
+        child: CupertinoApp(home: GaugeDetailView(pid: _pid())),
       ),
     );
     await tester.pump();
@@ -36,7 +36,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<ConfigData>.value(
         value: ConfigData.instance,
-        child: MaterialApp(home: GaugeDetailView(pid: _pid())),
+        child: CupertinoApp(home: GaugeDetailView(pid: _pid())),
       ),
     );
     await tester.pump();
@@ -48,7 +48,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<ConfigData>.value(
         value: ConfigData.instance,
-        child: MaterialApp(home: GaugeDetailView(pid: _pid())),
+        child: CupertinoApp(home: GaugeDetailView(pid: _pid())),
       ),
     );
     await tester.pump();
@@ -60,7 +60,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<ConfigData>.value(
         value: ConfigData.instance,
-        child: MaterialApp(home: GaugeDetailView(pid: _pid())),
+        child: CupertinoApp(home: GaugeDetailView(pid: _pid())),
       ),
     );
     await tester.pump();
@@ -73,7 +73,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<ConfigData>.value(
         value: ConfigData.instance,
-        child: MaterialApp(home: GaugeDetailView(pid: _pid())),
+        child: CupertinoApp(home: GaugeDetailView(pid: _pid())),
       ),
     );
     await tester.pump();
@@ -84,7 +84,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<ConfigData>.value(
         value: ConfigData.instance,
-        child: MaterialApp(home: GaugeDetailView(pid: _pid())),
+        child: CupertinoApp(home: GaugeDetailView(pid: _pid())),
       ),
     );
     await tester.pump();
@@ -95,18 +95,18 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<ConfigData>.value(
         value: ConfigData.instance,
-        child: MaterialApp(home: GaugeDetailView(pid: _pid())),
+        child: CupertinoApp(home: GaugeDetailView(pid: _pid())),
       ),
     );
     await tester.pump();
-    expect(find.byType(Card), findsWidgets);
+    expect(find.byType(CupertinoListSection), findsWidgets);
   });
 
   testWidgets('testShowsPidNameInAppBarForCreatedPid', (tester) async {
     await tester.pumpWidget(
       ChangeNotifierProvider<ConfigData>.value(
         value: ConfigData.instance,
-        child: MaterialApp(home: GaugeDetailView(pid: _pid())),
+        child: CupertinoApp(home: GaugeDetailView(pid: _pid())),
       ),
     );
     await tester.pump();
@@ -117,7 +117,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<ConfigData>.value(
         value: ConfigData.instance,
-        child: MaterialApp(home: GaugeDetailView(pid: _pid())),
+        child: CupertinoApp(home: GaugeDetailView(pid: _pid())),
       ),
     );
     await tester.pump();

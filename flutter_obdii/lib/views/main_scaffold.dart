@@ -2,7 +2,7 @@
 // 5-tab navigation: Settings | Gauges | Fuel | MIL | DTCs
 // Mirrors Swift TabView with matching tab items.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
 import 'dashboard_view.dart';
 import 'diagnostics_view.dart';
@@ -22,7 +22,7 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    final pages = [
+    final pages = <Widget>[
       const SettingsView(),
       GaugesView(isActive: _selectedIndex == 1),
       FuelStatusView(isActive: _selectedIndex == 2),
@@ -30,42 +30,38 @@ class _MainScaffoldState extends State<MainScaffold> {
       DiagnosticsView(isActive: _selectedIndex == 4),
     ];
 
-    return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: pages,
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (i) => setState(() => _selectedIndex = i),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
+    return CupertinoTabScaffold(
+      tabBar: CupertinoTabBar(
+        currentIndex: _selectedIndex,
+        onTap: (i) => setState(() => _selectedIndex = i),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.settings),
             label: 'Settings',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.speed_outlined),
-            selectedIcon: Icon(Icons.speed),
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.speedometer),
             label: 'Gauges',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.local_gas_station_outlined),
-            selectedIcon: Icon(Icons.local_gas_station),
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.drop),
             label: 'Fuel',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.engineering_outlined),
-            selectedIcon: Icon(Icons.engineering),
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.exclamationmark_shield),
             label: 'MIL',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.build_outlined),
-            selectedIcon: Icon(Icons.build),
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.wrench),
             label: 'DTCs',
           ),
         ],
       ),
+      tabBuilder: (context, index) {
+        return CupertinoTabView(
+          builder: (context) => pages[index],
+        );
+      },
     );
   }
 }

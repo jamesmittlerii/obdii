@@ -2,7 +2,7 @@
 // Displays fuel system status for Bank 1 and Bank 2.
 // Shows waiting state while loading, empty state if no data.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
 import '../viewmodels/fuel_status_viewmodel.dart';
@@ -41,28 +41,33 @@ class _FuelStatusViewState extends State<FuelStatusView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Fuel Control Status'),
-        centerTitle: false,
+    return CupertinoPageScaffold(
+      navigationBar: const CupertinoNavigationBar(
+        middle: Text('Fuel Control Status'),
       ),
-      body: Consumer<FuelStatusViewModel>(
+      child: Consumer<FuelStatusViewModel>(
         builder: (context, vm, _) {
           // Waiting state
           if (vm.status == null) {
             return ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 100, 16, 16),
               children: [
-                Card(
-                  child: ListTile(
-                    leading: const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                    title: const Text(
-                      'Waiting for data…',
-                      style: TextStyle(color: Colors.grey),
+                Container(
+                  decoration: BoxDecoration(
+                    color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(context),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.all(14),
+                    child: Row(
+                      children: [
+                        CupertinoActivityIndicator(radius: 10),
+                        SizedBox(width: 12),
+                        Text(
+                          'Waiting for data…',
+                          style: TextStyle(color: CupertinoColors.secondaryLabel),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -72,29 +77,23 @@ class _FuelStatusViewState extends State<FuelStatusView> {
 
           // Loaded: show Bank 1 / Bank 2 (or empty message)
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 100, 16, 16),
             children: [
-              Card(
-                child: Column(
-                  children: [
-                    if (vm.bank1 != null) ...[
-                      _FuelRow(title: 'Bank 1', description: vm.bank1!.description),
-                    ],
-                    if (vm.bank1 != null && vm.bank2 != null)
-                      const Divider(height: 1),
-                    if (vm.bank2 != null) ...[
-                      _FuelRow(title: 'Bank 2', description: vm.bank2!.description),
-                    ],
-                    if (!vm.hasAnyStatus)
-                      const ListTile(
-                        leading: Icon(Icons.info_outline, color: Colors.grey),
-                        title: Text(
-                          'No Fuel System Status Codes',
-                          style: TextStyle(color: Colors.grey),
-                        ),
+              CupertinoListSection.insetGrouped(
+                children: [
+                  if (vm.bank1 != null)
+                    _FuelRow(title: 'Bank 1', description: vm.bank1!.description),
+                  if (vm.bank2 != null)
+                    _FuelRow(title: 'Bank 2', description: vm.bank2!.description),
+                  if (!vm.hasAnyStatus)
+                    const CupertinoListTile(
+                      leading: Icon(CupertinoIcons.info_circle, color: CupertinoColors.secondaryLabel),
+                      title: Text(
+                        'No Fuel System Status Codes',
+                        style: TextStyle(color: CupertinoColors.secondaryLabel),
                       ),
-                  ],
-                ),
+                    ),
+                ],
               ),
             ],
           );
@@ -112,12 +111,12 @@ class _FuelRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: const Icon(Icons.local_gas_station, color: Colors.blue),
+    return CupertinoListTile(
+      leading: const Icon(CupertinoIcons.drop_fill, color: CupertinoColors.activeBlue),
       title: Text(title),
       trailing: Text(
         description,
-        style: const TextStyle(color: Colors.grey),
+        style: const TextStyle(color: CupertinoColors.secondaryLabel),
       ),
     );
   }
