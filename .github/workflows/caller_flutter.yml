@@ -77,8 +77,16 @@ jobs:
         working-directory: flutter_obdii
         run: flutter build ios --release --no-codesign
 
+      - name: Prepare Fastlane config for Flutter iOS project
+        working-directory: flutter_obdii/ios
+        run: |
+          mkdir -p fastlane
+          cp ../../fastlane/Fastfile fastlane/Fastfile
+          cp ../../fastlane/Appfile fastlane/Appfile
+          cp ../../fastlane/Matchfile fastlane/Matchfile
+
       - name: Run Fastlane beta lane
         working-directory: flutter_obdii/ios
-        run: bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta --fastfile ../../fastlane/Fastfile
+        run: bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta
         env:
           BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
