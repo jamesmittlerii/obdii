@@ -8,7 +8,7 @@
 PRODUCT_NAME = flutter_obdii
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.jamesmittlerii.flutterObdii
+PRODUCT_BUNDLE_IDENTIFIER = com.rheosoft.obdii
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 com.jamesmittlerii. All rights reserved.
