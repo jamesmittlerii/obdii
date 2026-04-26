@@ -91,11 +91,20 @@ class _PidToggleListViewState extends State<PidToggleListView> {
     return ReorderableListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
       onReorder: (oldIndex, newIndex) {
-        // Only enabled items are reorderable — map index back
-        if (oldIndex < enabled.length && newIndex <= enabled.length) {
-          if (newIndex > oldIndex) newIndex--;
-          vm.moveEnabled(oldIndex, newIndex);
-        }
+        // Index 0 is the Enabled header; enabled rows are [1..enabled.length].
+        // Flutter reports newIndex as insertion index in visual list.
+        final isFromEnabledRow = oldIndex > 0 && oldIndex <= enabled.length;
+        final isToEnabledRegion = newIndex > 0 && newIndex <= enabled.length + 1;
+        if (!isFromEnabledRow || !isToEnabledRegion) return;
+
+        final from = oldIndex - 1;
+        var to = newIndex - 1;
+        if (to > from) to -= 1;
+        if (to < 0) to = 0;
+        if (to >= enabled.length) to = enabled.length - 1;
+        if (to == from) return;
+
+        vm.moveEnabled(from, to);
       },
       itemCount: enabled.length + (enabled.isNotEmpty ? 1 : 0) +
           disabled.length + (disabled.isNotEmpty ? 1 : 0),
@@ -192,24 +201,23 @@ class _PidToggleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
+    final tile = ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       title: Text(pid.name, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(
         pid.displayRange(isMetric),
         style: const TextStyle(fontSize: 12),
       ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Switch(value: isOn, onChanged: onToggle),
-          if (canReorder && reorderIndex != null)
-            ReorderableDragStartListener(
-              index: reorderIndex! + 1, // +1 because index 0 is the header
-              child: const Icon(Icons.drag_handle, color: Colors.grey),
-            ),
-        ],
-      ),
+      trailing: Switch(value: isOn, onChanged: onToggle),
     );
+
+    if (canReorder && reorderIndex != null) {
+      return ReorderableDragStartListener(
+        index: reorderIndex! + 1, // +1 because index 0 is the header
+        child: tile,
+      );
+    }
+
+    return tile;
   }
 }

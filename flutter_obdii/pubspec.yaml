@@ -44,6 +44,7 @@ dependencies:
       url: https://github.com/jamesmittlerii/SwiftOBD2.git
       ref: flutter
       path: flutterobd2
+  file_selector: ^1.1.0
 
 dev_dependencies:
   flutter_test:

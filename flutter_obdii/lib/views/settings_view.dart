@@ -10,6 +10,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -323,6 +324,7 @@ class _SettingsViewState extends State<SettingsView> {
       _shareError = null;
     });
 
+    String? exportedPath;
     try {
       // Collect recent log entries (last 5 minutes)
       final logs = await _collectLogs();
@@ -333,10 +335,35 @@ class _SettingsViewState extends State<SettingsView> {
       final fileName =
           '${info.appName.replaceAll(' ', '_')}-v${info.version}-logs.json';
 
+      if (Platform.isWindows) {
+        final location = await getSaveLocation(
+          suggestedName: fileName,
+          acceptedTypeGroups: const [
+            XTypeGroup(
+              label: 'JSON',
+              extensions: ['json'],
+            ),
+          ],
+        );
+        if (location == null) {
+          return;
+        }
+        final outFile = File(location.path);
+        await outFile.writeAsBytes(bytes);
+        exportedPath = outFile.path;
+        if (mounted) {
+          setState(() {
+            _shareError = 'Log file exported to:\n$exportedPath';
+          });
+        }
+        return;
+      }
+
       // Write to temp file
       final tempDir = Directory.systemTemp;
       final file = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(bytes);
+      exportedPath = file.path;
 
       await SharePlus.instance.share(
         ShareParams(
@@ -346,7 +373,18 @@ class _SettingsViewState extends State<SettingsView> {
       );
     } catch (e) {
       if (mounted) {
-        setState(() => _shareError = e.toString());
+        final message = e.toString();
+        final lowered = message.toLowerCase();
+        final shareSheetUnavailable = lowered.contains('couldn\'t show you all the ways you could share') ||
+            lowered.contains('could not show you all the ways you could share');
+        setState(() {
+          if (shareSheetUnavailable && exportedPath != null) {
+            _shareError =
+                'Share sheet unavailable on this device. Log file exported to:\n$exportedPath';
+          } else {
+            _shareError = message;
+          }
+        });
       }
     } finally {
       if (mounted) setState(() => _isGeneratingLogs = false);
