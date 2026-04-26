@@ -9,6 +9,9 @@ on:
   workflow_dispatch:
   push:
     branches: [ "main" ]
+    paths-ignore:
+      - "flutter_obdii/**"
+      - ".github/workflows/caller_flutter.yml"
 #  pull_request:
 #    branches: [ "main" ]
 
