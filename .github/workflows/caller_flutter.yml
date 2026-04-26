@@ -25,7 +25,7 @@ jobs:
     env:
       CURRENT_BRANCH: ${{ github.ref_name }}
       APP_ID: ${{ vars.APP_ID }}
-      APP_IDENTIFIER: com.rheosoft.obdii
+      #APP_IDENTIFIER: com.rheosoft.obdii
 
     steps:
       - name: Checkout repository
@@ -85,7 +85,7 @@ jobs:
           cp ../../fastlane/Fastfile fastlane/Fastfile
           cp ../../fastlane/Appfile fastlane/Appfile
           cp ../../fastlane/Matchfile fastlane/Matchfile
-          sed -i '' "s|^app_id = .*|app_id = ENV['APP_IDENTIFIER'] || \"com.rheosoft.#{ENV['PROJECT_NAME']}\"|" fastlane/Appfile
+         # sed -i '' "s|^app_id = .*|app_id = ENV['APP_IDENTIFIER'] || \"com.rheosoft.#{ENV['PROJECT_NAME']}\"|" fastlane/Appfile
 
       - name: Run Fastlane beta lane
         working-directory: flutter_obdii/ios
