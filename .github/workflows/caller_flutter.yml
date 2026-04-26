@@ -115,19 +115,6 @@ jobs:
           git commit -m "ci: bump flutter version to ${PUBSPEC_VERSION} [skip ci]" || echo "No version changes to commit"
           git push origin HEAD:${{ github.ref_name }}
 
-      - name: Set PROJECT_NAME environment variable
-        id: set_project_name # Add an ID to the step to create an output variable
-        working-directory: flutter_obdii/ios
-        run: |
-          # Find the .xcodeproj file, remove the .xcodeproj extension, and assign it to the variable.
-          #PROJECT_NAME=$(basename *.xcodeproj .xcodeproj)
-          PROJECT_NAME="obdiif"
-          # Write the variable to the GITHUB_ENV file so it's available to subsequent steps.
-          echo "PROJECT_NAME=$PROJECT_NAME" >> "$GITHUB_ENV"
-          
-          # Write the variable to the GITHUB_OUTPUT file so it can be used by other jobs.
-          echo "project_name=$PROJECT_NAME" >> "$GITHUB_OUTPUT"
-
       - name: Flutter pub get
         working-directory: flutter_obdii
         run: flutter pub get
@@ -140,9 +127,13 @@ jobs:
       #  working-directory: flutter_obdii
       #   run: flutter test
 
-     # - name: Build iOS (no codesign)
-     #   working-directory: flutter_obdii
-     #   run: flutter build ios --release --no-codesign
+      - name: Build iOS Material (no codesign)
+        working-directory: flutter_obdii
+        run: flutter build ios --release --no-codesign -t lib/main_material.dart
+
+      - name: Build iOS Cupertino (no codesign)
+        working-directory: flutter_obdii
+        run: flutter build ios --release --no-codesign -t lib/main_cupertino.dart
 
       - name: Prepare Fastlane config for Flutter iOS project
         working-directory: flutter_obdii/ios
@@ -153,12 +144,12 @@ jobs:
           ls fastlane
          # sed -i '' "s|^app_id = .*|app_id = ENV['APP_IDENTIFIER'] || \"com.rheosoft.#{ENV['PROJECT_NAME']}\"|" fastlane/Appfile
 
-      - name: Run Fastlane beta lane
+      - name: Run Fastlane beta lane (Material -> obdiif)
         working-directory: flutter_obdii/ios
         run: |
           set -euo pipefail
           for attempt in 1 2 3; do
-            echo "Running fastlane via bws (attempt ${attempt}/3)..."
+            echo "Running fastlane via bws for PROJECT_NAME=obdiif (attempt ${attempt}/3)..."
             if bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta; then
               exit 0
             fi
@@ -172,6 +163,28 @@ jobs:
           exit 1
         env:
           BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
+          PROJECT_NAME: obdiif
+
+      - name: Run Fastlane beta lane (Cupertino -> obdiic)
+        working-directory: flutter_obdii/ios
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            echo "Running fastlane via bws for PROJECT_NAME=obdiic (attempt ${attempt}/3)..."
+            if bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              sleep_seconds=$((attempt * 20))
+              echo "bws/fastlane failed; retrying in ${sleep_seconds}s..."
+              sleep "${sleep_seconds}"
+            fi
+          done
+          echo "bws run failed after 3 attempts."
+          exit 1
+        env:
+          BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
+          PROJECT_NAME: obdiic
 
       - name: Dump gym log on failure
         if: failure()

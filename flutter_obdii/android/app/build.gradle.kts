@@ -30,6 +30,20 @@ android {
         versionName = flutter.versionName
     }
 
+    flavorDimensions += "ui"
+    productFlavors {
+        create("material") {
+            dimension = "ui"
+            applicationIdSuffix = ".material"
+            resValue("string", "app_name", "OBDII Material")
+        }
+        create("cupertino") {
+            dimension = "ui"
+            applicationIdSuffix = ".cupertino"
+            resValue("string", "app_name", "OBDII Cupertino")
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

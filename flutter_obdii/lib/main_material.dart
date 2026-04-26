@@ -6,11 +6,11 @@ import 'views/main_scaffold.dart';
 
 Future<void> main() async {
   await bootstrapObdApp();
-  runApp(const ObdApp());
+  runApp(const ObdMaterialApp());
 }
 
-class ObdApp extends StatelessWidget {
-  const ObdApp({super.key});
+class ObdMaterialApp extends StatelessWidget {
+  const ObdMaterialApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +20,7 @@ class ObdApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Color(0xFF00C2FF),
+            seedColor: const Color(0xFF00C2FF),
             brightness: Brightness.light,
           ),
           useMaterial3: true,
@@ -28,17 +28,17 @@ class ObdApp extends StatelessWidget {
         ),
         darkTheme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Color(0xFF00C2FF),
+            seedColor: const Color(0xFF00C2FF),
             brightness: Brightness.dark,
           ),
           useMaterial3: true,
         ),
-        localizationsDelegates: [
+        localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        supportedLocales: [Locale('en', 'US')],
+        supportedLocales: const [Locale('en', 'US')],
         themeMode: ThemeMode.light,
         home: const MainScaffold(),
       ),
