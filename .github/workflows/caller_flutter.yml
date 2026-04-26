@@ -62,6 +62,11 @@ jobs:
         run: |
           bundle install
 
+      - name: Install CocoaPods for CI Ruby
+        run: |
+          gem install cocoapods -N
+          pod --version
+
       - name: Bump Flutter version from pubspec
         id: bump_version
         working-directory: flutter_obdii
