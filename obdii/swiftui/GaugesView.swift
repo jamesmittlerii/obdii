@@ -96,7 +96,7 @@ private struct GaugeTile: View {
     VStack(spacing: 8) {
 
       RingGaugeView(pid: pid, measurement: measurement)
-        .frame(width: 120, height: 120)
+        .frame(width: 120, height: 98)
 
       Text(pid.label)
         .font(.headline)
