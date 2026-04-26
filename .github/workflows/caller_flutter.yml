@@ -64,7 +64,6 @@ jobs:
 
       - name: Install CocoaPods for Bundler Ruby
         run: |
-          bundle add cocoapods --skip-install
           bundle install
           BUNDLE_GEM_BINDIR="$(bundle exec ruby -e 'print Gem.bindir')"
           echo "$BUNDLE_GEM_BINDIR" >> "$GITHUB_PATH"
