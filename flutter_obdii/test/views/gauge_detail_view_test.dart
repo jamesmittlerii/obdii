@@ -27,9 +27,9 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('CURRENT'), findsOneWidget);
-    expect(find.text('STATISTICS'), findsOneWidget);
-    expect(find.text('MAXIMUM RANGE'), findsOneWidget);
+    expect(find.text('Current'), findsOneWidget);
+    expect(find.text('Statistics'), findsOneWidget);
+    expect(find.text('Maximum Range'), findsOneWidget);
   });
 
   testWidgets('testShowsNoDataStateBeforeStatsArrive', (tester) async {
@@ -66,7 +66,7 @@ void main() {
     await tester.pump();
 
     // labels render once stats exist; ensure section container still present
-    expect(find.text('STATISTICS'), findsOneWidget);
+    expect(find.text('Statistics'), findsOneWidget);
   });
 
   testWidgets('testRendersCurrentSectionTitle', (tester) async {
@@ -77,7 +77,7 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.text('CURRENT'), findsOneWidget);
+    expect(find.text('Current'), findsOneWidget);
   });
 
   testWidgets('testRendersMaximumRangeSectionTitle', (tester) async {
@@ -88,7 +88,7 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.text('MAXIMUM RANGE'), findsOneWidget);
+    expect(find.text('Maximum Range'), findsOneWidget);
   });
 
   testWidgets('testRangeCardExists', (tester) async {

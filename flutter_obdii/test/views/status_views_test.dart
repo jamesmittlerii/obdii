@@ -181,7 +181,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 80));
 
     expect(find.text('MIL: On (2 DTCs)'), findsOneWidget);
-    expect(find.text('READINESS MONITORS'), findsOneWidget);
+    expect(find.text('Readiness Monitors'), findsOneWidget);
 
     vm.dispose();
     provider.dispose();
@@ -280,8 +280,8 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 80));
-    expect(find.text('MALFUNCTION INDICATOR LAMP'), findsOneWidget);
-    expect(find.text('READINESS MONITORS'), findsOneWidget);
+    expect(find.text('Malfunction Indicator Lamp'), findsOneWidget);
+    expect(find.text('Readiness Monitors'), findsOneWidget);
 
     vm.dispose();
     provider.dispose();

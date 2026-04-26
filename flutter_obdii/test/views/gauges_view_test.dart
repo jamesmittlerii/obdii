@@ -169,7 +169,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('List'), findsWidgets);
-    expect(find.text('GAUGES'), findsOneWidget);
+    expect(find.text('Gauges'), findsWidgets);
   });
 
   testWidgets('testListModeShowsRowWithFullGaugeName', (tester) async {
@@ -206,7 +206,7 @@ void main() {
 
     await tester.tap(find.text('List'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Gauges'));
+    await tester.tap(find.text('Gauges').first);
     await tester.pumpAndSettle();
 
     expect(find.text('Gauges'), findsWidgets);
@@ -221,7 +221,7 @@ void main() {
     await tester.tap(find.text('List'));
     await tester.pumpAndSettle();
 
-    expect(find.text('GAUGES'), findsOneWidget);
+    expect(find.text('Gauges'), findsWidgets);
   });
 
   testWidgets('testSegmentedControlRendersBothOptions', (tester) async {

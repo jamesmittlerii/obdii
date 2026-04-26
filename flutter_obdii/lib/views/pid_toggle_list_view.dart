@@ -92,11 +92,21 @@ class _PidToggleListViewState extends State<PidToggleListView> {
     return ReorderableListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
       onReorder: (oldIndex, newIndex) {
-        // Only enabled items are reorderable — map index back
-        if (oldIndex < enabled.length && newIndex <= enabled.length) {
-          if (newIndex > oldIndex) newIndex--;
-          vm.moveEnabled(oldIndex, newIndex);
-        }
+        // Index 0 is the Enabled header; enabled rows are [1..enabled.length].
+        // Flutter's newIndex is reported as insertion index in the visual list,
+        // so adjust once here and pass normalized enabled-subset indices to VM.
+        final isFromEnabledRow = oldIndex > 0 && oldIndex <= enabled.length;
+        final isToEnabledRegion = newIndex > 0 && newIndex <= enabled.length + 1;
+        if (!isFromEnabledRow || !isToEnabledRegion) return;
+
+        final from = oldIndex - 1;
+        var to = newIndex - 1;
+        if (to > from) to -= 1;
+        if (to < 0) to = 0;
+        if (to >= enabled.length) to = enabled.length - 1;
+        if (to == from) return;
+
+        vm.moveEnabled(from, to);
       },
       itemCount: enabled.length + (enabled.isNotEmpty ? 1 : 0) +
           disabled.length + (disabled.isNotEmpty ? 1 : 0),
@@ -156,14 +166,13 @@ class _PidToggleListViewState extends State<PidToggleListView> {
       key: key,
       color: CupertinoColors.systemGroupedBackground.resolveFrom(context),
       
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Text(
-        title.toUpperCase(),
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: CupertinoTheme.of(context).primaryColor,
-          letterSpacing: 0.8,
+        title,
+        style: const TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          color: CupertinoColors.systemGrey,
         ),
       ),
     );
@@ -194,23 +203,22 @@ class _PidToggleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoListTile(
+    final tile = CupertinoListTile(
       title: Text(pid.name, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(
         pid.displayRange(isMetric),
         style: const TextStyle(fontSize: 12),
       ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CupertinoSwitch(value: isOn, onChanged: onToggle),
-          if (canReorder && reorderIndex != null)
-            ReorderableDragStartListener(
-              index: reorderIndex! + 1, // +1 because index 0 is the header
-              child: const Icon(CupertinoIcons.line_horizontal_3, color: CupertinoColors.secondaryLabel),
-            ),
-        ],
-      ),
+      trailing: CupertinoSwitch(value: isOn, onChanged: onToggle),
     );
+
+    if (canReorder && reorderIndex != null) {
+      return ReorderableDragStartListener(
+        index: reorderIndex! + 1, // +1 because index 0 is the header
+        child: tile,
+      );
+    }
+
+    return tile;
   }
 }

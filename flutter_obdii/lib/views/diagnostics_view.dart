@@ -75,7 +75,7 @@ class _DiagnosticsViewState extends State<DiagnosticsView> {
 
           // 3) Sections by severity
           return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(12, 100, 12, 12),
+            padding: const EdgeInsets.fromLTRB(12, 56, 12, 12),
             itemCount: vm.sections.length,
             itemBuilder: (context, index) {
               final section = vm.sections[index];
@@ -112,32 +112,16 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8, top: 4),
+      padding: const EdgeInsets.only(left: 8, bottom: 0, top: 0),
       child: Text(
-        severity.toUpperCase(),
+        severity,
         style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: _severityColor(severity),
-          letterSpacing: 0.8,
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          color: CupertinoColors.systemGrey,
         ),
       ),
     );
-  }
-
-  Color _severityColor(String s) {
-    switch (s.toLowerCase()) {
-      case 'critical':
-        return CupertinoColors.destructiveRed;
-      case 'high':
-        return CupertinoColors.systemOrange;
-      case 'moderate':
-        return CupertinoColors.systemYellow;
-      case 'low':
-        return CupertinoColors.activeBlue;
-      default:
-        return CupertinoColors.secondaryLabel;
-    }
   }
 }
 
@@ -207,7 +191,7 @@ class _DtcDetailView extends StatelessWidget {
         middle: Text(dtc.code as String? ?? ''),
       ),
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 100, 16, 16),
+        padding: const EdgeInsets.fromLTRB(16, 56, 16, 16),
         children: [
           // Overview
           _sectionHeader(context, 'Overview'),
@@ -269,14 +253,13 @@ class _DtcDetailView extends StatelessWidget {
 
   Widget _sectionHeader(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8, top: 4),
+      padding: const EdgeInsets.only(left: 8, bottom: 0, top: 0),
       child: Text(
-        title.toUpperCase(),
+        title,
         style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: CupertinoTheme.of(context).primaryColor,
-          letterSpacing: 0.8,
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          color: CupertinoColors.systemGrey,
         ),
       ),
     );

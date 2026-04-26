@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'core/config_data.dart';
@@ -57,6 +58,14 @@ class ObdApp extends StatelessWidget {
           return CupertinoApp(
             title: 'OBDII',
             debugShowCheckedModeBanner: false,
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('en'),
+            ],
             theme: const CupertinoThemeData(
               brightness: Brightness.light,
               primaryColor: Color(0xFF00C2FF),

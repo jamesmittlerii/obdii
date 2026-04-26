@@ -26,7 +26,7 @@ class _MilStatusViewState extends State<MilStatusView> {
       child: Consumer<MilStatusViewModel>(
         builder: (context, vm, _) {
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 100, 16, 16),
+            padding: const EdgeInsets.fromLTRB(16, 56, 16, 16),
             children: [
               // ── Malfunction Indicator Lamp ───────────────
               _sectionHeader(context, 'Malfunction Indicator Lamp'),
@@ -83,14 +83,13 @@ class _MilStatusViewState extends State<MilStatusView> {
 
   Widget _sectionHeader(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8, top: 4),
+      padding: const EdgeInsets.only(left: 8, bottom: 0, top: 0),
       child: Text(
-        title.toUpperCase(),
+        title,
         style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: CupertinoTheme.of(context).primaryColor,
-          letterSpacing: 0.8,
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          color: CupertinoColors.systemGrey,
         ),
       ),
     );

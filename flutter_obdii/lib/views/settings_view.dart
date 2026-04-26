@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -42,14 +43,17 @@ class _SettingsViewState extends State<SettingsView> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
+      backgroundColor: CupertinoColors.systemGroupedBackground,
       navigationBar: const CupertinoNavigationBar(
         middle: Text('Settings'),
       ),
       child: Consumer<SettingsViewModel>(
         builder: (context, vm, _) {
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 100, 16, 16),
-            children: [
+          return ColoredBox(
+            color: CupertinoColors.systemGroupedBackground,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 56, 16, 8),
+              children: [
               _sectionHeader(context, 'Gauges'),
               CupertinoListSection.insetGrouped(
                 children: [
@@ -63,12 +67,12 @@ class _SettingsViewState extends State<SettingsView> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               _sectionHeader(context, 'Units'),
               CupertinoListSection.insetGrouped(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     child: CupertinoSlidingSegmentedControl<MeasurementUnit>(
                       groupValue: vm.units,
                       children: const {
@@ -88,7 +92,7 @@ class _SettingsViewState extends State<SettingsView> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               _sectionHeader(context, 'Connection'),
               CupertinoListSection.insetGrouped(
                 children: [
@@ -97,24 +101,19 @@ class _SettingsViewState extends State<SettingsView> {
                     trailing: _statusText(vm.connectionState),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Row(
-                      children: [
-                        const Expanded(child: Text('Type')),
-                        CupertinoSlidingSegmentedControl<ConnectionType>(
-                          groupValue: vm.connectionType,
-                          children: {
-                            for (final t in ConnectionType.values)
-                              t: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 6),
-                                child: Text(t.displayName),
-                              ),
-                          },
-                          onValueChanged: (v) {
-                            if (v != null) vm.onConnectionTypeChanged(v);
-                          },
-                        ),
-                      ],
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: CupertinoSlidingSegmentedControl<ConnectionType>(
+                      groupValue: vm.connectionType,
+                      children: {
+                        for (final t in ConnectionType.values)
+                          t: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            child: Text(t.displayName),
+                          ),
+                      },
+                      onValueChanged: (v) {
+                        if (v != null) vm.onConnectionTypeChanged(v);
+                      },
                     ),
                   ),
                   CupertinoListTile(
@@ -155,7 +154,7 @@ class _SettingsViewState extends State<SettingsView> {
                 ],
               ),
               if (vm.connectionType == ConnectionType.wifi) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 _sectionHeader(context, 'Connection Details'),
                 CupertinoListSection.insetGrouped(
                   children: [
@@ -207,7 +206,7 @@ class _SettingsViewState extends State<SettingsView> {
                   ],
                 ),
               ],
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               _sectionHeader(context, 'Diagnostics'),
               CupertinoListSection.insetGrouped(
                 children: [
@@ -236,7 +235,7 @@ class _SettingsViewState extends State<SettingsView> {
                     ),
                   ),
                 ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               _sectionHeader(context, 'About'),
               CupertinoListSection.insetGrouped(
                 children: [
@@ -245,7 +244,8 @@ class _SettingsViewState extends State<SettingsView> {
                   ),
                 ],
               ),
-            ],
+              ],
+            ),
           );
         },
       ),
@@ -264,14 +264,13 @@ class _SettingsViewState extends State<SettingsView> {
 
   Widget _sectionHeader(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 8, bottom: 8, top: 4),
+      padding: const EdgeInsets.only(left: 8, bottom: 0, top: 0),
       child: Text(
-        title.toUpperCase(),
+        title,
         style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: CupertinoTheme.of(context).primaryColor,
-          letterSpacing: 0.8,
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          color: CupertinoColors.systemGrey,
         ),
       ),
     );
@@ -283,6 +282,7 @@ class _SettingsViewState extends State<SettingsView> {
       _shareError = null;
     });
 
+    String? exportedPath;
     try {
       final logs = await _collectLogs();
       final jsonStr = const JsonEncoder.withIndent('  ').convert(logs);
@@ -292,9 +292,37 @@ class _SettingsViewState extends State<SettingsView> {
       final fileName =
           '${info.appName.replaceAll(' ', '_')}-v${info.version}-logs.json';
 
+      if (Platform.isWindows) {
+        final location = await getSaveLocation(
+          suggestedName: fileName,
+          acceptedTypeGroups: const [
+            XTypeGroup(
+              label: 'JSON',
+              extensions: ['json'],
+            ),
+          ],
+        );
+        if (location == null) {
+          if (mounted) {
+            setState(() => _shareError = 'Log export cancelled.');
+          }
+          return;
+        }
+        final outFile = File(location.path);
+        await outFile.writeAsBytes(bytes);
+        exportedPath = outFile.path;
+        if (mounted) {
+          setState(() {
+            _shareError = 'Log file exported to:\n$exportedPath';
+          });
+        }
+        return;
+      }
+
       final tempDir = Directory.systemTemp;
       final file = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(bytes);
+      exportedPath = file.path;
 
       await SharePlus.instance.share(
         ShareParams(
@@ -304,7 +332,18 @@ class _SettingsViewState extends State<SettingsView> {
       );
     } catch (e) {
       if (mounted) {
-        setState(() => _shareError = e.toString());
+        final message = e.toString();
+        final lowered = message.toLowerCase();
+        final shareSheetUnavailable = lowered.contains('couldn\'t show you all the ways you could share') ||
+            lowered.contains('could not show you all the ways you could share');
+        setState(() {
+          if (shareSheetUnavailable && exportedPath != null) {
+            _shareError =
+                'Share sheet unavailable on this device. Log file exported to:\n$exportedPath';
+          } else {
+            _shareError = message;
+          }
+        });
       }
     } finally {
       if (mounted) setState(() => _isGeneratingLogs = false);

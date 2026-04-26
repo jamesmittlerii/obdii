@@ -144,10 +144,13 @@ class _PidStoreImpl extends ChangeNotifier implements PidStore {
         .toList();
 
     if (enabledIndices.isEmpty) return;
+    if (fromIndex < 0 || fromIndex >= enabledIndices.length) return;
+    if (toIndex < 0 || toIndex >= enabledIndices.length) return;
+    if (fromIndex == toIndex) return;
 
     var subset = enabledIndices.map((i) => _pids[i]).toList();
     final item = subset.removeAt(fromIndex);
-    subset.insert(toIndex > fromIndex ? toIndex - 1 : toIndex, item);
+    subset.insert(toIndex, item);
 
     final newPids = List<ObdiiPid>.from(_pids);
     for (var i = 0; i < enabledIndices.length; i++) {

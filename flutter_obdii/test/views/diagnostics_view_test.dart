@@ -99,8 +99,8 @@ void main() {
     provider.send([_dtc('P0001', 'High'), _dtc('P0002', 'Critical')]);
     await tester.pump(const Duration(milliseconds: 80));
 
-    expect(find.text('CRITICAL'), findsOneWidget);
-    expect(find.text('HIGH'), findsOneWidget);
+    expect(find.text('Critical'), findsWidgets);
+    expect(find.text('High'), findsWidgets);
     expect(find.textContaining('P0001'), findsOneWidget);
     expect(find.textContaining('P0002'), findsOneWidget);
 
@@ -125,8 +125,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('P0001'), findsWidgets);
-    expect(find.text('OVERVIEW'), findsOneWidget);
-    expect(find.text('DESCRIPTION'), findsOneWidget);
+    expect(find.text('Overview'), findsOneWidget);
+    expect(find.text('Description'), findsOneWidget);
 
     vm.dispose();
     provider.dispose();
@@ -166,8 +166,8 @@ void main() {
     await tester.tap(find.textContaining('P0008'));
     await tester.pumpAndSettle();
 
-    expect(find.text('POTENTIAL CAUSES'), findsOneWidget);
-    expect(find.text('POSSIBLE REMEDIES'), findsOneWidget);
+    expect(find.text('Potential Causes'), findsOneWidget);
+    expect(find.text('Possible Remedies'), findsOneWidget);
 
     vm.dispose();
     provider.dispose();
@@ -227,7 +227,7 @@ void main() {
     provider.send([_dtc('P0013', 'Low')]);
     await tester.pump(const Duration(milliseconds: 80));
 
-    expect(find.text('Low'), findsOneWidget);
+    expect(find.text('Low'), findsWidgets);
 
     vm.dispose();
     provider.dispose();

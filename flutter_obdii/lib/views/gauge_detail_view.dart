@@ -73,7 +73,7 @@ class _GaugeDetailInterestScopeState extends State<_GaugeDetailInterestScope> {
         middle: Text(pid.name),
       ),
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 100, 16, 16),
+        padding: const EdgeInsets.fromLTRB(16, 56, 16, 16),
         children: [
           // ── Current ──────────────────────────────────
           _sectionHeader(context, 'Current'),
@@ -151,14 +151,14 @@ class _GaugeDetailInterestScopeState extends State<_GaugeDetailInterestScope> {
 
   Widget _sectionHeader(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8, top: 4),
+      padding: const EdgeInsets.only(left: 8, bottom: 0, top: 0),
       child: Text(
-        title.toUpperCase(),
-        style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-              color: CupertinoTheme.of(context).primaryColor,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.8,
-            ),
+        title,
+        style: const TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          color: CupertinoColors.systemGrey,
+        ),
       ),
     );
   }

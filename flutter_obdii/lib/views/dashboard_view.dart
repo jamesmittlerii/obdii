@@ -64,7 +64,7 @@ class _GaugesViewState extends State<GaugesView> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 96, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 56, 16, 8),
             child: CupertinoSlidingSegmentedControl<_GaugesDisplayMode>(
               groupValue: _mode,
               children: const {
@@ -221,14 +221,13 @@ class _GaugesList extends StatelessWidget {
       itemBuilder: (context, index) {
         if (index == 0) {
           return Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 8, top: 4),
+            padding: const EdgeInsets.only(left: 8, bottom: 0, top: 0),
             child: Text(
-              'GAUGES',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: CupertinoTheme.of(context).primaryColor,
-                letterSpacing: 0.8,
+              'Gauges',
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: CupertinoColors.systemGrey,
               ),
             ),
           );

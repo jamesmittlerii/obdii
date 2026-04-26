@@ -27,7 +27,7 @@ class _FuelStatusViewState extends State<FuelStatusView> {
           // Waiting state
           if (vm.status == null) {
             return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 100, 16, 16),
+              padding: const EdgeInsets.fromLTRB(16, 56, 16, 16),
               children: [
                 Container(
                   decoration: BoxDecoration(
@@ -54,7 +54,7 @@ class _FuelStatusViewState extends State<FuelStatusView> {
 
           // Loaded: show Bank 1 / Bank 2 (or empty message)
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 100, 16, 16),
+            padding: const EdgeInsets.fromLTRB(16, 56, 16, 16),
             children: [
               CupertinoListSection.insetGrouped(
                 children: [

@@ -127,7 +127,7 @@ void main() {
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
     await toListMode(tester);
-    expect(find.text('GAUGES'), findsOneWidget);
+    expect(find.text('Gauges'), findsWidgets);
   });
 
   testWidgets('testNavigationTitle', (tester) async {

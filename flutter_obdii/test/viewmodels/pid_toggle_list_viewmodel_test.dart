@@ -59,7 +59,7 @@ class _TestStore extends ChangeNotifier implements PidStore {
     if (enabledIdx.isEmpty) return;
     final subset = enabledIdx.map((i) => _pids[i]).toList();
     final item = subset.removeAt(from);
-    subset.insert(to > from ? to - 1 : to, item);
+    subset.insert(to, item);
     final newPids = List<ObdiiPid>.from(_pids);
     for (var i = 0; i < enabledIdx.length; i++) {
       newPids[enabledIdx[i]] = subset[i];
@@ -226,5 +226,6 @@ void main() {
     await viewModel.moveEnabled(0, 1);
     final enabledAfter = viewModel.filteredEnabled.map((p) => p.id).toList();
     expect(enabledAfter.length, equals(enabledBefore.length));
+    expect(enabledAfter.first, equals(enabledBefore[1]));
   });
 }
