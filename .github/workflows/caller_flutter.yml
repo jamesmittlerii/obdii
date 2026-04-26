@@ -60,7 +60,6 @@ jobs:
 
       - name: Install Fastlane dependencies
         run: |
-          bundle update fastlane
           bundle install
 
       - name: Flutter pub get
