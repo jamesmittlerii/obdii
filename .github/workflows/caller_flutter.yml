@@ -127,7 +127,7 @@ jobs:
           bundler-cache: true
 
       - name: Cache CocoaPods artifacts
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             flutter_obdii/ios/Pods
