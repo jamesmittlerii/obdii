@@ -23,9 +23,7 @@ enum _GaugesDisplayMode { gauges, list }
 // ─────────────────────────────────────────────
 
 class GaugesView extends StatefulWidget {
-  final bool isActive;
-
-  const GaugesView({super.key, this.isActive = true});
+  const GaugesView({super.key});
 
   @override
   State<GaugesView> createState() => _GaugesViewState();
@@ -34,14 +32,6 @@ class GaugesView extends StatefulWidget {
 class _GaugesViewState extends State<GaugesView> {
   _GaugesDisplayMode _mode = _GaugesDisplayMode.gauges;
   static const _prefKey = 'gaugesDisplayMode';
-
-  void _syncVisibility() {
-    if (!mounted) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      context.read<GaugesViewModel>().setVisible(widget.isActive);
-    });
-  }
 
   @override
   void initState() {
@@ -63,20 +53,6 @@ class _GaugesViewState extends State<GaugesView> {
     setState(() => _mode = mode);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefKey, mode == _GaugesDisplayMode.list ? 'list' : 'gauges');
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _syncVisibility();
-  }
-
-  @override
-  void didUpdateWidget(covariant GaugesView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.isActive != widget.isActive) {
-      _syncVisibility();
-    }
   }
 
   @override

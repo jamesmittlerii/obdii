@@ -9,36 +9,13 @@ import 'package:provider/provider.dart';
 import '../viewmodels/mil_status_viewmodel.dart';
 
 class MilStatusView extends StatefulWidget {
-  final bool isActive;
-
-  const MilStatusView({super.key, this.isActive = true});
+  const MilStatusView({super.key});
 
   @override
   State<MilStatusView> createState() => _MilStatusViewState();
 }
 
 class _MilStatusViewState extends State<MilStatusView> {
-  void _syncVisibility() {
-    if (!mounted) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      context.read<MilStatusViewModel>().setVisible(widget.isActive);
-    });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _syncVisibility();
-  }
-
-  @override
-  void didUpdateWidget(covariant MilStatusView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.isActive != widget.isActive) {
-      _syncVisibility();
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

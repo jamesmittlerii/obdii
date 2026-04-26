@@ -8,36 +8,13 @@ import 'package:provider/provider.dart';
 import '../viewmodels/fuel_status_viewmodel.dart';
 
 class FuelStatusView extends StatefulWidget {
-  final bool isActive;
-
-  const FuelStatusView({super.key, this.isActive = true});
+  const FuelStatusView({super.key});
 
   @override
   State<FuelStatusView> createState() => _FuelStatusViewState();
 }
 
 class _FuelStatusViewState extends State<FuelStatusView> {
-  void _syncVisibility() {
-    if (!mounted) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      context.read<FuelStatusViewModel>().setVisible(widget.isActive);
-    });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _syncVisibility();
-  }
-
-  @override
-  void didUpdateWidget(covariant FuelStatusView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.isActive != widget.isActive) {
-      _syncVisibility();
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

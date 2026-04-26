@@ -3,6 +3,12 @@
 // Mirrors Swift TabView with matching tab items.
 
 import 'package:flutter/cupertino.dart';
+import 'package:provider/provider.dart';
+
+import '../viewmodels/diagnostics_viewmodel.dart';
+import '../viewmodels/fuel_status_viewmodel.dart';
+import '../viewmodels/gauges_viewmodel.dart';
+import '../viewmodels/mil_status_viewmodel.dart';
 
 import 'dashboard_view.dart';
 import 'diagnostics_view.dart';
@@ -18,22 +24,56 @@ class MainScaffold extends StatefulWidget {
 }
 
 class _MainScaffoldState extends State<MainScaffold> {
-  int _selectedIndex = 0;
+  late final CupertinoTabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = CupertinoTabController(initialIndex: 0);
+    _tabController.addListener(_handleTabIndexChange);
+  }
+
+  void _handleTabIndexChange() {
+    if (!mounted) return;
+    _syncViewVisibility();
+    setState(() {});
+  }
+
+  void _syncViewVisibility() {
+    final selectedIndex = _tabController.index;
+    context.read<GaugesViewModel>().setVisible(selectedIndex == 1);
+    context.read<FuelStatusViewModel>().setVisible(selectedIndex == 2);
+    context.read<MilStatusViewModel>().setVisible(selectedIndex == 3);
+    context.read<DiagnosticsViewModel>().setVisible(selectedIndex == 4);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Ensure interest registration matches initially selected tab.
+    _syncViewVisibility();
+  }
+
+  @override
+  void dispose() {
+    _tabController.removeListener(_handleTabIndexChange);
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final pages = <Widget>[
       const SettingsView(),
-      GaugesView(isActive: _selectedIndex == 1),
-      FuelStatusView(isActive: _selectedIndex == 2),
-      MilStatusView(isActive: _selectedIndex == 3),
-      DiagnosticsView(isActive: _selectedIndex == 4),
+      const GaugesView(),
+      const FuelStatusView(),
+      const MilStatusView(),
+      const DiagnosticsView(),
     ];
 
     return CupertinoTabScaffold(
+      controller: _tabController,
       tabBar: CupertinoTabBar(
-        currentIndex: _selectedIndex,
-        onTap: (i) => setState(() => _selectedIndex = i),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.settings),

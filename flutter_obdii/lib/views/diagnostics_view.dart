@@ -10,36 +10,13 @@ import '../core/obd_connection_manager.dart';
 import '../viewmodels/diagnostics_viewmodel.dart';
 
 class DiagnosticsView extends StatefulWidget {
-  final bool isActive;
-
-  const DiagnosticsView({super.key, this.isActive = true});
+  const DiagnosticsView({super.key});
 
   @override
   State<DiagnosticsView> createState() => _DiagnosticsViewState();
 }
 
 class _DiagnosticsViewState extends State<DiagnosticsView> {
-  void _syncVisibility() {
-    if (!mounted) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      context.read<DiagnosticsViewModel>().setVisible(widget.isActive);
-    });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _syncVisibility();
-  }
-
-  @override
-  void didUpdateWidget(covariant DiagnosticsView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.isActive != widget.isActive) {
-      _syncVisibility();
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
