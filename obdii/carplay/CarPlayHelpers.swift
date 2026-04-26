@@ -61,11 +61,14 @@ import SwiftUI
 
   return renderer.image { _ in
     let rect = CGRect(origin: .zero, size: size)
-    let center = CGPoint(x: rect.midX, y: rect.midY)
 
     // Ring sizing
     let lineWidth: CGFloat = max(4, min(size.width, size.height) * 0.25)
     let radius = (min(size.width, size.height) - lineWidth) / 2.0
+
+    // Shift center downwards to vertically center the open-bottom gauge
+    // (The gauge occupies the top ~75% of the circle, so we shift down by ~12.5% of diameter)
+    let center = CGPoint(x: rect.midX, y: rect.midY + radius * 0.25)
 
     // Angles for a speedometer-style gauge (from ~8 o'clock to ~4 o'clock)
     let startAngle: CGFloat = (5.0 / 6.0) * .pi
