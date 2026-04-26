@@ -47,7 +47,7 @@ platform :ios do
     sh "cd .. && flutter build ios --release --no-codesign"
 
     build_app(
-      project: "Runner.xcodeproj",
+      workspace: "Runner.xcworkspace",
       scheme: "Runner",
       export_method: "app-store",
       export_options: {

@@ -158,3 +158,25 @@ jobs:
         run: bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta
         env:
           BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
+
+      - name: Dump gym log on failure
+        if: failure()
+        run: |
+          echo "=== gym log files ==="
+          ls -la ~/Library/Logs/gym || true
+          echo "=== latest gym log (tail) ==="
+          LATEST_LOG=$(ls -t ~/Library/Logs/gym/*.log 2>/dev/null | head -n 1 || true)
+          if [ -n "$LATEST_LOG" ]; then
+            echo "Log: $LATEST_LOG"
+            tail -n 300 "$LATEST_LOG" || true
+          else
+            echo "No gym log found."
+          fi
+
+      - name: Upload gym logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gym-logs
+          path: ~/Library/Logs/gym/*.log
+          if-no-files-found: warn
