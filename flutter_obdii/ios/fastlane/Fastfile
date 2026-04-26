@@ -53,6 +53,19 @@ platform :ios do
     provisioning_profile = "match AppStore #{bundle_id}" if provisioning_profile.empty?
 
     project_file = "flutter_obdii/ios/Runner.xcodeproj"
+    ios_project_file = "Runner.xcodeproj"
+    info_plist_path = "Runner/Info.plist"
+
+    update_app_identifier(
+      xcodeproj: ios_project_file,
+      plist_path: info_plist_path,
+      app_identifier: bundle_id
+    )
+    set_info_plist_value(
+      path: info_plist_path,
+      key: "CFBundleDisplayName",
+      value: app_display_name
+    )
    # increment_build_number(xcodeproj: project_file)
    # commit_version_bump(
    #   message: "Bump version from Fastlane [skip ci]",
@@ -70,14 +83,14 @@ platform :ios do
     build_app(
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
-      export_method: "app-store",
+      export_method: "app-store-connect",
       export_options: {
         signingStyle: "manual",
         provisioningProfiles: {
           bundle_id => provisioning_profile,
         },
       },
-      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' DEVELOPMENT_TEAM=L97LVVC8Y4 APP_DISPLAY_NAME='#{app_display_name}' PRODUCT_BUNDLE_IDENTIFIER='#{bundle_id}'"
+      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' DEVELOPMENT_TEAM=L97LVVC8Y4"
     )
 
     app_store_connect_api_key

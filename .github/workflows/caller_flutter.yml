@@ -152,19 +152,8 @@ jobs:
         working-directory: flutter_obdii/ios
         run: |
           set -euo pipefail
-          for attempt in 1 2 3; do
-            echo "Running fastlane via bws for PROJECT_NAME=obdiif (attempt ${attempt}/3)..."
-            if bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta; then
-              exit 0
-            fi
-            if [ "$attempt" -lt 3 ]; then
-              sleep_seconds=$((attempt * 20))
-              echo "bws/fastlane failed; retrying in ${sleep_seconds}s..."
-              sleep "${sleep_seconds}"
-            fi
-          done
-          echo "bws run failed after 3 attempts."
-          exit 1
+          echo "Running fastlane via bws for PROJECT_NAME=obdiif..."
+          bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta
         env:
           BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
           PROJECT_NAME: obdiif
@@ -173,19 +162,8 @@ jobs:
         working-directory: flutter_obdii/ios
         run: |
           set -euo pipefail
-          for attempt in 1 2 3; do
-            echo "Running fastlane via bws for PROJECT_NAME=obdiic (attempt ${attempt}/3)..."
-            if bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta; then
-              exit 0
-            fi
-            if [ "$attempt" -lt 3 ]; then
-              sleep_seconds=$((attempt * 20))
-              echo "bws/fastlane failed; retrying in ${sleep_seconds}s..."
-              sleep "${sleep_seconds}"
-            fi
-          done
-          echo "bws run failed after 3 attempts."
-          exit 1
+          echo "Running fastlane via bws for PROJECT_NAME=obdiic..."
+          bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta
         env:
           BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
           PROJECT_NAME: obdiic
