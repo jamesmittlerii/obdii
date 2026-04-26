@@ -20,7 +20,10 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
-    let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "CarPlayBridge")
+    guard let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "CarPlayBridge") else {
+      assertionFailure("Unable to acquire Flutter plugin registrar for CarPlayBridge.")
+      return
+    }
     registerCarPlayBridgeChannel(on: registrar.messenger())
   }
 
