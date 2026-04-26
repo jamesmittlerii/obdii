@@ -26,6 +26,7 @@ class _DiagnosticsViewState extends State<DiagnosticsView> {
       ),
       child: Consumer2<DiagnosticsViewModel, OBDConnectionManager>(
         builder: (context, vm, mgr, _) {
+          final topContentPadding = 64.0;
           // 1) Waiting for first data
           if (vm.codes == null) {
             return Center(
@@ -75,7 +76,7 @@ class _DiagnosticsViewState extends State<DiagnosticsView> {
 
           // 3) Sections by severity
           return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(12, 56, 12, 12),
+            padding: EdgeInsets.fromLTRB(12, topContentPadding, 12, 12),
             itemCount: vm.sections.length,
             itemBuilder: (context, index) {
               final section = vm.sections[index];
@@ -185,13 +186,14 @@ class _DtcDetailView extends StatelessWidget {
   Widget build(BuildContext context) {
     final causes = _stringList(dtc.causes);
     final remedies = _stringList(dtc.remedies);
+    final topContentPadding = 64.0;
 
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: Text(dtc.code as String? ?? ''),
       ),
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 56, 16, 16),
+        padding: EdgeInsets.fromLTRB(16, topContentPadding, 16, 16),
         children: [
           // Overview
           _sectionHeader(context, 'Overview'),
@@ -225,7 +227,10 @@ class _DtcDetailView extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 10),
-                    child: Text('• ${causes[i]}'),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('• ${causes[i]}'),
+                    ),
                   ),
               ],
             ),
@@ -241,7 +246,10 @@ class _DtcDetailView extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 10),
-                    child: Text('• ${remedies[i]}'),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('• ${remedies[i]}'),
+                    ),
                   ),
               ],
             ),
@@ -267,10 +275,24 @@ class _DtcDetailView extends StatelessWidget {
 
   Widget _labeledRow(String label, String value) {
     return CupertinoListTile(
-      title: Text(label, style: const TextStyle(color: CupertinoColors.secondaryLabel)),
-      trailing: Text(
-        value,
-        style: const TextStyle(fontWeight: FontWeight.w500),
+      title: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 72,
+            child: Text(
+              label,
+              style: const TextStyle(color: CupertinoColors.secondaryLabel),
+            ),
+          ),
+          const Text(' - ', style: TextStyle(color: CupertinoColors.secondaryLabel)),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
       ),
     );
   }

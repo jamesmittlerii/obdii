@@ -79,6 +79,7 @@ class _PidToggleListViewState extends State<PidToggleListView> {
     final enabled = vm.filteredEnabled;
     final disabled = vm.filteredDisabled;
     final noResults = enabled.isEmpty && disabled.isEmpty && vm.searchText.isNotEmpty;
+    final topContentPadding = 64.0;
 
     if (noResults) {
       return Center(
@@ -90,7 +91,7 @@ class _PidToggleListViewState extends State<PidToggleListView> {
     }
 
     return ReorderableListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.fromLTRB(0, topContentPadding, 0, 8),
       onReorder: (oldIndex, newIndex) {
         // Index 0 is the Enabled header; enabled rows are [1..enabled.length].
         // Flutter's newIndex is reported as insertion index in the visual list,

@@ -57,6 +57,7 @@ class _GaugesViewState extends State<GaugesView> {
 
   @override
   Widget build(BuildContext context) {
+    final topContentPadding = 64.0;
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: Text(_mode == _GaugesDisplayMode.gauges ? 'Gauges' : 'List'),
@@ -64,7 +65,7 @@ class _GaugesViewState extends State<GaugesView> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 56, 16, 8),
+            padding: EdgeInsets.fromLTRB(16, topContentPadding, 16, 8),
             child: CupertinoSlidingSegmentedControl<_GaugesDisplayMode>(
               groupValue: _mode,
               children: const {

@@ -49,10 +49,11 @@ class _SettingsViewState extends State<SettingsView> {
       ),
       child: Consumer<SettingsViewModel>(
         builder: (context, vm, _) {
+          final topContentPadding = 64.0;
           return ColoredBox(
             color: CupertinoColors.systemGroupedBackground,
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 56, 16, 8),
+              padding: EdgeInsets.fromLTRB(16, topContentPadding, 16, 8),
               children: [
               _sectionHeader(context, 'Gauges'),
               CupertinoListSection.insetGrouped(

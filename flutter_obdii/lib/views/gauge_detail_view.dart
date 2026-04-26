@@ -67,13 +67,14 @@ class _GaugeDetailInterestScopeState extends State<_GaugeDetailInterestScope> {
     final vm = context.watch<GaugeDetailViewModel>();
     final isMetric = context.watch<ConfigData>().units == MeasurementUnit.metric;
     final pid = widget.pid;
+    final topContentPadding = 64.0;
 
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: Text(pid.name),
       ),
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 56, 16, 16),
+        padding: EdgeInsets.fromLTRB(16, topContentPadding, 16, 16),
         children: [
           // ── Current ──────────────────────────────────
           _sectionHeader(context, 'Current'),

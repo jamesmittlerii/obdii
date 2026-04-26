@@ -25,8 +25,9 @@ class _MilStatusViewState extends State<MilStatusView> {
       ),
       child: Consumer<MilStatusViewModel>(
         builder: (context, vm, _) {
+          final topContentPadding = 64.0;
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 56, 16, 16),
+            padding: EdgeInsets.fromLTRB(16, topContentPadding, 16, 16),
             children: [
               // ── Malfunction Indicator Lamp ───────────────
               _sectionHeader(context, 'Malfunction Indicator Lamp'),
