@@ -8,7 +8,7 @@ permissions:
 on:
   workflow_dispatch:
   push:
-    branches: ["main"]
+    branches: ["flutter"]
     paths:
       - "flutter_obdii/**"
       - ".github/workflows/caller_flutter.yml"
