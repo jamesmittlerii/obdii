@@ -1,4 +1,4 @@
-package com.jamesmittlerii.flutter_obdii
+package com.rheosoft.obdiif
 
 import io.flutter.embedding.android.FlutterActivity
 
