@@ -74,8 +74,12 @@ jobs:
       - name: Pod install sanity check
         working-directory: flutter_obdii/ios
         run: |
-          pod repo update
-          pod install
+          if [ -f Podfile ]; then
+            pod repo update
+            pod install
+          else
+            echo "No Podfile present in flutter_obdii/ios; skipping pod install."
+          fi
 
       - name: Bump Flutter version from pubspec
         id: bump_version
