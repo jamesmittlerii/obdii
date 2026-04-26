@@ -96,6 +96,7 @@ jobs:
           mkdir -p fastlane
           cp ../../fastlane/Appfile fastlane/Appfile
           cp ../../fastlane/Matchfile fastlane/Matchfile
+          ls fastlane
          # sed -i '' "s|^app_id = .*|app_id = ENV['APP_IDENTIFIER'] || \"com.rheosoft.#{ENV['PROJECT_NAME']}\"|" fastlane/Appfile
 
       - name: Run Fastlane beta lane
