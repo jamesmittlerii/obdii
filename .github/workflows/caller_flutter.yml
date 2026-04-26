@@ -25,7 +25,7 @@ jobs:
     env:
       CURRENT_BRANCH: ${{ github.ref_name }}
       APP_ID: ${{ vars.APP_ID }}
-      #APP_IDENTIFIER: com.rheosoft.obdii
+      #APP_IDENTIFIER: com.rheosoft.obdiif
 
     steps:
       - name: Checkout repository
@@ -121,7 +121,7 @@ jobs:
         run: |
           # Find the .xcodeproj file, remove the .xcodeproj extension, and assign it to the variable.
           #PROJECT_NAME=$(basename *.xcodeproj .xcodeproj)
-          PROJECT_NAME="obdii"
+          PROJECT_NAME="obdiif"
           # Write the variable to the GITHUB_ENV file so it's available to subsequent steps.
           echo "PROJECT_NAME=$PROJECT_NAME" >> "$GITHUB_ENV"
           
