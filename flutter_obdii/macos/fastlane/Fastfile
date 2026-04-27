@@ -19,7 +19,7 @@ platform :mac do
   before_all do
     setup_ci if ENV['CI']
     # macOS often requires 'appstore' type for TestFlight
-    match(type: 'appstore', platform: 'macos')
+    match(type: "appstore", platform: "macos", additional_cert_types: ["mac_installer_distribution"])
   end
 
   desc "Push a new macOS build to TestFlight"
