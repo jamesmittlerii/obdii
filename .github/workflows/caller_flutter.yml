@@ -185,11 +185,60 @@ jobs:
           name: windows-material-msixupload
           path: ${{ steps.msix.outputs.path }}
 
-      - name: Submit to Microsoft Store
-        uses: microsoft/store-submission@v1
-        with:
-          command: submit
-          type: win32
-          app-id: ${{ secrets.MS_STORE_APP_ID }}
-          package-path: ${{ steps.msix.outputs.path }}
-          api-json: ${{ secrets.MS_STORE_API_JSON }}
+      - name: Setup Microsoft Store CLI
+        uses: microsoft/microsoft-store-apppublisher@v1.1
+
+      - name: Preflight Store secrets
+        shell: pwsh
+        env:
+          AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+          SELLER_ID: ${{ secrets.SELLER_ID }}
+          AZURE_AD_APPLICATION_CLIENT_ID: ${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}
+          AZURE_AD_APPLICATION_SECRET: ${{ secrets.AZURE_AD_APPLICATION_SECRET }}
+          MS_STORE_PRODUCT_ID: ${{ secrets.MS_STORE_PRODUCT_ID }}
+        run: |
+          $required = @(
+            "AZURE_AD_TENANT_ID",
+            "SELLER_ID",
+            "AZURE_AD_APPLICATION_CLIENT_ID",
+            "AZURE_AD_APPLICATION_SECRET",
+            "MS_STORE_PRODUCT_ID"
+          )
+          $missing = @()
+          foreach ($name in $required) {
+            if ([string]::IsNullOrWhiteSpace((Get-Item "Env:$name" -ErrorAction SilentlyContinue).Value)) {
+              $missing += $name
+            }
+          }
+          if ($missing.Count -gt 0) {
+            throw "Missing required GitHub secrets: $($missing -join ', ')"
+          }
+          Write-Host "All required Microsoft Store secrets are set."
+
+      - name: Preflight msstore CLI
+        shell: pwsh
+        run: |
+          msstore --version
+
+      - name: Preflight package path
+        shell: pwsh
+        run: |
+          $pkgPath = "${{ steps.msix.outputs.path }}"
+          if (-not (Test-Path -LiteralPath $pkgPath)) {
+            throw "Package not found at: $pkgPath"
+          }
+          Write-Host "Package ready: $pkgPath"
+
+      - name: Configure Microsoft Store credentials
+        shell: pwsh
+        run: |
+          msstore reconfigure `
+            --tenantId "${{ secrets.AZURE_AD_TENANT_ID }}" `
+            --sellerId "${{ secrets.SELLER_ID }}" `
+            --clientId "${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}" `
+            --clientSecret "${{ secrets.AZURE_AD_APPLICATION_SECRET }}"
+
+      - name: Publish package to Microsoft Store
+        shell: pwsh
+        run: |
+          msstore publish "${{ steps.msix.outputs.path }}" -id "${{ secrets.MS_STORE_PRODUCT_ID }}"
