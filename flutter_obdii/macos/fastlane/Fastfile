@@ -33,7 +33,7 @@ platform :mac do
 
     # Provisioning for macOS
     provisioning_profile = ENV['PROVISIONING_PROFILE_SPECIFIER_MACOS'].to_s.strip
-    provisioning_profile = "match AppStore #{bundle_id}" if provisioning_profile.empty?
+    provisioning_profile = "match AppStore #{bundle_id} macos" if provisioning_profile.empty?
 
     # macOS project paths (relative to the macos folder)
     macos_project_file = "Runner.xcodeproj"
