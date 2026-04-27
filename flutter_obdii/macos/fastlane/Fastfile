@@ -52,6 +52,8 @@ platform :mac do
     # Build the macOS app via Flutter
     sh "cd .. && flutter build macos --release -t #{flutter_target}"
 
+    sh("security find-identity -v -p codesigning")
+
     # Build and Archive for macOS
     build_app(
       workspace: "Runner.xcworkspace",
@@ -62,7 +64,7 @@ platform :mac do
       export_options: {
         signingStyle: "manual",
         # This is the missing link:
-        installerSigningCertificate: "3rd Party Mac Developer Installer: James Mittler II (L97LVVC8Y4)",
+        installerSigningCertificate: "L97LVVC8Y4",
         provisioningProfiles: {
           bundle_id => provisioning_profile,
         },
