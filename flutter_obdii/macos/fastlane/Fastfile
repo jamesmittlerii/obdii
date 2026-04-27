@@ -64,7 +64,7 @@ platform :mac do
       export_options: {
         signingStyle: "manual",
         # This is the missing link:
-        installerSigningCertificate: "L97LVVC8Y4",
+        installerSigningCertificate: "3rd Party Mac Developer Installer: James Mittler II (L97LVVC8Y4)",
         provisioningProfiles: {
           bundle_id => provisioning_profile,
         },
