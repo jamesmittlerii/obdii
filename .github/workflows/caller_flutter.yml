@@ -238,6 +238,12 @@ jobs:
             --clientId "${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}" `
             --clientSecret "${{ secrets.AZURE_AD_APPLICATION_SECRET }}"
 
+      - name: Clear existing Store draft submission
+        shell: pwsh
+        run: |
+          msstore submission delete "${{ secrets.MS_STORE_PRODUCT_ID }}" --no-confirm
+        continue-on-error: true
+
       - name: Publish package to Microsoft Store
         shell: pwsh
         run: |
