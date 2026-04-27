@@ -50,7 +50,7 @@ platform :mac do
     )
 
     # Build the macOS app via Flutter
-    sh "cd .. && flutter build macos --release --no-codesign -t #{flutter_target}"
+    sh "cd .. && flutter build macos --release -t #{flutter_target}"
 
     # Build and Archive for macOS
     build_app(

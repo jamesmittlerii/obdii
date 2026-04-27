@@ -13,15 +13,15 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 # Available Actions
 
-## iOS
+## Mac
 
-### ios beta
+### mac beta
 
 ```sh
-[bundle exec] fastlane ios beta
+[bundle exec] fastlane mac beta
 ```
 
-Push a new beta build to TestFlight
+Push a new macOS build to TestFlight
 
 ----
 
