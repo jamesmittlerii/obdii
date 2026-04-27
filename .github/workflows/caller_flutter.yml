@@ -175,6 +175,16 @@ jobs:
           ls fastlane
          # sed -i '' "s|^app_id = .*|app_id = ENV['APP_IDENTIFIER'] || \"com.rheosoft.#{ENV['PROJECT_NAME']}\"|" fastlane/Appfile
 
+      - name: Run Fastlane beta lane IOS
+        working-directory: flutter_obdii/macos
+        run: |
+          set -euo pipefail
+          echo "Running fastlane via bws for PROJECT_NAME=${PROJECT_NAME}..."
+          bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta
+        env:
+          BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
+          PROJECT_NAME: ${{ matrix.project_name }}
+
       - name: Run Fastlane beta lane
         working-directory: flutter_obdii/ios
         run: |
