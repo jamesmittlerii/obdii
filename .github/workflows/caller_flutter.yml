@@ -1,6 +1,4 @@
-name: Flutter iOS Fastlane workflow
-
-# combined Material and Cupertino Fastlane Workflow
+name: Flutter TestFlight Parallel Deployment
 
 permissions:
   contents: write
@@ -23,14 +21,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # --- COMMON PREPARATION JOB ---
   prepare:
-    name: Prepare Flutter version
+    name: Versioning & Dependencies
     runs-on: macos-26
-    timeout-minutes: 20
     outputs:
       commit_sha: ${{ steps.capture_sha.outputs.commit_sha }}
-    env:
-      CURRENT_BRANCH: ${{ github.ref_name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -39,86 +35,67 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.PAT_TOKEN }}
 
-      - name: Bump Flutter version from pubspec
+      - name: Bump Flutter version
         working-directory: flutter_obdii
         run: |
           python3 - <<'PY'
           import pathlib, re, sys
-
           path = pathlib.Path("pubspec.yaml")
           text = path.read_text(encoding="utf-8")
           m = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$", text, re.MULTILINE)
-          if not m:
-            print("Could not parse pubspec version line", file=sys.stderr)
-            sys.exit(1)
-
+          if not m: sys.exit(1)
           major, minor, patch, build = map(int, m.groups())
-          new_minor = minor
-          new_patch = patch + 1
-          new_build = build + 1
-          new_version = f"{major}.{new_minor}.{new_patch}+{new_build}"
+          new_version = f"{major}.{minor}.{patch + 1}+{build + 1}"
           updated = re.sub(r"^version:\s*.*$", f"version: {new_version}", text, count=1, flags=re.MULTILINE)
           path.write_text(updated, encoding="utf-8")
-
-          with open(pathlib.Path("../.github_version_env"), "w", encoding="utf-8") as f:
-            f.write(f"FLUTTER_BUILD_NAME={major}.{new_minor}.{new_patch}\n")
-            f.write(f"FLUTTER_BUILD_NUMBER={new_build}\n")
-            f.write(f"PUBSPEC_VERSION={new_version}\n")
           PY
-          cat ../.github_version_env >> "$GITHUB_ENV"
 
-      - name: Commit bumped pubspec version
+      - name: Commit version bump
         if: github.event_name == 'push'
         run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
           git add flutter_obdii/pubspec.yaml
-          git commit -m "ci: bump flutter version to ${PUBSPEC_VERSION} [skip ci]" || echo "No version changes to commit"
+          git commit -m "ci: bump version [skip ci]" || echo "No changes"
           git push origin HEAD:${{ github.ref_name }}
 
-      - name: Capture commit SHA for downstream jobs
+      - name: Capture SHA
         id: capture_sha
         run: echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-  deploy-beta:
-    name: Deploy ${{ matrix.display_name }} to TestFlight
+  # --- PARALLEL DEPLOYMENT JOBS ---
+  deploy:
+    name: ${{ matrix.platform }} ${{ matrix.display_name }}
     needs: prepare
     runs-on: macos-26
-    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
+        # This creates the 4 parallel combinations
+        platform: [ios, macos]
+        project: [obdiif, obdiic]
         include:
-          - project_name: obdiif
+          - project: obdiif
             display_name: Material
-          - project_name: obdiic
+          - project: obdiic
             display_name: Cupertino
     env:
-      CURRENT_BRANCH: ${{ github.ref_name }}
-      APP_ID: ${{ vars.APP_ID }}
+      BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
+      PROJECT_NAME: ${{ matrix.project }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
           ref: ${{ needs.prepare.outputs.commit_sha }}
           submodules: recursive
-          fetch-depth: 0
           token: ${{ secrets.PAT_TOKEN }}
 
-      - name: Select Xcode
-        run: /usr/bin/xcodebuild -version
-
+      # Common Tooling Setup (Required per-runner)
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-
-      - name: Install Bitwarden Secrets Manager CLI (bws)
-        run: |
-          BWS_VERSION="1.0.0"
-          curl -L -o bws.zip "https://github.com/bitwarden/sdk/releases/download/bws-v${BWS_VERSION}/bws-aarch64-apple-darwin-${BWS_VERSION}.zip"
-          unzip -q bws.zip -d /usr/local/bin
-          chmod +x /usr/local/bin/bws
-          bws --version
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -126,102 +103,37 @@ jobs:
           ruby-version: "3.2"
           bundler-cache: true
 
-      - name: Cache CocoaPods artifacts
-        uses: actions/cache@v5
-        with:
-          path: |
-            flutter_obdii/ios/Pods
-            ~/.cocoapods
-            ~/Library/Caches/CocoaPods
-          key: ${{ runner.os }}-cocoapods-${{ hashFiles('flutter_obdii/ios/Podfile.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cocoapods-
-
-      - name: Install Fastlane dependencies
+      - name: Install Bitwarden BWS
         run: |
-          bundle install
+          curl -L -o bws.zip "https://github.com/bitwarden/sdk/releases/download/bws-v1.0.0/bws-aarch64-apple-darwin-1.0.0.zip"
+          unzip -q bws.zip -d /usr/local/bin && chmod +x /usr/local/bin/bws
 
-      - name: Install CocoaPods for Bundler Ruby
-        run: |
-          bundle install
-          which ruby
-          ruby -v
-          bundle exec pod --version
-
-      - name: Pod install sanity check
-        working-directory: flutter_obdii/ios
+      # Platform Specific Setup
+      - name: Install Pods
+        working-directory: flutter_obdii/${{ matrix.platform }}
         run: |
           if [ -f Podfile ]; then
             bundle exec pod repo update
             bundle exec pod install
-          else
-            echo "No Podfile present in flutter_obdii/ios; skipping pod install."
           fi
 
-      - name: Flutter pub get
-        working-directory: flutter_obdii
-        run: flutter pub get
-
-      - name: Flutter analyze
-        working-directory: flutter_obdii
-        run: flutter analyze
-
-      - name: Prepare Fastlane config for Flutter iOS project
-        working-directory: flutter_obdii/ios
+      - name: Sync Fastlane Config
+        working-directory: flutter_obdii/${{ matrix.platform }}
         run: |
           mkdir -p fastlane
           cp ../../fastlane/Appfile fastlane/Appfile
           cp ../../fastlane/Matchfile fastlane/Matchfile
-          ls fastlane
-         # sed -i '' "s|^app_id = .*|app_id = ENV['APP_IDENTIFIER'] || \"com.rheosoft.#{ENV['PROJECT_NAME']}\"|" fastlane/Appfile
 
-      - name: Prepare Fastlane config for Flutter mac project
-        working-directory: flutter_obdii/macos
+      # Execution
+      - name: Build & Upload to TestFlight
+        working-directory: flutter_obdii/${{ matrix.platform }}
         run: |
-          mkdir -p fastlane
-          cp ../../fastlane/Appfile fastlane/Appfile
-          cp ../../fastlane/Matchfile fastlane/Matchfile
-          ls fastlane
-         # sed -i '' "s|^app_id = .*|app_id = ENV['APP_IDENTIFIER'] || \"com.rheosoft.#{ENV['PROJECT_NAME']}\"|" fastlane/Appfile
-
-      - name: Run Fastlane beta lane macos
-        working-directory: flutter_obdii/macos
-        run: |
-          set -euo pipefail
-          echo "Running fastlane via bws for PROJECT_NAME=${PROJECT_NAME}..."
           bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta
-        env:
-          BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
-          PROJECT_NAME: ${{ matrix.project_name }}
 
-      - name: Run Fastlane beta lane
-        working-directory: flutter_obdii/ios
-        run: |
-          set -euo pipefail
-          echo "Running fastlane via bws for PROJECT_NAME=${PROJECT_NAME}..."
-          bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta
-        env:
-          BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
-          PROJECT_NAME: ${{ matrix.project_name }}
-
-      - name: Dump gym log on failure
-        if: failure()
-        run: |
-          echo "=== gym log files ==="
-          ls -la ~/Library/Logs/gym || true
-          echo "=== latest gym log (tail) ==="
-          LATEST_LOG=$(ls -t ~/Library/Logs/gym/*.log 2>/dev/null | head -n 1 || true)
-          if [ -n "$LATEST_LOG" ]; then
-            echo "Log: $LATEST_LOG"
-            tail -n 300 "$LATEST_LOG" || true
-          else
-            echo "No gym log found."
-          fi
-
-      - name: Upload gym logs
+      # Failure Handling
+      - name: Upload Logs on Failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: gym-logs
+          name: gym-logs-${{ matrix.platform }}-${{ matrix.project }}
           path: ~/Library/Logs/gym/*.log
-          if-no-files-found: warn
