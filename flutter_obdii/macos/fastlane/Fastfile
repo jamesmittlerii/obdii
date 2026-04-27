@@ -18,6 +18,7 @@ default_platform(:mac)
 platform :mac do
   before_all do
     setup_ci if ENV['CI']
+    ENV["DELIVER_ALTOOL_ADDITIONAL_UPLOAD_PARAMETERS"] = "--use-old-altool"
     # macOS often requires 'appstore' type for TestFlight
     match(type: "appstore", platform: "macos", additional_cert_types: ["mac_installer_distribution"])
   end
