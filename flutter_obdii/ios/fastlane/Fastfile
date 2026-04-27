@@ -15,66 +15,6 @@
 
 default_platform(:ios)
 
-platform :macos do
-  before_all do
-    setup_ci if ENV['CI']
-    # macOS often requires 'appstore' type for TestFlight
-    match(type: 'appstore', platform: 'macos')
-  end
-
-  desc "Push a new macOS build to TestFlight"
-  lane :beta do
-    project_name = ENV['PROJECT_NAME'].to_s.strip
-    
-    # Logic for targets remains similar
-    flutter_target = project_name == 'obdiic' ? 'lib/main_cupertino.dart' : 'lib/main_material.dart'
-    bundle_id = ENV['APP_IDENTIFIER'].to_s.strip
-    bundle_id = "com.rheosoft.#{project_name}" if bundle_id.empty?
-
-    # Provisioning for macOS
-    provisioning_profile = ENV['PROVISIONING_PROFILE_SPECIFIER_MACOS'].to_s.strip
-    provisioning_profile = "match AppStore #{bundle_id}" if provisioning_profile.empty?
-
-    # macOS project paths (relative to the macos folder)
-    macos_project_file = "Runner.xcodeproj"
-    info_plist_path = "Runner/Info.plist"
-
-    update_code_signing_settings(
-      use_automatic_signing: false,
-      path: macos_project_file,
-      team_id: "L97LVVC8Y4",
-      bundle_identifier: bundle_id,
-      profile_name: provisioning_profile,
-      targets: ["Runner"],
-      build_configurations: ["Release"]
-    )
-
-    # Build the macOS app via Flutter
-    sh "cd .. && flutter build macos --release --no-codesign -t #{flutter_target}"
-
-    # Build and Archive for macOS
-    build_app(
-      platform: "macos", # Crucial: tell gym this is for macOS
-      workspace: "Runner.xcworkspace",
-      scheme: "Runner",
-      export_method: "app-store",
-      export_options: {
-        signingStyle: "manual",
-        provisioningProfiles: {
-          bundle_id => provisioning_profile,
-        },
-      },
-      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' DEVELOPMENT_TEAM=L97LVVC8Y4"
-    )
-
-    app_store_connect_api_key
-    upload_to_testflight(
-      # 'platform' is inferred from the build_app output, but you can be explicit
-      skip_waiting_for_build_processing: false
-    )
-  end
-end
-
 platform :ios do
   before_all do
     # Run setup_ci for any CI environment
