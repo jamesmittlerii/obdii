@@ -56,17 +56,20 @@ platform :mac do
     build_app(
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
-      sdk: "macosx", # Correct way to target macOS
-      destination: "generic/platform=macOS", # Ensures it doesn't try to build for iOS
-      export_method: "app-store",
+      sdk: "macosx", 
+      destination: "generic/platform=macOS",
+      export_method: "app-store-connect", # Changed from 'app-store' to fix deprecation
       export_options: {
         signingStyle: "manual",
+        # This is the missing link:
+        installerSigningCertificate: "Mac Installer Distribution: James Emmett Mittler II (L97LVVC8Y4)",
         provisioningProfiles: {
           bundle_id => provisioning_profile,
         },
       },
       xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' DEVELOPMENT_TEAM=L97LVVC8Y4"
     )
+
 
     app_store_connect_api_key
     upload_to_testflight(
