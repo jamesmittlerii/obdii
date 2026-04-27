@@ -137,3 +137,58 @@ jobs:
         with:
           name: gym-logs-${{ matrix.platform }}-${{ matrix.project }}
           path: ~/Library/Logs/gym/*.log
+
+  windows_store_material:
+    name: Windows Store Material
+    needs: prepare
+    runs-on: windows-latest
+    env:
+      FLUTTER_TARGET: lib/main_material.dart
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.prepare.outputs.commit_sha }}
+          submodules: recursive
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: flutter_obdii
+        run: flutter pub get
+
+      - name: Build Windows release (Material)
+        working-directory: flutter_obdii
+        run: flutter build windows --release --target ${{ env.FLUTTER_TARGET }}
+
+      - name: Build MSIX upload package
+        working-directory: flutter_obdii
+        run: dart run msix:create --store --build-windows false
+
+      - name: Locate MSIXUPLOAD
+        id: msix
+        shell: pwsh
+        run: |
+          $pkg = Get-ChildItem -Path "build/windows/x64/runner/Release" -Filter "*.msixupload" -Recurse | Select-Object -First 1
+          if (-not $pkg) { throw "No .msixupload package found." }
+          "path=$($pkg.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Upload Windows package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-material-msixupload
+          path: ${{ steps.msix.outputs.path }}
+
+      - name: Submit to Microsoft Store
+        uses: microsoft/store-submission@v1
+        with:
+          command: submit
+          type: win32
+          app-id: ${{ secrets.MS_STORE_APP_ID }}
+          package-path: ${{ steps.msix.outputs.path }}
+          api-json: ${{ secrets.MS_STORE_API_JSON }}

@@ -1,5 +1,5 @@
 name: flutter_obdii
-description: "A new Flutter project."
+description: "Rheosoft OBD2 Application"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -59,6 +59,17 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
+  msix: ^3.16.13
+
+msix_config:
+  display_name: Rheosoft OBDII
+  publisher_display_name: Rheosoft
+  identity_name: Rheosoft.RheosoftOBDII
+  publisher: CN=CDD0EB85-E0DB-42EA-821E-CD97C0307B7A
+  msix_version: 0.2.30.0
+  logo_path: windows/runner/resources/app_icon.ico
+  capabilities: internetClient
+  store: true  
 
 flutter_launcher_icons:
   android: true
