@@ -15,11 +15,11 @@
 
 default_platform(:ios)
 
-platform :macos do
+platform :mac do
   before_all do
     setup_ci if ENV['CI']
     # macOS often requires 'appstore' type for TestFlight
-    match(type: 'appstore', platform: 'macos')
+    match(type: 'appstore', platform: 'mac')
   end
 
   desc "Push a new macOS build to TestFlight"
@@ -147,7 +147,7 @@ platform :ios do
           
     # Build Flutter iOS artifacts without signing, then let fastlane/gym
     # perform archive + App Store signing using match-provided credentials.
-    sh "cd .. && flutter build ios --release --no-codesign -t #{flutter_target}"
+    sh "cd .. && flutter build macos --release --no-codesign -t #{flutter_target}"
 
     build_app(
       workspace: "Runner.xcworkspace",
