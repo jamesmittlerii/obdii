@@ -54,9 +54,10 @@ platform :mac do
 
     # Build and Archive for macOS
     build_app(
-      platform: "macos", # Crucial: tell gym this is for macOS
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
+      sdk: "macosx", # Correct way to target macOS
+      destination: "generic/platform=macOS", # Ensures it doesn't try to build for iOS
       export_method: "app-store",
       export_options: {
         signingStyle: "manual",
