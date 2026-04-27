@@ -58,7 +58,7 @@ platform :mac do
       scheme: "Runner",
       sdk: "macosx", 
       destination: "generic/platform=macOS",
-      export_method: "app-store-connect", # Changed from 'app-store' to fix deprecation
+      export_method: "app-store", # Changed from 'app-store' to fix deprecation
       export_options: {
         signingStyle: "manual",
         # This is the missing link:
