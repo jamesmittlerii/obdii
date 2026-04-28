@@ -140,6 +140,7 @@ jobs:
 
   windows_store_material:
     name: Windows Store Material
+    if: false
     needs: prepare
     runs-on: windows-latest
     env:
@@ -338,4 +339,4 @@ jobs:
           packageName: com.rheosoft.obdiif
           releaseFiles: flutter_obdii/build/app/outputs/bundle/materialRelease/app-material-release.aab
           track: ${{ env.PLAY_TRACK }}
-          status: completed
+          status: draft
