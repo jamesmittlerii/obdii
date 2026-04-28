@@ -256,7 +256,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FLUTTER_TARGET: lib/main_material.dart
-      PLAY_TRACK: internal
+      PLAY_TRACK: alpha
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
