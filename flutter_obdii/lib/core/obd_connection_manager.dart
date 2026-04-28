@@ -6,11 +6,13 @@
 // status, MIL status, and per-PID statistics.
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_obd2/flutter_obd2.dart' as obd2lib;
+import 'package:permission_handler/permission_handler.dart';
 
 import 'config_data.dart';
 import 'pid_interest_registry.dart';
@@ -254,6 +256,10 @@ class OBDConnectionManager extends ChangeNotifier
 
     // Bluetooth: check adapter
     if (config.connectionType == ConnectionType.bluetooth) {
+      if (!await _ensureBluetoothPermissions()) {
+        _setConnectionState(OBDConnectionState.failed);
+        return;
+      }
       if (!await FlutterBluePlus.isSupported) {
         _setConnectionState(OBDConnectionState.failed);
         return;
@@ -292,6 +298,44 @@ class OBDConnectionManager extends ChangeNotifier
       _setConnectionState(OBDConnectionState.failed);
       debugPrint('OBDConnectionManager: connect failed: $e');
     }
+  }
+
+  Future<bool> _ensureBluetoothPermissions() async {
+    if (!Platform.isAndroid) return true;
+
+    try {
+      final statuses = await [
+        Permission.bluetoothScan,
+        Permission.bluetoothConnect,
+      ].request();
+
+      final missingBluetoothPerm = statuses.entries.any(
+        (entry) => !entry.value.isGranted,
+      );
+      if (missingBluetoothPerm) {
+        debugPrint(
+          'OBDConnectionManager: bluetooth permission denied: '
+          '${statuses.map((k, v) => MapEntry(k.toString(), v.toString()))}',
+        );
+        return false;
+      }
+
+      // Some Android devices still gate scan results behind location access.
+      final locationStatus = await Permission.locationWhenInUse.status;
+      if (!locationStatus.isGranted) {
+        final requested = await Permission.locationWhenInUse.request();
+        if (!requested.isGranted) {
+          debugPrint(
+            'OBDConnectionManager: location permission denied: $requested',
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('OBDConnectionManager: permission request failed: $e');
+      return false;
+    }
+
+    return true;
   }
 
   @override
