@@ -17,8 +17,8 @@ on:
 
 
 concurrency:
-  group: ${{ github.repository}}-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.repository }}-ios-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   call-reusable-workflow:
