@@ -16,7 +16,7 @@ class ObdMaterialApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ObdAppProviders(
       child: MaterialApp(
-        title: 'OBDII Material',
+        title: 'Rheosoft OBDII',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
@@ -39,7 +39,7 @@ class ObdMaterialApp extends StatelessWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: const [Locale('en', 'US')],
-        themeMode: ThemeMode.light,
+        themeMode: ThemeMode.system,
         home: const MainScaffold(),
       ),
     );

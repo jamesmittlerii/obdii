@@ -16,7 +16,7 @@ class ObdCupertinoApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ObdAppProviders(
       child: const CupertinoApp(
-        title: 'OBDII Cupertino',
+        title: 'Rheosoft OBDII',
         debugShowCheckedModeBanner: false,
         localizationsDelegates: [
           GlobalMaterialLocalizations.delegate,
@@ -25,7 +25,6 @@ class ObdCupertinoApp extends StatelessWidget {
         ],
         supportedLocales: [Locale('en', 'US')],
         theme: CupertinoThemeData(
-          brightness: Brightness.light,
           primaryColor: Color(0xFF00C2FF),
         ),
         home: MainScaffoldCupertino(),

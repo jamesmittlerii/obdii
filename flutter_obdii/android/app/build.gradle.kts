@@ -43,12 +43,12 @@ android {
     productFlavors {
         create("material") {
             dimension = "ui"
-            resValue("string", "app_name", "OBDII Material")
+            resValue("string", "app_name", "Rheosoft OBDII")
         }
         create("cupertino") {
             dimension = "ui"
             applicationIdSuffix = ".cupertino"
-            resValue("string", "app_name", "OBDII Cupertino")
+            resValue("string", "app_name", "Rheosoft OBDII")
         }
     }
 
