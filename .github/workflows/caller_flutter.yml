@@ -202,7 +202,7 @@ jobs:
           }
 
           $msixVersion = "$($versionMatch.Groups[1].Value).$($versionMatch.Groups[2].Value).$($versionMatch.Groups[3].Value).$($versionMatch.Groups[4].Value)"
-          $updated = [regex]::Replace($content, '(?m)^msix_version:\s*.*$', "msix_version: $msixVersion", 1)
+          $updated = [regex]::Replace($content, '(?m)^(\s*)msix_version:\s*.*$', "`${1}msix_version: $msixVersion", 1)
           if ($updated -eq $content) {
             throw "Could not find msix_version in $pubspecPath"
           }
