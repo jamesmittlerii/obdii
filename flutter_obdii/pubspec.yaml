@@ -67,7 +67,7 @@ msix_config:
   publisher_display_name: Rheosoft
   identity_name: Rheosoft.RheosoftOBDII
   publisher: CN=CDD0EB85-E0DB-42EA-821E-CD97C0307B7A
-  msix_version: 0.2.39.89
+  msix_version: 0.2.41.0
   logo_path: windows/runner/resources/app_icon.ico
   capabilities: internetClient
   store: true  
