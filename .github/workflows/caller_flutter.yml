@@ -162,7 +162,7 @@ jobs:
 
   windows_store_material:
     name: Windows Store Material
-    if: false
+    if: true
     needs: prepare
     runs-on: windows-latest
     env:
