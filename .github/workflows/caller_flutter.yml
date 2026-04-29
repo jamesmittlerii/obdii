@@ -189,6 +189,27 @@ jobs:
         working-directory: flutter_obdii
         run: flutter build windows --release --target ${{ env.FLUTTER_TARGET }}
 
+      - name: Sync MSIX version from pubspec version
+        shell: pwsh
+        working-directory: flutter_obdii
+        run: |
+          $pubspecPath = "pubspec.yaml"
+          $content = Get-Content -Raw -Path $pubspecPath
+
+          $versionMatch = [regex]::Match($content, '(?m)^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$')
+          if (-not $versionMatch.Success) {
+            throw "Could not parse pubspec version from $pubspecPath"
+          }
+
+          $msixVersion = "$($versionMatch.Groups[1].Value).$($versionMatch.Groups[2].Value).$($versionMatch.Groups[3].Value).$($versionMatch.Groups[4].Value)"
+          $updated = [regex]::Replace($content, '(?m)^msix_version:\s*.*$', "msix_version: $msixVersion", 1)
+          if ($updated -eq $content) {
+            throw "Could not find msix_version in $pubspecPath"
+          }
+
+          Set-Content -Path $pubspecPath -Value $updated
+          Write-Host "Synced msix_version to $msixVersion"
+
       - name: Build MSIX upload package
         working-directory: flutter_obdii
         run: dart run msix:create --store --build-windows false
