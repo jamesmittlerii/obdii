@@ -68,7 +68,9 @@ msix_config:
   identity_name: Rheosoft.RheosoftOBDII
   publisher: CN=CDD0EB85-E0DB-42EA-821E-CD97C0307B7A
   msix_version: 0.2.41.0
-  logo_path: windows/runner/resources/app_icon.ico
+  logo_path: windows/runner/resources/rheosoft-obdii-msix-logo-clean-512.png
+ # trim_logo: false
+  background_color: "#00000000"
   capabilities: internetClient
   store: true  
 
