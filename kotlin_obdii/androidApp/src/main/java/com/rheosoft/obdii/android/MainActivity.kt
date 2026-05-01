@@ -10,7 +10,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.rheosoft.obdii.android.ble.AndroidBlePlatformAdapter
 import com.rheosoft.obdii.android.storage.AndroidPreferencesKeyValueStore
-import com.rheosoft.obdii.android.views.KotlinObdiiApp
+import com.rheosoft.obdii.android.ui.screens.KotlinObdiiApp
 import com.rheosoft.obdii.core.ConfigData
 import com.rheosoft.obdii.core.DefaultPidStore
 import com.rheosoft.obdii.core.OBDConnectionManager

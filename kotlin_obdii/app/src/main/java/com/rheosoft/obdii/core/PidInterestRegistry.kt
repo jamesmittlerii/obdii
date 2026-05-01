@@ -10,6 +10,7 @@ class PidInterestRegistry {
         val instance = PidInterestRegistry()
     }
 
+    private val lock = Any()
     private val byToken: MutableMap<String, Set<String>> = mutableMapOf()
     private val _interestedFlow = MutableStateFlow<Set<String>>(emptySet())
     val interestedStream: StateFlow<Set<String>> = _interestedFlow.asStateFlow()
@@ -18,21 +19,27 @@ class PidInterestRegistry {
 
     fun makeToken(): String {
         val token = UUID.randomUUID().toString()
-        byToken[token] = emptySet()
+        synchronized(lock) {
+            byToken[token] = emptySet()
+        }
         return token
     }
 
     fun replace(pids: Set<String>, token: String) {
-        byToken[token] = pids
-        recompute()
+        synchronized(lock) {
+            byToken[token] = pids
+            recomputeLocked()
+        }
     }
 
     suspend fun clear(token: String) {
-        byToken.remove(token)
-        recompute()
+        synchronized(lock) {
+            byToken.remove(token)
+            recomputeLocked()
+        }
     }
 
-    private fun recompute() {
+    private fun recomputeLocked() {
         val union = byToken.values.flatten().toSet()
         if (union != _interestedFlow.value) {
             _interestedFlow.value = union

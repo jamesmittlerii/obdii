@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+/*
 enum class MeasurementUnit(val displayName: String) {
     metric("Metric"),
     imperial("Imperial");
@@ -11,7 +12,7 @@ enum class MeasurementUnit(val displayName: String) {
     val next: MeasurementUnit
         get() = if (this == metric) imperial else metric
 }
-
+*/
 enum class ConnectionType(val rawValue: String) {
     bluetooth("bluetooth"),
     wifi("wifi"),
@@ -96,10 +97,10 @@ object ConfigData : SettingsConfigProviding, UnitsProviding {
             _connectionTypeFlow.value = value
         }
 
-    override var units: MeasurementUnit = MeasurementUnit.metric
+    override var units: MeasurementUnit = MeasurementUnit.Metric
         private set
 
-    private val _unitsFlow = MutableStateFlow(MeasurementUnit.metric)
+    private val _unitsFlow = MutableStateFlow(MeasurementUnit.Metric)
     private val _connectionTypeFlow = MutableStateFlow(ConnectionType.bluetooth)
 
     override val unitsStream: StateFlow<MeasurementUnit> = _unitsFlow.asStateFlow()
@@ -111,7 +112,7 @@ object ConfigData : SettingsConfigProviding, UnitsProviding {
         autoConnectToOBD = store.getBoolean(K_AUTO_CONNECT) ?: true
         connectionType = ConnectionType.fromRaw(store.getString(K_CONNECTION_TYPE) ?: "bluetooth")
         units = MeasurementUnit.entries.firstOrNull { it.name == (store.getString(K_UNITS) ?: "metric") }
-            ?: MeasurementUnit.metric
+            ?: MeasurementUnit.Metric
         _unitsFlow.value = units
         _connectionTypeFlow.value = connectionType
     }
@@ -128,6 +129,6 @@ object ConfigData : SettingsConfigProviding, UnitsProviding {
         wifiPort = 35000
         autoConnectToOBD = true
         connectionType = ConnectionType.bluetooth
-        setUnits(MeasurementUnit.metric)
+        setUnits(MeasurementUnit.Metric)
     }
 }

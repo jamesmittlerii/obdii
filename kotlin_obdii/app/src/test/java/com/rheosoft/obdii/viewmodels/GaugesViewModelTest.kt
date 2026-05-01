@@ -25,7 +25,7 @@ private class MockStats : PidStatsProviding {
 }
 
 private class MockUnits : UnitsProviding {
-    private val flow = MutableStateFlow(MeasurementUnit.metric)
+    private val flow = MutableStateFlow(MeasurementUnit.Metric)
     override val units: MeasurementUnit get() = flow.value
     override val unitsStream: StateFlow<MeasurementUnit> = flow
 }

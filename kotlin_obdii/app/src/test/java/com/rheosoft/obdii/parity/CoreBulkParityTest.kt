@@ -12,7 +12,7 @@ class CoreBulkParityTest {
     fun `carplay bridge records latest settings snapshot`() {
         CarplayBridge.resetForTests()
         CarplayBridge.settingsChanged(
-            units = MeasurementUnit.metric,
+            units = MeasurementUnit.Metric,
             connectionType = ConnectionType.bluetooth,
             autoConnectToOBD = true,
             wifiHost = "192.168.0.10",
@@ -20,7 +20,7 @@ class CoreBulkParityTest {
         )
         val snapshot = CarplayBridge.latestSettings
         assertNotNull(snapshot)
-        assertEquals(MeasurementUnit.metric, snapshot.units)
+        assertEquals(MeasurementUnit.Metric, snapshot.units)
         assertEquals(ConnectionType.bluetooth, snapshot.connectionType)
     }
 }

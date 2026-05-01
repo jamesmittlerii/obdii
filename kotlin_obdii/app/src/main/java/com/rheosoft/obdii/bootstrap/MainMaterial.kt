@@ -1,6 +1,6 @@
 package com.rheosoft.obdii.bootstrap
 
-import com.rheosoft.obdii.views.MainScaffold
+import com.rheosoft.obdii.screenmodels.MainScaffoldScreenModel
 
 data class MaterialAppSpec(
     val title: String,
@@ -20,7 +20,7 @@ object MainMaterial {
         seedColorHex = "#00C2FF",
         supportedLocales = listOf("en_US"),
         themeMode = "system",
-        home = MainScaffold::class.simpleName ?: "MainScaffold",
+        home = MainScaffoldScreenModel::class.simpleName ?: "MainScaffoldScreenModel",
     )
 
     suspend fun run() {

@@ -11,8 +11,20 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+
+data class SettingsUiState(
+    val wifiHost: String,
+    val wifiPort: Int,
+    val autoConnectToOBD: Boolean,
+    val connectionType: ConnectionType,
+    val units: MeasurementUnit,
+    val connectionState: OBDConnectionState,
+)
 
 class SettingsViewModel(
     private val config: SettingsConfigProviding = ConfigData,
@@ -34,23 +46,28 @@ class SettingsViewModel(
         private set
     var connectionState: OBDConnectionState = connection.connectionState
         private set
+    private val _uiStateStream = MutableStateFlow(buildUiState())
+    val uiStateStream: StateFlow<SettingsUiState> = _uiStateStream.asStateFlow()
 
     init {
         scope.launch {
             connection.connectionStateStream.collectLatest {
                 connectionState = it
+                emitUiState()
                 notifyChanged()
             }
         }
         scope.launch {
             config.unitsStream.collectLatest {
                 units = it
+                emitUiState()
                 notifyChanged()
             }
         }
         scope.launch {
             config.connectionTypeStream.collectLatest {
                 connectionType = it
+                emitUiState()
                 notifyChanged()
             }
         }
@@ -58,6 +75,7 @@ class SettingsViewModel(
 
     fun onWifiHostChanged(newHost: String) {
         wifiHost = newHost
+        emitUiState()
         notifyChanged()
         val local = ++hostDebounceVersion
         scope.launch {
@@ -70,6 +88,7 @@ class SettingsViewModel(
 
     fun onWifiPortChanged(newPort: Int) {
         wifiPort = newPort
+        emitUiState()
         notifyChanged()
         val local = ++portDebounceVersion
         scope.launch {
@@ -85,6 +104,7 @@ class SettingsViewModel(
         connectionType = newType
         config.connectionType = newType
         connection.updateConnectionDetails()
+        emitUiState()
         notifyChanged()
     }
 
@@ -92,12 +112,14 @@ class SettingsViewModel(
         if (newUnits == units) return
         units = newUnits
         config.setUnits(newUnits)
+        emitUiState()
         notifyChanged()
     }
 
     fun onAutoConnectChanged(value: Boolean) {
         autoConnectToOBD = value
         config.autoConnectToOBD = value
+        emitUiState()
         notifyChanged()
     }
 
@@ -113,4 +135,17 @@ class SettingsViewModel(
             OBDConnectionState.connecting -> Unit
         }
     }
+
+    private fun emitUiState() {
+        _uiStateStream.value = buildUiState()
+    }
+
+    private fun buildUiState(): SettingsUiState = SettingsUiState(
+        wifiHost = wifiHost,
+        wifiPort = wifiPort,
+        autoConnectToOBD = autoConnectToOBD,
+        connectionType = connectionType,
+        units = units,
+        connectionState = connectionState,
+    )
 }

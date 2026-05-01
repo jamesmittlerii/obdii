@@ -8,8 +8,13 @@ import com.rheosoft.obdii.models.ObdiiPid
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+
+data class GaugeDetailUiState(val stats: PIDStats?)
 
 class GaugeDetailViewModel(
     val pid: ObdiiPid,
@@ -21,6 +26,8 @@ class GaugeDetailViewModel(
     private val scope = CoroutineScope(Dispatchers.Default + Job())
     var stats: PIDStats? = statsProvider.statsFor(pid.pidCommand)
         private set
+    private val _uiStateStream = MutableStateFlow(GaugeDetailUiState(stats))
+    val uiStateStream: StateFlow<GaugeDetailUiState> = _uiStateStream.asStateFlow()
 
     init {
         scope.launch {
@@ -28,6 +35,7 @@ class GaugeDetailViewModel(
                 val newStats = all[pid.pidCommand]
                 if (!isSameStats(stats, newStats)) {
                     stats = newStats
+                    _uiStateStream.value = GaugeDetailUiState(stats)
                     notifyChanged()
                 }
             }
@@ -35,6 +43,7 @@ class GaugeDetailViewModel(
         scope.launch {
             unitsProvider.unitsStream.collectLatest {
                 stats = statsProvider.statsFor(pid.pidCommand)
+                _uiStateStream.value = GaugeDetailUiState(stats)
                 notifyChanged()
             }
         }

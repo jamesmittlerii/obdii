@@ -19,7 +19,7 @@ private class MockSettingsConfig : SettingsConfigProviding {
     override var autoConnectToOBD: Boolean = false
     override var connectionType: ConnectionType = ConnectionType.bluetooth
     override val units: MeasurementUnit get() = unitsFlowMutable.value
-    private val unitsFlowMutable = MutableStateFlow(MeasurementUnit.metric)
+    private val unitsFlowMutable = MutableStateFlow(MeasurementUnit.Metric)
     private val connFlowMutable = MutableStateFlow(ConnectionType.bluetooth)
     override val unitsStream: StateFlow<MeasurementUnit> = unitsFlowMutable
     override val connectionTypeStream: StateFlow<ConnectionType> = connFlowMutable
@@ -67,7 +67,7 @@ class SettingsViewModelTest {
     fun `units change updates config`() {
         val config = MockSettingsConfig()
         val vm = SettingsViewModel(config, MockConn())
-        vm.onUnitsChanged(MeasurementUnit.imperial)
-        assertEquals(MeasurementUnit.imperial, vm.units)
+        vm.onUnitsChanged(MeasurementUnit.Imperial)
+        assertEquals(MeasurementUnit.Imperial, vm.units)
     }
 }

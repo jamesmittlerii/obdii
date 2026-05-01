@@ -15,6 +15,6 @@ class MainMaterialTest {
         assertEquals("#00C2FF", spec.seedColorHex)
         assertEquals(listOf("en_US"), spec.supportedLocales)
         assertEquals("system", spec.themeMode)
-        assertEquals("MainScaffold", spec.home)
+        assertEquals("MainScaffoldScreenModel", spec.home)
     }
 }

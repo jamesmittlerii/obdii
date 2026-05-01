@@ -1,0 +1,40 @@
+package com.rheosoft.obdii.screenmodels
+
+import com.rheosoft.obdii.core.ConnectionType
+import com.rheosoft.obdii.core.OBDConnectionState
+import com.rheosoft.obdii.viewmodels.SettingsViewModel
+
+class SettingsScreenModel(val viewModel: SettingsViewModel) {
+    val title: String = "Settings"
+    val sectionHeaders: List<String>
+        get() = buildList {
+            add("UNITS")
+            add("CONNECTION")
+            if (viewModel.connectionType == ConnectionType.wifi) add("CONNECTION DETAILS")
+            add("DIAGNOSTICS")
+            add("ABOUT")
+        }
+
+    val unitsLabels: List<String> = listOf("Metric", "Imperial")
+    val hasGaugesNavigationRow: Boolean = true
+    val hasAutoConnectRow: Boolean = true
+    val diagnosticsActionLabel: String = "Share Logs"
+
+    val connectButtonLabel: String
+        get() = when (viewModel.connectionState) {
+            OBDConnectionState.disconnected, OBDConnectionState.failed -> "Connect"
+            OBDConnectionState.connecting -> "Connecting..."
+            OBDConnectionState.connected -> "Disconnect"
+        }
+
+    val statusLabel: String
+        get() = when (viewModel.connectionState) {
+            OBDConnectionState.disconnected -> "Disconnected"
+            OBDConnectionState.connecting -> "Connecting..."
+            OBDConnectionState.connected -> "Connected"
+            OBDConnectionState.failed -> "Failed"
+        }
+
+    val showsWifiDetails: Boolean
+        get() = viewModel.connectionType == ConnectionType.wifi
+}

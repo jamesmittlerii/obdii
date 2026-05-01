@@ -19,14 +19,14 @@ class ConfigDataTest {
         assertEquals(35000, ConfigData.wifiPort)
         assertTrue(ConfigData.autoConnectToOBD)
         assertEquals(ConnectionType.bluetooth, ConfigData.connectionType)
-        assertEquals(MeasurementUnit.metric, ConfigData.units)
+        assertEquals(MeasurementUnit.Metric, ConfigData.units)
     }
 
     @Test
     fun `units and connection stream state updates`() {
-        ConfigData.setUnits(MeasurementUnit.imperial)
+        ConfigData.setUnits(MeasurementUnit.Imperial)
         ConfigData.connectionType = ConnectionType.wifi
-        assertEquals(MeasurementUnit.imperial, ConfigData.unitsStream.value)
+        assertEquals(MeasurementUnit.Imperial, ConfigData.unitsStream.value)
         assertEquals(ConnectionType.wifi, ConfigData.connectionTypeStream.value)
     }
 
@@ -34,10 +34,10 @@ class ConfigDataTest {
     fun `values persist in backing store`() {
         ConfigData.wifiHost = "10.0.0.1"
         ConfigData.autoConnectToOBD = false
-        ConfigData.setUnits(MeasurementUnit.imperial)
+        ConfigData.setUnits(MeasurementUnit.Imperial)
         val store = ConfigData.store as InMemoryKeyValueStore
         assertEquals("10.0.0.1", store.getString("wifiHost"))
         assertFalse(store.getBoolean("autoConnectToOBD") ?: true)
-        assertEquals("imperial", store.getString("units"))
+        assertEquals("Imperial", store.getString("units"))
     }
 }

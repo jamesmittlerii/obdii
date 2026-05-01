@@ -4,6 +4,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -28,6 +29,97 @@ class ObdConnectionManagerTest {
     fun `connect demo transitions to connected`() = runTest {
         OBDConnectionManager.connect()
         assertEquals(OBDConnectionState.connected, OBDConnectionManager.connectionState)
+    }
+
+    @Test
+    fun `connect demo streams interested pid stats`() = runTest {
+        val token = PidInterestRegistry.instance.makeToken()
+        PidInterestRegistry.instance.replace(setOf("010C"), token)
+
+        try {
+            OBDConnectionManager.connect()
+
+            var stats: PIDStats? = null
+            repeat(20) {
+                stats = OBDConnectionManager.statsFor("010C")
+                if (stats != null) return@repeat
+                Thread.sleep(100)
+            }
+
+            assertNotNull(stats)
+        } finally {
+            PidInterestRegistry.instance.clear(token)
+            OBDConnectionManager.disconnect()
+        }
+    }
+
+    @Test
+    fun `connect demo streams interested mil status`() = runTest {
+        val token = PidInterestRegistry.instance.makeToken()
+        PidInterestRegistry.instance.replace(setOf("0101"), token)
+
+        try {
+            OBDConnectionManager.connect()
+
+            var status: Status? = null
+            repeat(20) {
+                status = OBDConnectionManager.milStatus
+                if (status != null) return@repeat
+                Thread.sleep(100)
+            }
+
+            val decoded = assertNotNull(status)
+            assertTrue(decoded.monitors.isNotEmpty())
+        } finally {
+            PidInterestRegistry.instance.clear(token)
+            OBDConnectionManager.disconnect()
+        }
+    }
+
+    @Test
+    fun `connect demo streams interested diagnostics`() = runTest {
+        val token = PidInterestRegistry.instance.makeToken()
+        PidInterestRegistry.instance.replace(setOf("03"), token)
+
+        try {
+            OBDConnectionManager.connect()
+
+            var codes: List<TroubleCodeMetadata>? = null
+            repeat(20) {
+                codes = OBDConnectionManager.troubleCodes
+                if (codes != null) return@repeat
+                Thread.sleep(100)
+            }
+
+            val decoded = assertNotNull(codes)
+            assertTrue(decoded.isNotEmpty())
+        } finally {
+            PidInterestRegistry.instance.clear(token)
+            OBDConnectionManager.disconnect()
+        }
+    }
+
+    @Test
+    fun `initialize and connect resyncs existing diagnostics interest`() = runTest {
+        val token = PidInterestRegistry.instance.makeToken()
+        PidInterestRegistry.instance.replace(setOf("03"), token)
+
+        try {
+            OBDConnectionManager.initialize()
+            OBDConnectionManager.connect()
+
+            var codes: List<TroubleCodeMetadata>? = null
+            repeat(20) {
+                codes = OBDConnectionManager.troubleCodes
+                if (codes != null) return@repeat
+                Thread.sleep(100)
+            }
+
+            assertTrue(assertNotNull(codes).isNotEmpty())
+        } finally {
+            PidInterestRegistry.instance.clear(token)
+            OBDConnectionManager.disconnect()
+        }
     }
 
     @Test

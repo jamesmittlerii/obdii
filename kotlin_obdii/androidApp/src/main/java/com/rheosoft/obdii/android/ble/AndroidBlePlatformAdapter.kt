@@ -17,6 +17,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import androidx.core.content.ContextCompat
 import com.rheosoft.obdii.core.communication.ble.BleCharacteristic
 import com.rheosoft.obdii.core.communication.ble.BlePeripheral
 import com.rheosoft.obdii.core.communication.ble.BlePlatformAdapter
@@ -30,6 +31,8 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import android.content.pm.PackageManager
+import android.Manifest
 
 private class GattSession(
     val gatt: BluetoothGatt,
@@ -54,6 +57,15 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
     private val sessions = ConcurrentHashMap<String, GattSession>()
     private val listeners = ConcurrentHashMap<String, (ByteArray) -> Unit>()
 
+    // Define this helper at the top of your file or in a utility
+    private fun hasConnectPermission(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true // Older versions grant this at install time via manifest
+        }
+    }
+
     override suspend fun scan(timeoutMs: Long, serviceUuids: Set<String>): List<BlePeripheral> = withContext(Dispatchers.Main) {
         val bt = adapter ?: throw CommunicationError("Bluetooth adapter unavailable")
         if (!bt.isEnabled) throw CommunicationError("Bluetooth is disabled")
@@ -67,6 +79,7 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
 
             // Include bonded devices up front as fallback candidates.
             runCatching {
+                @SuppressLint("MissingPermission")
                 bt.bondedDevices?.forEach { device ->
                     val id = device.address ?: return@forEach
                     devices[id] = device
@@ -75,6 +88,7 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
                 }
             }
             val callback = object : ScanCallback() {
+                @SuppressLint("MissingPermission")
                 override fun onScanResult(callbackType: Int, result: ScanResult) {
                     val device = result.device ?: return
                     val id = device.address ?: return
@@ -105,6 +119,7 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
             val timeout = Runnable {
                 if (completed) return@Runnable
                 completed = true
+                @SuppressLint("MissingPermission")
                 runCatching { scanner.stopScan(callback) }
                 logI("scan:timeout found=${found.size}")
                 if (continuation.isActive) continuation.resume(found.values.toList())
@@ -112,6 +127,7 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
 
             continuation.invokeOnCancellation {
                 mainHandler.removeCallbacks(timeout)
+                @SuppressLint("MissingPermission")
                 runCatching { scanner.stopScan(callback) }
             }
 
@@ -206,7 +222,7 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
                     listeners[key]?.invoke(value)
                 }
 
-                @Suppress("DEPRECATION")
+                @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
                 override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
                     val payload = characteristic.value ?: ByteArray(0)
                     val key = listenerKey(peripheralId, shortUuid(characteristic.uuid))
@@ -237,6 +253,7 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
                 }
             }
 
+            @Suppress("DEPRECATION")
             val gatt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 device.connectGatt(context, false, callback, BluetoothDevice.TRANSPORT_LE)
             } else {
@@ -259,10 +276,14 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
 
     override suspend fun disconnect(peripheralId: String): Unit = withContext(Dispatchers.Main) {
         val session = sessions.remove(peripheralId) ?: return@withContext
-        runCatching { session.gatt.disconnect() }
-        runCatching { session.gatt.close() }
+
+        runCatching { @SuppressLint("MissingPermission")
+        session.gatt.disconnect() }
+        runCatching { @SuppressLint("MissingPermission")
+        session.gatt.close() }
     }
 
+    @SuppressLint("MissingPermission")
     override suspend fun discoverServices(peripheralId: String): List<BleService> = withContext(Dispatchers.Main) {
         val session = sessions[peripheralId] ?: throw CommunicationError("BLE session not connected")
         if (session.services.isNotEmpty()) {
@@ -300,7 +321,7 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
         logI("chars:service=${shortUuid(target.uuid)} count=${mapped.size} values=${mapped.joinToString { "${it.uuid}(r=${it.canRead},w=${it.canWrite},n=${it.canNotify})" }}")
         return@withContext mapped
     }
-
+    @SuppressLint("MissingPermission")
     override suspend fun enableNotifications(peripheralId: String, characteristicUuid: String) = withContext(Dispatchers.Main) {
         val session = sessions[peripheralId] ?: throw CommunicationError("BLE session not connected")
         val characteristic = findCharacteristic(session.gatt, characteristicUuid)
@@ -342,7 +363,7 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
             }
         }
     }
-
+    @SuppressLint("MissingPermission")
     override suspend fun write(peripheralId: String, characteristicUuid: String, payload: ByteArray) = withContext(Dispatchers.Main) {
         val session = sessions[peripheralId] ?: throw CommunicationError("BLE session not connected")
         val characteristic = findCharacteristic(session.gatt, characteristicUuid)
@@ -422,7 +443,9 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
         }
     }
 
+    @SuppressLint("MissingPermission")
     private fun stopAndResumeWithError(
+
         scanner: android.bluetooth.le.BluetoothLeScanner,
         callback: ScanCallback,
         handler: Handler,

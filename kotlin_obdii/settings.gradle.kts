@@ -5,6 +5,9 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
@@ -15,9 +18,10 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "kotlin_obdii"
-include(":app")
+include(":coreApp")
 include(":androidApp")
 include(":kotlinobd2")
+project(":coreApp").projectDir = file("app")
 val kotlinObd2DirEnv = System.getenv("KOTLINOBD2_DIR")
 val kotlinObd2Dir = if (!kotlinObd2DirEnv.isNullOrBlank()) {
     file(kotlinObd2DirEnv)

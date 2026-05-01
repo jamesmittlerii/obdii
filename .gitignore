@@ -1,5 +1,6 @@
 .DS_Store
 .idea/
+.vscode/
 # Xcode
 #
 # gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
@@ -102,6 +103,9 @@ iOSInjectionProject/
 
 # Gradle local caches
 **/.gradle/
+
+# Local Android SDK paths
+**/local.properties
 
 # Cursor local workspace state (keep shared rules tracked)
 .cursor/*
