@@ -1,6 +1,7 @@
 package com.rheosoft.obdii.viewmodels
 
 import com.rheosoft.obdii.core.ConfigData
+import com.rheosoft.obdii.core.GaugesDisplayMode
 import com.rheosoft.obdii.core.PIDStats
 import com.rheosoft.obdii.core.PidInterestRegistry
 import com.rheosoft.obdii.core.PidListProviding
@@ -20,7 +21,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 data class GaugeTile(val id: String, val pid: ObdiiPid, val stats: PIDStats?)
-data class GaugesUiState(val tiles: List<GaugeTile>)
+data class GaugesUiState(val tiles: List<GaugeTile>, val displayMode: GaugesDisplayMode)
 
 class GaugesViewModel(
     private val pidProvider: PidListProviding = DefaultPidStore,
@@ -33,7 +34,7 @@ class GaugesViewModel(
     private var isVisible = false
     var tiles: List<GaugeTile> = emptyList()
         private set
-    private val _uiStateStream = MutableStateFlow(GaugesUiState(tiles))
+    private val _uiStateStream = MutableStateFlow(GaugesUiState(tiles, unitsProvider.gaugesDisplayMode))
     val uiStateStream: StateFlow<GaugesUiState> = _uiStateStream.asStateFlow()
 
     val isEmpty: Boolean
@@ -43,6 +44,7 @@ class GaugesViewModel(
         scope.launch { pidProvider.pidsStream.collectLatest { rebuildTiles() } }
         scope.launch { statsProvider.pidStatsStream.collectLatest { rebuildTiles() } }
         scope.launch { unitsProvider.unitsStream.collectLatest { rebuildTiles() } }
+        scope.launch { unitsProvider.gaugesDisplayModeStream.collectLatest { rebuildTiles() } }
         rebuildTiles()
     }
 
@@ -52,13 +54,18 @@ class GaugesViewModel(
         updateInterest()
     }
 
+    fun setDisplayMode(mode: GaugesDisplayMode) {
+        unitsProvider.gaugesDisplayMode = mode
+    }
+
     private fun rebuildTiles() {
         val newTiles = pidProvider.pids
             .filter { it.enabled && it.kind == ObdPidKind.gauge }
             .map { GaugeTile(it.id, it, statsProvider.statsFor(it.pidCommand)) }
-        if (newTiles == tiles) return
+        val mode = unitsProvider.gaugesDisplayMode
+        if (newTiles == tiles && mode == _uiStateStream.value.displayMode) return
         tiles = newTiles
-        _uiStateStream.value = GaugesUiState(tiles)
+        _uiStateStream.value = GaugesUiState(tiles, mode)
         updateInterest()
         notifyChanged()
     }

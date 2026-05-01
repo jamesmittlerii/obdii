@@ -1,8 +1,8 @@
 package com.rheosoft.obdii.screenmodels
 
+import com.rheosoft.obdii.core.GaugesDisplayMode
 import com.rheosoft.obdii.viewmodels.GaugesViewModel
 
-enum class GaugesDisplayMode { gauges, list }
 
 class DashboardScreenModel(
     val viewModel: GaugesViewModel,

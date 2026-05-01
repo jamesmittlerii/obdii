@@ -4,6 +4,7 @@
 // unit switching, and the connect/disconnect button action.
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -24,6 +25,9 @@ class SettingsViewModel extends BaseViewModel {
   MeasurementUnit units;
 
   OBDConnectionState connectionState;
+
+  String _appVersion = '';
+  String get appVersion => _appVersion;
 
   // Debounce timers for WiFi host/port (mirrors Swift Combine debounce .seconds(0.5))
   Timer? _hostDebounce;
@@ -46,6 +50,13 @@ class SettingsViewModel extends BaseViewModel {
         connectionState = (connection ?? OBDConnectionManager.instance).connectionState {
     _bindConnectionState();
     _bindExternalPublishers();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    _appVersion = '${info.appName} v${info.version} build:${info.buildNumber}';
+    notifyListeners();
   }
 
   // ── Binding ─────────────────────────────────────
@@ -148,9 +159,9 @@ class SettingsViewModel extends BaseViewModel {
 
   // ── Diagnostics ──────────────────────────────────
 
-  Future<Map<String, dynamic>> generateDiagnosticLogs() async {
+  Future<({String fileName, List<int> bytes})> prepareLogExport() async {
     final info = await PackageInfo.fromPlatform();
-    return {
+    final logs = {
       'timestamp': DateTime.now().toIso8601String(),
       'appVersion': '${info.version}+${info.buildNumber}',
       'connectionType': _config.connectionType.toString(),
@@ -159,6 +170,12 @@ class SettingsViewModel extends BaseViewModel {
       'wifiHost': _config.wifiHost,
       'wifiPort': _config.wifiPort,
     };
+
+    final jsonStr = const JsonEncoder.withIndent('  ').convert(logs);
+    final bytes = utf8.encode(jsonStr);
+    final fileName = '${info.appName.replaceAll(' ', '_')}-v${info.version}-logs.json';
+
+    return (fileName: fileName, bytes: bytes);
   }
 
   // ── Number formatter (for port text field) ───────

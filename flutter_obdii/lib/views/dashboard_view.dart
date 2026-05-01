@@ -31,37 +31,12 @@ class GaugesView extends StatefulWidget {
 }
 
 class _GaugesViewState extends State<GaugesView> {
-  _GaugesDisplayMode _mode = _GaugesDisplayMode.gauges;
-  static const _prefKey = 'gaugesDisplayMode';
-
   void _syncVisibility() {
     if (!mounted) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<GaugesViewModel>().setVisible(widget.isActive);
     });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _loadMode();
-  }
-
-  Future<void> _loadMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_prefKey);
-    if (raw != null && mounted) {
-      setState(() {
-        _mode = raw == 'list' ? _GaugesDisplayMode.list : _GaugesDisplayMode.gauges;
-      });
-    }
-  }
-
-  Future<void> _setMode(_GaugesDisplayMode mode) async {
-    setState(() => _mode = mode);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_prefKey, mode == _GaugesDisplayMode.list ? 'list' : 'gauges');
   }
 
   @override
@@ -80,44 +55,44 @@ class _GaugesViewState extends State<GaugesView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_mode == _GaugesDisplayMode.gauges ? 'Gauges' : 'List'),
-        centerTitle: false,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: SegmentedButton<_GaugesDisplayMode>(
-              style: const ButtonStyle(
-                visualDensity: VisualDensity(horizontal: -2, vertical: -2),
+    return Consumer<GaugesViewModel>(
+      builder: (context, vm, _) {
+        final mode = vm.displayMode;
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(mode == GaugesDisplayMode.gauges ? 'Gauges' : 'List'),
+            centerTitle: false,
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(48),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: SegmentedButton<GaugesDisplayMode>(
+                  style: const ButtonStyle(
+                    visualDensity: VisualDensity(horizontal: -2, vertical: -2),
+                  ),
+                  segments: const [
+                    ButtonSegment(
+                      value: GaugesDisplayMode.gauges,
+                      label: Text('Gauges'),
+                    ),
+                    ButtonSegment(
+                      value: GaugesDisplayMode.list,
+                      label: Text('List'),
+                    ),
+                  ],
+                  selected: {mode},
+                  onSelectionChanged: (s) => vm.setDisplayMode(s.first),
+                ),
               ),
-              segments: const [
-                ButtonSegment(
-                  value: _GaugesDisplayMode.gauges,
-                  label: Text('Gauges'),
-                ),
-                ButtonSegment(
-                  value: _GaugesDisplayMode.list,
-                  label: Text('List'),
-                ),
-              ],
-              selected: {_mode},
-              onSelectionChanged: (s) => _setMode(s.first),
             ),
           ),
-        ),
-      ),
-      body: Consumer<GaugesViewModel>(
-        builder: (context, vm, _) {
-          if (vm.isEmpty) {
-            return _emptyState();
-          }
-          return _mode == _GaugesDisplayMode.gauges
-              ? _GaugesGrid(vm: vm)
-              : _GaugesList(vm: vm);
-        },
-      ),
+          body: vm.isEmpty
+              ? _emptyState()
+              : (mode == GaugesDisplayMode.gauges
+                  ? _GaugesGrid(vm: vm)
+                  : _GaugesList(vm: vm)),
+        );
+      },
     );
   }
 

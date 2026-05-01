@@ -13,7 +13,6 @@ import 'dart:io';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -30,23 +29,12 @@ class SettingsView extends StatefulWidget {
 }
 
 class _SettingsViewState extends State<SettingsView> {
-  String _appVersion = '';
   bool _isGeneratingLogs = false;
   String? _shareError;
 
   @override
   void initState() {
     super.initState();
-    _loadVersion();
-  }
-
-  Future<void> _loadVersion() async {
-    final info = await PackageInfo.fromPlatform();
-    if (mounted) {
-      setState(() {
-        _appVersion = '${info.appName} v${info.version} build:${info.buildNumber}';
-      });
-    }
   }
 
   @override
@@ -275,8 +263,8 @@ class _SettingsViewState extends State<SettingsView> {
               _sectionHeader(context, 'About'),
               Card(
                 child: ListTile(
-                  title: Text(_appVersion.isNotEmpty
-                      ? _appVersion
+                  title: Text(vm.appVersion.isNotEmpty
+                      ? vm.appVersion
                       : 'Loading version…'),
                 ),
               ),
@@ -326,15 +314,8 @@ class _SettingsViewState extends State<SettingsView> {
 
     String? exportedPath;
     try {
-      // Collect recent log entries (last 5 minutes)
       final vm = context.read<SettingsViewModel>();
-      final logs = await vm.generateDiagnosticLogs();
-      final jsonStr = const JsonEncoder.withIndent('  ').convert(logs);
-      final bytes = utf8.encode(jsonStr);
-
-      final info = await PackageInfo.fromPlatform();
-      final fileName =
-          '${info.appName.replaceAll(' ', '_')}-v${info.version}-logs.json';
+      final (:fileName, :bytes) = await vm.prepareLogExport();
 
       if (Platform.isWindows) {
         final location = await getSaveLocation(

@@ -37,10 +37,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ChevronRight
+import com.rheosoft.obdii.core.GaugesDisplayMode
 import com.rheosoft.obdii.models.PidColor
 import com.rheosoft.obdii.models.ObdiiPid
 import com.rheosoft.obdii.screenmodels.DashboardScreenModel
-import com.rheosoft.obdii.screenmodels.GaugesDisplayMode
 import com.rheosoft.obdii.viewmodels.GaugeTile
 import com.rheosoft.obdii.screenmodels.RingGaugeModel
 import kotlin.math.max
@@ -50,20 +50,18 @@ fun DashboardScreen(
     view: DashboardScreenModel,
     isMetric: Boolean,
     modifier: Modifier,
-    listMode: Boolean,
-    onModeChanged: (Boolean) -> Unit,
     onGaugeTap: (ObdiiPid) -> Unit,
 ) {
     val uiState by view.viewModel.uiStateStream.collectAsState()
     val enabled = uiState.tiles
+    val listMode = uiState.displayMode == GaugesDisplayMode.list
     LazyColumn(modifier = modifier.fillMaxSize().padding(16.dp)) {
         item {
             Row {
                 FilterChip(
                     selected = !listMode,
                     onClick = {
-                        view.setMode(GaugesDisplayMode.gauges)
-                        onModeChanged(false)
+                        view.viewModel.setDisplayMode(GaugesDisplayMode.gauges)
                     },
                     label = { Text("Gauges") },
                     modifier = Modifier.padding(end = 8.dp),
@@ -74,8 +72,7 @@ fun DashboardScreen(
                 FilterChip(
                     selected = listMode,
                     onClick = {
-                        view.setMode(GaugesDisplayMode.list)
-                        onModeChanged(true)
+                        view.viewModel.setDisplayMode(GaugesDisplayMode.list)
                     },
                     label = { Text("List") },
                     colors = FilterChipDefaults.filterChipColors(

@@ -24,6 +24,7 @@ data class SettingsUiState(
     val connectionType: ConnectionType,
     val units: MeasurementUnit,
     val connectionState: OBDConnectionState,
+    val appVersion: String = "",
 )
 
 class SettingsViewModel(
@@ -134,6 +135,26 @@ class SettingsViewModel(
             OBDConnectionState.connected -> connection.disconnect()
             OBDConnectionState.connecting -> Unit
         }
+    }
+
+    fun setAppVersion(version: String) {
+        if (_uiStateStream.value.appVersion == version) return
+        _uiStateStream.value = _uiStateStream.value.copy(appVersion = version)
+    }
+
+    fun prepareLogExport(): String {
+        val uiState = _uiStateStream.value
+        return """
+            {
+              "timestamp":"${java.time.Instant.now()}",
+              "connectionType":"${uiState.connectionType}",
+              "units":"${uiState.units}",
+              "connectionState":"${uiState.connectionState}",
+              "appVersion":"${uiState.appVersion}",
+              "wifiHost":"${uiState.wifiHost}",
+              "wifiPort":${uiState.wifiPort}
+            }
+        """.trimIndent()
     }
 
     private fun emitUiState() {

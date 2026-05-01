@@ -1,6 +1,7 @@
 package com.rheosoft.obdii.screenmodels
 
 import com.rheosoft.obdii.core.ConnectionType
+import com.rheosoft.obdii.core.GaugesDisplayMode
 import com.rheosoft.obdii.core.MeasurementUnit
 import com.rheosoft.obdii.core.OBDConnectionControlling
 import com.rheosoft.obdii.core.OBDConnectionState
@@ -18,11 +19,13 @@ private class MockSettingsConfig : SettingsConfigProviding {
     override var wifiPort: Int = 35000
     override var autoConnectToOBD: Boolean = true
     override var connectionType: ConnectionType = ConnectionType.bluetooth
+    override var gaugesDisplayMode: GaugesDisplayMode = GaugesDisplayMode.gauges
     private val unitsFlowMutable = MutableStateFlow(MeasurementUnit.Metric)
     override val units: MeasurementUnit
         get() = unitsFlowMutable.value
     override val unitsStream: StateFlow<MeasurementUnit> = unitsFlowMutable
     override val connectionTypeStream: StateFlow<ConnectionType> = MutableStateFlow(connectionType)
+    override val gaugesDisplayModeStream: StateFlow<GaugesDisplayMode> = MutableStateFlow(GaugesDisplayMode.gauges)
     override fun setUnits(units: MeasurementUnit) {
         unitsFlowMutable.value = units
     }

@@ -24,20 +24,26 @@ enum class ConnectionType(val rawValue: String) {
     }
 }
 
+enum class GaugesDisplayMode { gauges, list }
+
 interface SettingsConfigProviding {
     var wifiHost: String
     var wifiPort: Int
     var autoConnectToOBD: Boolean
     var connectionType: ConnectionType
+    var gaugesDisplayMode: GaugesDisplayMode
     val units: MeasurementUnit
     fun setUnits(units: MeasurementUnit)
     val unitsStream: StateFlow<MeasurementUnit>
     val connectionTypeStream: StateFlow<ConnectionType>
+    val gaugesDisplayModeStream: StateFlow<GaugesDisplayMode>
 }
 
 interface UnitsProviding {
     val units: MeasurementUnit
+    var gaugesDisplayMode: GaugesDisplayMode
     val unitsStream: StateFlow<MeasurementUnit>
+    val gaugesDisplayModeStream: StateFlow<GaugesDisplayMode>
 }
 
 interface KeyValueStore {
@@ -65,6 +71,7 @@ object ConfigData : SettingsConfigProviding, UnitsProviding {
     private const val K_AUTO_CONNECT = "autoConnectToOBD"
     private const val K_CONNECTION_TYPE = "connectionType"
     private const val K_UNITS = "units"
+    private const val K_GAUGES_MODE = "gaugesDisplayMode"
 
     var store: KeyValueStore = InMemoryKeyValueStore()
 
@@ -97,14 +104,24 @@ object ConfigData : SettingsConfigProviding, UnitsProviding {
             _connectionTypeFlow.value = value
         }
 
+    override var gaugesDisplayMode: GaugesDisplayMode = GaugesDisplayMode.gauges
+        set(value) {
+            if (field == value) return
+            field = value
+            store.putString(K_GAUGES_MODE, value.name)
+            _gaugesModeFlow.value = value
+        }
+
     override var units: MeasurementUnit = MeasurementUnit.Metric
         private set
 
     private val _unitsFlow = MutableStateFlow(MeasurementUnit.Metric)
     private val _connectionTypeFlow = MutableStateFlow(ConnectionType.bluetooth)
+    private val _gaugesModeFlow = MutableStateFlow(GaugesDisplayMode.gauges)
 
     override val unitsStream: StateFlow<MeasurementUnit> = _unitsFlow.asStateFlow()
     override val connectionTypeStream: StateFlow<ConnectionType> = _connectionTypeFlow.asStateFlow()
+    override val gaugesDisplayModeStream: StateFlow<GaugesDisplayMode> = _gaugesModeFlow.asStateFlow()
 
     fun load() {
         wifiHost = store.getString(K_WIFI_HOST) ?: "192.168.0.10"
@@ -113,8 +130,11 @@ object ConfigData : SettingsConfigProviding, UnitsProviding {
         connectionType = ConnectionType.fromRaw(store.getString(K_CONNECTION_TYPE) ?: "bluetooth")
         units = MeasurementUnit.entries.firstOrNull { it.name == (store.getString(K_UNITS) ?: "metric") }
             ?: MeasurementUnit.Metric
+        gaugesDisplayMode = GaugesDisplayMode.entries.firstOrNull { it.name == (store.getString(K_GAUGES_MODE) ?: "gauges") }
+            ?: GaugesDisplayMode.gauges
         _unitsFlow.value = units
         _connectionTypeFlow.value = connectionType
+        _gaugesModeFlow.value = gaugesDisplayMode
     }
 
     override fun setUnits(units: MeasurementUnit) {

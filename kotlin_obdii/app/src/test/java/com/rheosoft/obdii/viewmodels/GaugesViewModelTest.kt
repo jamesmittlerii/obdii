@@ -1,6 +1,7 @@
 package com.rheosoft.obdii.viewmodels
 
 import com.rheosoft.obdii.core.DefaultPidStore
+import com.rheosoft.obdii.core.GaugesDisplayMode
 import com.rheosoft.obdii.core.MeasurementResult
 import com.rheosoft.obdii.core.PIDStats
 import com.rheosoft.obdii.core.PidInterestRegistry
@@ -26,8 +27,13 @@ private class MockStats : PidStatsProviding {
 
 private class MockUnits : UnitsProviding {
     private val flow = MutableStateFlow(MeasurementUnit.Metric)
+    private val modeFlow = MutableStateFlow(GaugesDisplayMode.gauges)
     override val units: MeasurementUnit get() = flow.value
+    override var gaugesDisplayMode: GaugesDisplayMode
+        get() = modeFlow.value
+        set(value) { modeFlow.value = value }
     override val unitsStream: StateFlow<MeasurementUnit> = flow
+    override val gaugesDisplayModeStream: StateFlow<GaugesDisplayMode> = modeFlow
 }
 
 class GaugesViewModelTest {

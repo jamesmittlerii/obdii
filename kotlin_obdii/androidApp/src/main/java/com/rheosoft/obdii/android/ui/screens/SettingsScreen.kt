@@ -67,12 +67,13 @@ fun SettingsScreen(
     LaunchedEffect(uiState.autoConnectToOBD) { autoConnect = uiState.autoConnectToOBD }
     val statusLabel = view.statusLabel
     val connectButtonLabel = view.connectButtonLabel
-    val appVersion = remember {
+
+    LaunchedEffect(Unit) {
         runCatching {
             val p = context.packageManager.getPackageInfo(context.packageName, 0)
             val appName = context.applicationInfo.loadLabel(context.packageManager).toString()
-            "$appName v${p.versionName} build:${p.longVersionCode}"
-        }.getOrDefault("Loading version…")
+            vm.setAppVersion("$appName v${p.versionName} build:${p.longVersionCode}")
+        }
     }
     LazyColumn(modifier = modifier.fillMaxSize().padding(16.dp)) {
         item {
@@ -262,17 +263,7 @@ fun SettingsScreen(
             PremiumCard(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier.fillMaxWidth().clickable {
-                        val payload = """
-                            {
-                              "timestamp":"${java.time.Instant.now()}",
-                              "connectionType":"${uiState.connectionType}",
-                              "units":"${uiState.units}",
-                              "connectionState":"${uiState.connectionState}",
-                              "appVersion":"$appVersion",
-                              "wifiHost":"${uiState.wifiHost}",
-                              "wifiPort":${uiState.wifiPort}
-                            }
-                        """.trimIndent()
+                        val payload = vm.prepareLogExport()
                         runCatching {
                             val out = File(context.cacheDir, "obdii-logs.json")
                             out.writeText(payload)
@@ -292,7 +283,7 @@ fun SettingsScreen(
             Spacer(Modifier.height(16.dp))
             SectionLabel("ABOUT")
             PremiumCard(modifier = Modifier.fillMaxWidth()) {
-                Text(appVersion, modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp))
+                Text(uiState.appVersion.ifEmpty { "Loading version…" }, modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp))
             }
         }
     }

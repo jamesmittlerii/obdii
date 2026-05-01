@@ -1,5 +1,6 @@
 package com.rheosoft.obdii.viewmodels
 
+import com.rheosoft.obdii.core.GaugesDisplayMode
 import com.rheosoft.obdii.core.MeasurementResult
 import com.rheosoft.obdii.core.PIDStats
 import com.rheosoft.obdii.core.PidStatsProviding
@@ -23,7 +24,9 @@ private class MockStatsProvider : PidStatsProviding {
 private class MockUnitsProvider : UnitsProviding {
     private val flow = MutableStateFlow(MeasurementUnit.Metric)
     override val units: MeasurementUnit get() = flow.value
+    override var gaugesDisplayMode: GaugesDisplayMode = GaugesDisplayMode.gauges
     override val unitsStream: StateFlow<MeasurementUnit> = flow
+    override val gaugesDisplayModeStream: StateFlow<GaugesDisplayMode> = MutableStateFlow(GaugesDisplayMode.gauges)
 }
 
 class GaugeDetailViewModelTest {

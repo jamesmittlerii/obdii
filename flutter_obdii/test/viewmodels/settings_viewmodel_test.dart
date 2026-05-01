@@ -91,6 +91,13 @@ void main() {
   late SettingsViewModel viewModel;
 
   setUp(() {
+    PackageInfo.setMockInitialValues(
+      appName: 'OBDII',
+      packageName: 'com.rheosoft.obdii',
+      version: '1.0.0',
+      buildNumber: '1',
+      buildSignature: '',
+    );
     mockConfig = MockSettingsConfig();
     mockConn = MockOBDConnection();
     viewModel = SettingsViewModel(config: mockConfig, connection: mockConn);

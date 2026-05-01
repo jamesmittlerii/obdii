@@ -46,7 +46,7 @@ import com.rheosoft.obdii.screenmodels.DiagnosticsScreenModel
 import com.rheosoft.obdii.screenmodels.DtcDetailScreenModel
 import com.rheosoft.obdii.screenmodels.FuelStatusScreenModel
 import com.rheosoft.obdii.screenmodels.GaugeDetailScreenModel
-import com.rheosoft.obdii.screenmodels.GaugesDisplayMode
+import com.rheosoft.obdii.core.GaugesDisplayMode
 import com.rheosoft.obdii.screenmodels.MainScaffoldScreenModel
 import com.rheosoft.obdii.screenmodels.MilStatusScreenModel
 import com.rheosoft.obdii.screenmodels.PidToggleListScreenModel
@@ -62,7 +62,6 @@ fun KotlinObdiiApp() {
     var ready by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     var showGaugePicker by remember { mutableStateOf(false) }
-    var gaugesModeList by remember { mutableStateOf(uiPrefs.getBoolean("ui.gaugesModeList", false)) }
     val settingsVm = remember { SettingsViewModel() }
     val settingsView = remember { SettingsScreenModel(settingsVm) }
     val gaugePickerVm = remember { PidToggleListViewModel(DefaultPidStore) }
@@ -71,7 +70,7 @@ fun KotlinObdiiApp() {
     val dashboardView = remember {
         DashboardScreenModel(
             gaugesVm,
-            if (gaugesModeList) GaugesDisplayMode.list else GaugesDisplayMode.gauges,
+            ConfigData.gaugesDisplayMode,
         )
     }
     val fuelView = remember { FuelStatusScreenModel(FuelStatusViewModel(), isActive = false) }
@@ -110,10 +109,6 @@ fun KotlinObdiiApp() {
             dtcView.setActive(selected == 4)
             gaugesVm.setVisible(selected == 1)
         }
-    }
-    LaunchedEffect(gaugesModeList) {
-        dashboardView.setMode(if (gaugesModeList) GaugesDisplayMode.list else GaugesDisplayMode.gauges)
-        uiPrefs.edit().putBoolean("ui.gaugesModeList", gaugesModeList).apply()
     }
 
     ObserveChanges(settingsVm)
@@ -173,8 +168,6 @@ fun KotlinObdiiApp() {
                 view = dashboardView,
                 isMetric = settingsVm.units == MeasurementUnit.Metric,
                 modifier = Modifier.padding(pad),
-                listMode = gaugesModeList,
-                onModeChanged = { gaugesModeList = it },
                 onGaugeTap = { pid -> selectedGaugeDetail = GaugeDetailScreenModel(GaugeDetailViewModel(pid)) },
             )
             2 -> FuelStatusScreen(fuelView, Modifier.padding(pad))

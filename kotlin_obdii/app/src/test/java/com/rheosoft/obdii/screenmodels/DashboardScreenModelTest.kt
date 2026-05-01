@@ -1,6 +1,7 @@
 package com.rheosoft.obdii.screenmodels
 
 import com.rheosoft.obdii.core.DefaultPidStore
+import com.rheosoft.obdii.core.GaugesDisplayMode
 import com.rheosoft.obdii.viewmodels.GaugesViewModel
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test

@@ -5,12 +5,20 @@
 
 import 'dart:async';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../core/config_data.dart';
 import '../core/obd_connection_manager.dart';
 import '../core/pid_interest_registry.dart';
 import '../core/pid_store.dart';
 import '../core/obdiipid.dart';
 import 'base_view_model.dart';
+
+// ─────────────────────────────────────────────
+// MARK: GaugesDisplayMode
+// ─────────────────────────────────────────────
+
+enum GaugesDisplayMode { gauges, list }
 
 // ─────────────────────────────────────────────
 // MARK: Tile (replaces Swift Tile struct)
@@ -49,6 +57,9 @@ class GaugesViewModel extends BaseViewModel {
   List<GaugeTile> get tiles => _tiles;
   bool _isVisible = false;
 
+  GaugesDisplayMode _displayMode = GaugesDisplayMode.gauges;
+  GaugesDisplayMode get displayMode => _displayMode;
+
   bool get isEmpty => _tiles.isEmpty;
   bool get isMetric => _unitsProvider.units == MeasurementUnit.metric;
 
@@ -67,7 +78,27 @@ class GaugesViewModel extends BaseViewModel {
         _interestRegistry = interestRegistry ?? PidInterestRegistry.instance,
         _interestToken =
             (interestRegistry ?? PidInterestRegistry.instance).makeToken() {
+    _loadDisplayMode();
     _bind();
+  }
+
+  static const _prefKey = 'gaugesDisplayMode';
+
+  Future<void> _loadDisplayMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_prefKey);
+    if (raw != null) {
+      _displayMode = raw == 'list' ? GaugesDisplayMode.list : GaugesDisplayMode.gauges;
+      notifyListeners();
+    }
+  }
+
+  Future<void> setDisplayMode(GaugesDisplayMode mode) async {
+    if (_displayMode == mode) return;
+    _displayMode = mode;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefKey, mode == GaugesDisplayMode.list ? 'list' : 'gauges');
   }
 
   void _bind() {
