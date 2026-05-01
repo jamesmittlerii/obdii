@@ -7,7 +7,6 @@
 
 import 'dart:async';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -162,7 +161,6 @@ class OBDConnectionManager extends ChangeNotifier
   StreamSubscription? _dataSub;
   StreamSubscription? _interestSub;
   StreamSubscription? _unitsSub;
-  Timer? _demoTimer;
   Set<String> _lastStreamingPids = {};
   Set<String> _supportedMode1Pids = {};
   bool _hasSupportedMode1Snapshot = false;
@@ -222,7 +220,6 @@ class OBDConnectionManager extends ChangeNotifier
         _restartContinuousUpdates(interested);
       } else {
         _dataSub?.cancel();
-        _demoTimer?.cancel();
         _lastStreamingPids = {};
       }
     });
@@ -342,7 +339,6 @@ class OBDConnectionManager extends ChangeNotifier
   void disconnect() {
     _obdService?.stopConnection();
     _dataSub?.cancel();
-    _demoTimer?.cancel();
     _clearForTerminalState();
     _setConnectionState(OBDConnectionState.disconnected);
   }
@@ -382,7 +378,6 @@ class OBDConnectionManager extends ChangeNotifier
 
   void _clearForTerminalState() {
     _dataSub?.cancel();
-    _demoTimer?.cancel();
     _lastStreamingPids = {};
     _supportedMode1Pids = {};
     _hasSupportedMode1Snapshot = false;
@@ -492,288 +487,6 @@ class OBDConnectionManager extends ChangeNotifier
     }
   }
 
-  // ── Demo mode ─────────────────────────────────────
-  //
-  // Port of MOCKComm.makeMockResponse() in SwiftOBD2/mockManager.swift.
-  // Uses the same speed→RPM model and time-based warmup curves so the
-  // Flutter demo behaves identically to the original Swift app.
-
-  // ignore: unused_element
-  void _startDemoData() {
-    _demoTimer?.cancel();
-    final sessionStart = DateTime.now();
-    DateTime? lastTick;
-    double accumulatedSeconds = 0;
-    double accumulatedMeters = 0;
-
-    // ── helpers ───────────────────────────────────────
-    double sessionElapsed() {
-      final now = DateTime.now();
-      final elapsed = now.difference(sessionStart).inMilliseconds / 1000.0;
-      final dt = lastTick != null
-          ? now.difference(lastTick!).inMilliseconds / 1000.0
-          : 0.0;
-      lastTick = now;
-      accumulatedSeconds += dt.clamp(0.0, 5.0);
-      return elapsed;
-    }
-
-    double smoothNoise(double seed, double scale) {
-      final t = sessionElapsed();
-      final n = sin((t + seed) * 0.2) * 0.6 +
-          sin((t * 0.07) + seed * 3.1) * 0.4;
-      return n * scale;
-    }
-
-    double mockSpeed() {
-      final elapsed = sessionElapsed();
-      const rampDuration = 15.0, minSpeed = 20.0, maxSpeed = 70.0;
-      if (elapsed < rampDuration) {
-        return (elapsed / rampDuration * minSpeed).clamp(0.0, minSpeed);
-      } else {
-        const midpoint = (minSpeed + maxSpeed) / 2.0;
-        const amplitude = (maxSpeed - minSpeed) / 2.0;
-        const period = 30.0;
-        final phase = 2.0 *
-            pi *
-            ((elapsed - rampDuration) % period / period);
-        return midpoint + amplitude * sin(phase);
-      }
-    }
-
-    double mockRpm(double speed) {
-      if (speed <= 0.5) return 800.0;
-      if (speed < 20.0) return 800.0 + 360.0 * speed;
-      if (speed < 50.0) return 1500.0 + (6500.0 / 30.0) * (speed - 20.0);
-      return 1800.0 + 310.0 * (speed - 50.0);
-    }
-
-    _demoTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
-      final t = sessionElapsed();
-      final speed = mockSpeed();
-      final rpm = mockRpm(speed).clamp(800.0, 8000.0);
-      final rpmN = ((rpm - 800.0) / (8000.0 - 800.0)).clamp(0.0, 1.0);
-
-      // Warmup: 0→100°C over 60 s
-      final warmupT = (t / 60.0).clamp(0.0, 1.0);
-      final coolantC = warmupT * 100.0;
-      // Intake temp: 0→70°C over 60 s
-      final intakeTempC = (t / 60.0).clamp(0.0, 1.0) * 70.0 - 40.0 + 40.0;
-
-      // Derived signals
-      final load = (0.1 + 0.8 * rpmN + smoothNoise(4, 0.03)).clamp(0.0, 1.0);
-      final throttlePct = (0.15 + 0.45 * rpmN * rpmN +
-              smoothNoise(5.5, 0.015))
-          .clamp(0.0, 1.0);
-      final mapKPa = (25.0 + load * 70.0 + smoothNoise(8, 2.0)).clamp(20.0, 100.0);
-      final mafGs = (2.0 + rpmN * 118.0 * (0.8 + 0.4 * rpmN) +
-              smoothNoise(2, 3.0))
-          .clamp(2.0, 200.0);
-      final timingDeg =
-          (10.0 + rpmN * 25.0 - load * 12.0 + smoothNoise(7, 1.0)).clamp(2.0, 45.0);
-      final voltageV =
-          (13.6 + smoothNoise(1, 0.15)).clamp(12.2, 14.6);
-      final fuelLevelPct =
-          (90.0 - (t / 10.0)).clamp(0.0, 100.0);
-      final baroKPa = (101.0 + smoothNoise(9, 0.6)).clamp(95.0, 105.0);
-      final fuelPresKPa =
-          (400.0 + smoothNoise(6, 25.0)).clamp(200.0, 600.0);
-      final shortFuelTrim = (smoothNoise(10, 0.05) * 100.0).clamp(-25.0, 25.0);
-      final longFuelTrim = (smoothNoise(11, 0.02) * 100.0).clamp(-25.0, 25.0);
-      final o2Voltage = (0.5 + smoothNoise(14, 0.3)).clamp(0.1, 0.9);
-      final catTempC =
-          (300.0 + 250.0 * (0.5 + 0.5 * sin(t * 0.1)) + smoothNoise(27, 15.0))
-              .clamp(200.0, 900.0);
-      final absLoad = (load * 100.0).clamp(0.0, 100.0);
-      final lambda = (1.0 + smoothNoise(29, 0.03)).clamp(0.9, 1.1);
-      final relThrottle = (throttlePct * 100.0).clamp(0.0, 100.0);
-      final engineLoadPct = (load * 100.0).clamp(0.0, 100.0);
-      final runTimeSec = accumulatedSeconds.clamp(0.0, 65535.0);
-      final distKm = (accumulatedMeters / 1000.0).clamp(0.0, 65535.0);
-      accumulatedMeters += (speed / 3.6) * 0.5; // integrate 500ms tick
-      final evapPurgePct =
-          (0.1 + 0.3 * sin(t * 0.2)).clamp(0.0, 100.0);
-      final commandedEGRPct =
-          (0.2 + 0.2 * sin(t * 0.3)).clamp(0.0, 100.0);
-      final hybridSOCPct = (90.0 - t / 600.0).clamp(50.0, 100.0);
-
-      // ── OBD hex command → MeasurementResult map ──────
-      final updates = <String, obd2lib.MeasurementResult>{
-        // Tier-1 (always enabled by default)
-        '010C': obd2lib.MeasurementResult(rpm, obd2lib.Unit.rpm),
-        '010D': obd2lib.MeasurementResult(speed, obd2lib.Unit.kilometersPerHour),
-        '0105': obd2lib.MeasurementResult(coolantC, obd2lib.Unit.celsius),
-        '010F': obd2lib.MeasurementResult(intakeTempC, obd2lib.Unit.celsius),
-        '0142': obd2lib.MeasurementResult(voltageV, obd2lib.Unit.volts),
-        // Gauges (disabled by default; generated anyway so they work when enabled)
-        '0111': obd2lib.MeasurementResult(throttlePct * 100, obd2lib.Unit.percent),
-        '0104': obd2lib.MeasurementResult(engineLoadPct, obd2lib.Unit.percent),
-        '0143': obd2lib.MeasurementResult(absLoad, obd2lib.Unit.percent),
-        '010B': obd2lib.MeasurementResult(mapKPa, obd2lib.Unit.kilopascals),
-        '0110': obd2lib.MeasurementResult(mafGs, obd2lib.Unit.gramsPerSecond),
-        '010E': obd2lib.MeasurementResult(timingDeg, obd2lib.Unit.degrees),
-        '0146': obd2lib.MeasurementResult(25.0, obd2lib.Unit.celsius), // ambient
-        '012F': obd2lib.MeasurementResult(fuelLevelPct, obd2lib.Unit.percent),
-        '0133': obd2lib.MeasurementResult(baroKPa, obd2lib.Unit.kilopascals),
-        '010A': obd2lib.MeasurementResult(fuelPresKPa, obd2lib.Unit.kilopascals),
-        '0159': obd2lib.MeasurementResult(fuelPresKPa, obd2lib.Unit.kilopascals),
-        '0122': obd2lib.MeasurementResult(fuelPresKPa, obd2lib.Unit.kilopascals),
-        '0123': obd2lib.MeasurementResult(fuelPresKPa, obd2lib.Unit.kilopascals),
-        '0106': obd2lib.MeasurementResult(shortFuelTrim, obd2lib.Unit.percent),
-        '0107': obd2lib.MeasurementResult(longFuelTrim, obd2lib.Unit.percent),
-        '0108': obd2lib.MeasurementResult(shortFuelTrim * 0.9, obd2lib.Unit.percent),
-        '0109': obd2lib.MeasurementResult(longFuelTrim * 0.9, obd2lib.Unit.percent),
-        '0114': obd2lib.MeasurementResult(o2Voltage, obd2lib.Unit.volts),
-        '0115': obd2lib.MeasurementResult(o2Voltage * 1.05, obd2lib.Unit.volts),
-        '0118': obd2lib.MeasurementResult(o2Voltage * 0.96, obd2lib.Unit.volts),
-        '0119': obd2lib.MeasurementResult(o2Voltage * 1.02, obd2lib.Unit.volts),
-        '013C': obd2lib.MeasurementResult(catTempC, obd2lib.Unit.celsius),
-        '013D': obd2lib.MeasurementResult(catTempC * 0.98, obd2lib.Unit.celsius),
-        '013E': obd2lib.MeasurementResult(catTempC * 0.97, obd2lib.Unit.celsius),
-        '013F': obd2lib.MeasurementResult(catTempC * 0.95, obd2lib.Unit.celsius),
-        '0144': obd2lib.MeasurementResult(lambda, obd2lib.Unit.ratio),
-        '0145': obd2lib.MeasurementResult(relThrottle, obd2lib.Unit.percent),
-        '0147': obd2lib.MeasurementResult(relThrottle * 0.98, obd2lib.Unit.percent),
-        '0148': obd2lib.MeasurementResult(relThrottle * 0.97, obd2lib.Unit.percent),
-        '0149': obd2lib.MeasurementResult(relThrottle * 0.96, obd2lib.Unit.percent),
-        '014A': obd2lib.MeasurementResult(relThrottle * 0.95, obd2lib.Unit.percent),
-        '014B': obd2lib.MeasurementResult(relThrottle * 0.94, obd2lib.Unit.percent),
-        '014C': obd2lib.MeasurementResult(relThrottle * 0.93, obd2lib.Unit.percent),
-        '011F': obd2lib.MeasurementResult(runTimeSec, obd2lib.Unit.seconds),
-        '0121': obd2lib.MeasurementResult(distKm, obd2lib.Unit.kilometers),
-        '0131': obd2lib.MeasurementResult(distKm, obd2lib.Unit.kilometers),
-        '012E': obd2lib.MeasurementResult(evapPurgePct, obd2lib.Unit.percent),
-        '012C': obd2lib.MeasurementResult(commandedEGRPct, obd2lib.Unit.percent),
-        '015A': obd2lib.MeasurementResult(relThrottle, obd2lib.Unit.percent),
-        '015B': obd2lib.MeasurementResult(hybridSOCPct, obd2lib.Unit.percent),
-      };
-
-      final interested = PidInterestRegistry.instance.interested;
-      for (final entry in updates.entries) {
-        if (interested.isNotEmpty && !interested.contains(entry.key)) continue;
-        final existing = pidStats[entry.key];
-        pidStats[entry.key] = existing != null
-            ? existing.copyWith(entry.value)
-            : PIDStats(pid: entry.key, latest: entry.value);
-      }
-
-      // Non-gauge tabs (Fuel / MIL / DTCs) need synthetic payloads in demo mode.
-      // Gate these by current interest to mirror demand-driven polling.
-      if (interested.isEmpty || interested.contains('0103')) {
-        // Match SwiftOBD2 mock fuel-status behavior:
-        // 1 = Open Loop (cold engine)
-        // 2 = Closed Loop (normal operation)
-        // 3 = Open Loop (load/fuel cut)
-        final int fuelCode;
-        if (coolantC < 60.0) {
-          fuelCode = 1;
-        } else if (throttlePct < 3.0) {
-          fuelCode = 3;
-        } else {
-          fuelCode = 2;
-        }
-        final fuelDescription = switch (fuelCode) {
-          1 => 'Open Loop (cold engine)',
-          2 => 'Closed Loop (normal operation)',
-          3 => 'Open Loop (load/fuel cut)',
-          _ => 'Unavailable',
-        };
-
-        // Swift mock returns the same status byte for both banks.
-        fuelStatus = [
-          obd2lib.StatusCodeMetadata(
-            code: fuelCode.toString(),
-            description: fuelDescription,
-          ),
-          obd2lib.StatusCodeMetadata(
-            code: fuelCode.toString(),
-            description: fuelDescription,
-          ),
-        ];
-      }
-
-      if (interested.isEmpty || interested.contains('0101')) {
-        final stageTimeSeconds = t.clamp(0.0, 120.0);
-        final stages = (stageTimeSeconds / 12.0).floor();
-        bool readyAtStage(int requiredStage) => stages >= requiredStage;
-        milStatus = obd2lib.Status(
-          milOn: true,
-          dtcCount: 7,
-          // Mirrors SwiftOBD2 mock progression in mockManager.swift:
-          // 10 gasoline monitors become ready across 120 seconds.
-          monitors: [
-            obd2lib.ReadinessMonitor(
-              name: 'Misfire',
-              supported: true,
-              ready: readyAtStage(3),
-            ),
-            obd2lib.ReadinessMonitor(
-              name: 'Fuel System',
-              supported: true,
-              ready: readyAtStage(2),
-            ),
-            obd2lib.ReadinessMonitor(
-              name: 'Comprehensive Components',
-              supported: true,
-              ready: readyAtStage(1),
-            ),
-            obd2lib.ReadinessMonitor(
-              name: 'Catalyst',
-              supported: true,
-              ready: readyAtStage(6),
-            ),
-            obd2lib.ReadinessMonitor(
-              name: 'Heated Catalyst',
-              supported: true,
-              ready: readyAtStage(10),
-            ),
-            obd2lib.ReadinessMonitor(
-              name: 'Evaporative System',
-              supported: true,
-              ready: readyAtStage(7),
-            ),
-            obd2lib.ReadinessMonitor(
-              name: 'Secondary Air System',
-              supported: true,
-              ready: readyAtStage(9),
-            ),
-            obd2lib.ReadinessMonitor(
-              name: 'O₂ Sensor',
-              supported: true,
-              ready: readyAtStage(5),
-            ),
-            obd2lib.ReadinessMonitor(
-              name: 'O₂ Heater',
-              supported: true,
-              ready: readyAtStage(4),
-            ),
-            obd2lib.ReadinessMonitor(
-              name: 'EGR/VVT System',
-              supported: true,
-              ready: readyAtStage(8),
-            ),
-          ],
-        );
-      }
-
-      if (interested.isEmpty || interested.contains('03')) {
-        // Mirrors SwiftOBD2 mock Mode 03 response list in mockManager.swift.
-        troubleCodes = [
-          _demoTroubleCode('P0300'),
-          _demoTroubleCode('P0170'),
-          _demoTroubleCode('P0101'),
-          _demoTroubleCode('P0104'),
-          _demoTroubleCode('P0207'),
-          _demoTroubleCode('P0411'),
-          _demoTroubleCode('P0420'),
-        ];
-      }
-
-      _pidStatsNotifier.value = Map.from(pidStats);
-      notifyListeners();
-    });
-  }
-
   // ── Stats helpers ─────────────────────────────────
 
   @override
@@ -816,18 +529,5 @@ class OBDConnectionManager extends ChangeNotifier
       case ConnectionType.bluetooth:
         return obd2lib.ConnectionType.bluetooth;
     }
-  }
-
-  obd2lib.TroubleCodeMetadata _demoTroubleCode(String code) {
-    final fromDictionary = obd2lib.troubleCodeDictionary[code];
-    if (fromDictionary != null) return fromDictionary;
-    return obd2lib.TroubleCodeMetadata(
-      code: code,
-      title: 'Diagnostic Trouble Code',
-      description: 'Simulated demo DTC',
-      severity: 'Moderate',
-      causes: const ['Unknown'],
-      remedies: const ['Inspect vehicle'],
-    );
   }
 }

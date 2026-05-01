@@ -10,7 +10,7 @@ import 'package:flutter_obdii/core/config_data.dart';
 import 'package:flutter_obdii/core/obd_connection_manager.dart';
 import 'package:flutter_obdii/core/pid_interest_registry.dart';
 import 'package:flutter_obdii/core/pid_store.dart';
-import 'package:flutter_obdii/models/obdii_pid.dart';
+import 'package:flutter_obdii/core/obdiipid.dart';
 import 'package:flutter_obdii/viewmodels/gauges_viewmodel.dart';
 import 'package:flutter_obdii/views/dashboard_view.dart';
 

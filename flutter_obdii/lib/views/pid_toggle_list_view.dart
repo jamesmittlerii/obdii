@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/config_data.dart';
-import '../models/obdii_pid.dart';
+import '../core/obdiipid.dart';
 import '../viewmodels/pid_toggle_list_viewmodel.dart';
 
 class PidToggleListView extends StatefulWidget {

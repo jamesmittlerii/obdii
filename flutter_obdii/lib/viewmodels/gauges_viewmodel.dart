@@ -9,7 +9,7 @@ import '../core/config_data.dart';
 import '../core/obd_connection_manager.dart';
 import '../core/pid_interest_registry.dart';
 import '../core/pid_store.dart';
-import '../models/obdii_pid.dart';
+import '../core/obdiipid.dart';
 import 'base_view_model.dart';
 
 // ─────────────────────────────────────────────

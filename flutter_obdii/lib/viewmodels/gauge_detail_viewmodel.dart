@@ -7,7 +7,7 @@ import 'dart:async';
 
 import '../core/config_data.dart';
 import '../core/obd_connection_manager.dart';
-import '../models/obdii_pid.dart';
+import '../core/obdiipid.dart';
 import 'base_view_model.dart';
 
 class GaugeDetailViewModel extends BaseViewModel {

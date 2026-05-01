@@ -49,6 +49,10 @@ dependencies:
   file_selector: ^1.1.0
   permission_handler: ^12.0.1
 
+dependency_overrides:
+  flutter_obd2:
+    path: ../../SwiftOBD2/flutterobd2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -71,8 +75,8 @@ msix_config:
   logo_path: windows/runner/resources/rheosoft-obdii-msix-logo-clean-512.png
  # trim_logo: false
   background_color: "#00000000"
+  install_certificate: false
   capabilities: internetClient
-  store: true  
 
 flutter_launcher_icons:
   android: true

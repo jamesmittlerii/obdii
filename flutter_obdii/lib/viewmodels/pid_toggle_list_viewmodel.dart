@@ -8,7 +8,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../core/pid_store.dart';
-import '../models/obdii_pid.dart';
+import '../core/obdiipid.dart';
 
 class PidToggleListViewModel extends ChangeNotifier {
   final PidStore _store;

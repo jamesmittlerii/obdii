@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_obdii/core/pid_store.dart';
-import 'package:flutter_obdii/models/obdii_pid.dart';
+import 'package:flutter_obdii/core/obdiipid.dart';
 
 // ─────────────────────────────────────────────────────────────────
 // In-memory PidStore — bypasses JSON/SharedPreferences for unit tests.

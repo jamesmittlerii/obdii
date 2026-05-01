@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flutter_obdii/models/obdii_pid.dart';
+import 'package:flutter_obdii/core/obdiipid.dart';
 
 void main() {
   test('testSymbolImageCreation', () {

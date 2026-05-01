@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../core/config_data.dart';
 import '../core/pid_interest_registry.dart';
-import '../models/obdii_pid.dart';
+import '../core/obdiipid.dart';
 import '../viewmodels/gauge_detail_viewmodel.dart';
 
 class GaugeDetailView extends StatelessWidget {

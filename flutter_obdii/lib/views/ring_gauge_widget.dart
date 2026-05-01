@@ -9,7 +9,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../core/obd_connection_manager.dart';
-import '../models/obdii_pid.dart';
+import '../core/obdiipid.dart';
 
 // ─────────────────────────────────────────────
 // Public widget
