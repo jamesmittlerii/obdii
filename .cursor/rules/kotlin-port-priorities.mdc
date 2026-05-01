@@ -1,0 +1,15 @@
+---
+description: Enforce strict Swift/Flutter parity for Kotlin port
+alwaysApply: true
+---
+
+# Kotlin Port Priorities
+
+- Do not introduce hardcoded values or logic in Kotlin unless they are already hardcoded in Swift/Flutter.
+- Source data from the same catalogs/resources used by Swift/Flutter whenever available.
+- Follow Swift/Flutter architecture, contracts, layering, and behavior 1:1 by default.
+- Deviation is allowed only when platform constraints make it necessary; call out each deviation and why.
+- If requirements are ambiguous or a change is risky, ask before implementing.
+- Prefer evidence-based fixes from reference files over speculative rewrites.
+- Keep app layer thin and preserve library ownership of transport/mock/decode logic.
+- After substantial changes, run build/tests and state exactly what was verified.

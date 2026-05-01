@@ -291,6 +291,7 @@ String _generateId() => 'pid_${++_idCounter}';
 class ObdiiPidLibrary {
   static Future<List<ObdiiPid>> loadFromJSON() async {
     try {
+      await obd2lib.Commands.ensureInitialized();
       final jsonString = await rootBundle.loadString('assets/OBDPIDs.json');
       final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
       return jsonList

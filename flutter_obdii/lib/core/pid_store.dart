@@ -158,9 +158,9 @@ class _PidStoreImpl extends ChangeNotifier implements PidStore {
     }
 
     _pids = newPids;
+    notifyListeners();
     await _persistGaugeOrders(_pids);
     await CarPlayBridge.gaugePreferencesChanged();
-    notifyListeners();
   }
 
   // ── Persistence ──────────────────────────────

@@ -90,6 +90,10 @@ class _PidToggleListViewState extends State<PidToggleListView> {
 
     return ReorderableListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
+      proxyDecorator: (child, _, __) => Material(
+        type: MaterialType.transparency,
+        child: child,
+      ),
       onReorder: (oldIndex, newIndex) {
         // Index 0 is the Enabled header; enabled rows are [1..enabled.length].
         // Flutter reports newIndex as insertion index in visual list.

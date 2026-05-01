@@ -273,6 +273,7 @@ class OBDConnectionManager extends ChangeNotifier
     }
 
     try {
+      await obd2lib.Commands.ensureInitialized();
       await _obdService!.startConnection(
         timeout: 30.0,
         querySupportedPIDs: _querySupportedPids,

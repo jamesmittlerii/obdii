@@ -8,40 +8,24 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class PidToggleListViewModel(
     private val store: PidStore = DefaultPidStore,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + Job()),
-    private val searchDebounceMs: Long = 250,
     private val ownsScope: Boolean = true,
 ) {
-    private var searchDebounceJob: Job? = null
-    private var appliedSearchText: String = ""
+    val pidsStream: StateFlow<List<ObdiiPid>> = store.pidsStream
     var onChanged: (() -> Unit)? = null
     var pids: List<ObdiiPid> = store.pids
         private set
     var searchText: String = ""
         set(value) {
             field = value
-            searchDebounceJob?.cancel()
-            if (value.isBlank()) {
-                appliedSearchText = ""
-                onChanged?.invoke()
-                return
-            }
-            if (searchDebounceMs <= 0) {
-                appliedSearchText = value
-                onChanged?.invoke()
-                return
-            }
-            searchDebounceJob = scope.launch {
-                delay(searchDebounceMs)
-                appliedSearchText = value
-                onChanged?.invoke()
-            }
+            // Swift-like behavior: filter updates immediately as user types.
+            onChanged?.invoke()
         }
 
     init {
@@ -59,7 +43,7 @@ class PidToggleListViewModel(
         get() = applySearch(pids.filter { !it.enabled && it.kind == ObdPidKind.gauge })
 
     private fun applySearch(list: List<ObdiiPid>): List<ObdiiPid> {
-        val q = appliedSearchText.trim().lowercase()
+        val q = searchText.trim().lowercase()
         if (q.isEmpty()) return list
         return list.filter { p ->
             p.label.lowercase().contains(q) ||
@@ -77,9 +61,10 @@ class PidToggleListViewModel(
     }
 
     suspend fun toggleById(id: String, isOn: Boolean) {
-        val idx = pids.indexOfFirst { it.id == id }
+        val key = id.trim()
+        val idx = pids.indexOfFirst { it.stableKey() == key }
             .takeIf { it >= 0 }
-            ?: pids.indexOfFirst { it.pidCommand == id }
+            ?: pids.indexOfFirst { it.pidCommand == key }
         if (idx < 0) return
         toggle(idx, isOn)
     }
@@ -89,9 +74,10 @@ class PidToggleListViewModel(
     }
 
     fun clear() {
-        searchDebounceJob?.cancel()
         if (ownsScope) {
             scope.cancel()
         }
     }
 }
+
+private fun ObdiiPid.stableKey(): String = if (id.isNotBlank()) id else pidCommand

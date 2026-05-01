@@ -32,7 +32,8 @@ class InMemoryPidStore(initial: List<ObdiiPid>) : PidStore {
     override suspend fun load() {}
 
     override suspend fun toggle(pid: ObdiiPid) {
-        val idx = pids.indexOfFirst { it.id == pid.id }
+        val key = pid.stableKey()
+        val idx = pids.indexOfFirst { it.stableKey() == key }
         if (idx == -1) return
         val mutable = pids.toMutableList()
         mutable[idx] = mutable[idx].copyWith(enabled = pid.enabled)
@@ -99,7 +100,8 @@ object DefaultPidStore : PidStore {
     }
 
     override suspend fun toggle(pid: ObdiiPid) {
-        val idx = mutablePids.indexOfFirst { it.id == pid.id }
+        val key = pid.stableKey()
+        val idx = mutablePids.indexOfFirst { it.stableKey() == key }
         if (idx == -1) return
         val mutable = mutablePids.toMutableList()
         mutable[idx] = mutable[idx].copyWith(enabled = pid.enabled)
@@ -184,3 +186,5 @@ object DefaultPidStore : PidStore {
         seededPidsProvider = { emptyList() }
     }
 }
+
+private fun ObdiiPid.stableKey(): String = if (id.isNotBlank()) id else pidCommand

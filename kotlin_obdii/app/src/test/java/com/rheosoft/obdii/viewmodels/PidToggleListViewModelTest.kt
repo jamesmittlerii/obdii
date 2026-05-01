@@ -25,7 +25,7 @@ class PidToggleListViewModelTest {
 
     @Test
     fun `search by command finds pid`() = runTest {
-        val vm = PidToggleListViewModel(InMemoryPidStore(pids()), searchDebounceMs = 0)
+        val vm = PidToggleListViewModel(InMemoryPidStore(pids()))
         vm.searchText = "010D"
         assertTrue((vm.filteredEnabled + vm.filteredDisabled).any { it.id == "spd" })
         vm.clear()
@@ -34,9 +34,23 @@ class PidToggleListViewModelTest {
     @Test
     fun `toggle flips enabled`() = runTest {
         val store = InMemoryPidStore(pids())
-        val vm = PidToggleListViewModel(store, searchDebounceMs = 0)
+        val vm = PidToggleListViewModel(store)
         vm.toggle(1, true)
         assertEquals(true, store.pids.first { it.id == "spd" }.enabled)
+        vm.clear()
+    }
+
+    @Test
+    fun `toggleById falls back to pidCommand when id is blank`() = runTest {
+        val store = InMemoryPidStore(
+            listOf(
+                ObdiiPid("", true, "RPM", "Engine RPM", "010C", units = "RPM", kind = ObdPidKind.gauge),
+                ObdiiPid("", false, "Speed", "Vehicle Speed", "010D", units = "km/h", kind = ObdPidKind.gauge),
+            ),
+        )
+        val vm = PidToggleListViewModel(store)
+        vm.toggleById("010D", true)
+        assertEquals(true, store.pids.first { it.pidCommand == "010D" }.enabled)
         vm.clear()
     }
 }

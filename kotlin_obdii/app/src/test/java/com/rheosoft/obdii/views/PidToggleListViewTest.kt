@@ -17,7 +17,7 @@ class PidToggleListViewTest {
                 ObdiiPid("spd", false, "Speed", "Vehicle Speed", "010D", units = "km/h", kind = ObdPidKind.gauge),
             ),
         )
-        return PidToggleListViewModel(store, searchDebounceMs = 0)
+        return PidToggleListViewModel(store)
     }
 
     @Test
