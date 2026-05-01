@@ -5,7 +5,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../core/config_data.dart';
 import '../core/obdiipid.dart';
 import '../viewmodels/pid_toggle_list_viewmodel.dart';
 
@@ -32,8 +31,7 @@ class _PidToggleListViewState extends State<PidToggleListView> {
       create: (_) => PidToggleListViewModel(),
       child: Consumer<PidToggleListViewModel>(
         builder: (context, vm, _) {
-          final isMetric =
-              context.watch<ConfigData>().units == MeasurementUnit.metric;
+          final isMetric = vm.isMetric;
 
           return Scaffold(
             appBar: AppBar(

@@ -6,7 +6,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../core/obd_connection_manager.dart';
 import '../viewmodels/diagnostics_viewmodel.dart';
 
 class DiagnosticsView extends StatefulWidget {
@@ -48,8 +47,8 @@ class _DiagnosticsViewState extends State<DiagnosticsView> {
         title: const Text('Diagnostic Codes'),
         centerTitle: false,
       ),
-      body: Consumer2<DiagnosticsViewModel, OBDConnectionManager>(
-        builder: (context, vm, mgr, _) {
+      body: Consumer<DiagnosticsViewModel>(
+        builder: (context, vm, _) {
           // 1) Waiting for first data
           if (vm.codes == null) {
             return Center(
@@ -64,7 +63,7 @@ class _DiagnosticsViewState extends State<DiagnosticsView> {
                   const SizedBox(height: 16),
                   const Text('Waiting for data…',
                       style: TextStyle(color: Colors.grey)),
-                  if (mgr.connectionState != OBDConnectionState.connected)
+                  if (vm.connectionState != OBDConnectionState.connected)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(

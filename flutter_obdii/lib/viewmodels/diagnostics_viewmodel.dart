@@ -12,6 +12,8 @@ import '../core/obd_connection_manager.dart';
 import '../core/pid_interest_registry.dart';
 import 'base_view_model.dart';
 
+export '../core/obd_connection_manager.dart' show OBDConnectionState;
+
 // ─────────────────────────────────────────────
 // MARK: Section (mirrors Swift Section struct)
 // ─────────────────────────────────────────────
@@ -52,9 +54,12 @@ class DtcSection {
 
 class DiagnosticsViewModel extends BaseViewModel {
   final DiagnosticsProviding _provider;
+  final OBDConnectionControlling _connectionController;
   final PidInterestRegistry _interestRegistry;
   final String _interestToken;
   bool _isVisible = false;
+
+  OBDConnectionState get connectionState => _connectionController.connectionState;
 
   /// null = waiting for first update, [] = loaded but none
   List<TroubleCodeMetadata>? _codes;
@@ -64,11 +69,14 @@ class DiagnosticsViewModel extends BaseViewModel {
   List<DtcSection> get sections => _sections;
 
   StreamSubscription? _sub;
+  StreamSubscription? _connSub;
 
   DiagnosticsViewModel({
     DiagnosticsProviding? provider,
+    OBDConnectionControlling? connectionController,
     PidInterestRegistry? interestRegistry,
   })  : _provider = provider ?? OBDConnectionManager.instance,
+        _connectionController = connectionController ?? OBDConnectionManager.instance,
         _interestRegistry = interestRegistry ?? PidInterestRegistry.instance,
         _interestToken =
             (interestRegistry ?? PidInterestRegistry.instance).makeToken() {
@@ -76,6 +84,9 @@ class DiagnosticsViewModel extends BaseViewModel {
       if (newCodes == _codes) return;
       _codes = newCodes;
       _rebuildSections(newCodes);
+      notifyListeners();
+    });
+    _connSub = _connectionController.connectionStateStream.listen((_) {
       notifyListeners();
     });
   }
@@ -117,6 +128,7 @@ class DiagnosticsViewModel extends BaseViewModel {
   @override
   void dispose() {
     _sub?.cancel();
+    _connSub?.cancel();
     _interestRegistry.clear(_interestToken);
     super.dispose();
   }

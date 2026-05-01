@@ -139,9 +139,9 @@ class _SettingsViewState extends State<SettingsView> {
                     const Divider(height: 1),
 
                     // Connect / Disconnect button (centered text, blue)
-                    Consumer<OBDConnectionManager>(
-                      builder: (context, mgr, _) {
-                        final state = mgr.connectionState;
+                    Builder(
+                      builder: (context) {
+                        final state = vm.connectionState;
                         final label = switch (state) {
                           OBDConnectionState.disconnected => 'Connect',
                           OBDConnectionState.connecting => 'Connecting…',
@@ -327,7 +327,8 @@ class _SettingsViewState extends State<SettingsView> {
     String? exportedPath;
     try {
       // Collect recent log entries (last 5 minutes)
-      final logs = await _collectLogs();
+      final vm = context.read<SettingsViewModel>();
+      final logs = await vm.generateDiagnosticLogs();
       final jsonStr = const JsonEncoder.withIndent('  ').convert(logs);
       final bytes = utf8.encode(jsonStr);
 
@@ -389,24 +390,6 @@ class _SettingsViewState extends State<SettingsView> {
     } finally {
       if (mounted) setState(() => _isGeneratingLogs = false);
     }
-  }
-
-  /// Gathers in-memory diagnostic data for sharing.
-  /// Returns a JSON-serialisable map with a timestamp and connection info.
-  Future<Map<String, dynamic>> _collectLogs() async {
-    final mgr = OBDConnectionManager.instance;
-    final cfg = ConfigData.instance;
-    final info = await PackageInfo.fromPlatform();
-
-    return {
-      'timestamp': DateTime.now().toIso8601String(),
-      'appVersion': '${info.version}+${info.buildNumber}',
-      'connectionType': cfg.connectionType.toString(),
-      'units': cfg.units.toString(),
-      'connectionState': mgr.connectionState.toString(),
-      'wifiHost': cfg.wifiHost,
-      'wifiPort': cfg.wifiPort,
-    };
   }
 }
 

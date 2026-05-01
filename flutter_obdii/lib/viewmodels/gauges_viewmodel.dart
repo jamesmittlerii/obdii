@@ -50,6 +50,7 @@ class GaugesViewModel extends BaseViewModel {
   bool _isVisible = false;
 
   bool get isEmpty => _tiles.isEmpty;
+  bool get isMetric => _unitsProvider.units == MeasurementUnit.metric;
 
   StreamSubscription? _pidSub;
   StreamSubscription? _statsSub;

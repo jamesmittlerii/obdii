@@ -6,6 +6,7 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../core/config_data.dart';
 import '../core/obd_connection_manager.dart';
@@ -143,6 +144,21 @@ class SettingsViewModel extends BaseViewModel {
         // Do nothing while connecting
         break;
     }
+  }
+
+  // ── Diagnostics ──────────────────────────────────
+
+  Future<Map<String, dynamic>> generateDiagnosticLogs() async {
+    final info = await PackageInfo.fromPlatform();
+    return {
+      'timestamp': DateTime.now().toIso8601String(),
+      'appVersion': '${info.version}+${info.buildNumber}',
+      'connectionType': _config.connectionType.toString(),
+      'units': _config.units.toString(),
+      'connectionState': _connection.connectionState.toString(),
+      'wifiHost': _config.wifiHost,
+      'wifiPort': _config.wifiPort,
+    };
   }
 
   // ── Number formatter (for port text field) ───────

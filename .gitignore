@@ -111,3 +111,6 @@ iOSInjectionProject/
 .cursor/*
 !.cursor/rules/
 !.cursor/rules/**
+
+# Kotlin build output
+kotlin_obdii/app/bin/
