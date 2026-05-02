@@ -286,13 +286,13 @@ jobs:
       - name: Clear existing Store draft submission
         shell: pwsh
         run: |
-          msstore submission delete "${{ secrets.MS_STORE_PRODUCT_ID }}" --flightId  "9PNDRVKCKMF0" --no-confirm
+          msstore submission delete "${{ secrets.MS_STORE_PRODUCT_ID }}" --flightId  "f02525fd-3718-40e0-b657-bf60db9af138" --no-confirm
         continue-on-error: true
 
       - name: Publish package to Microsoft Store (internal flight)
         shell: pwsh
         run: |
-          msstore publish "${{ steps.msix.outputs.path }}" --flightId  "9PNDRVKCKMF0" -id "${{ secrets.MS_STORE_PRODUCT_ID }}"
+          msstore publish "${{ steps.msix.outputs.path }}" --flightId  "f02525fd-3718-40e0-b657-bf60db9af138" -id "${{ secrets.MS_STORE_PRODUCT_ID }}"
 
   google_play_material:
     name: Google Play Material
