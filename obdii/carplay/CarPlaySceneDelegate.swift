@@ -162,9 +162,11 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate,
         queue: .main
       ) { [weak self] note in
         guard let self else { return }
-        CarPlayHandsetBridge.applySettings(userInfo: note.userInfo)
-        OBDConnectionManager.shared.updateConnectionDetails()
-        self.controllers.forEach { $0.refreshFromHandsetBridge() }
+        Task { @MainActor in
+          CarPlayHandsetBridge.applySettings(userInfo: note.userInfo)
+          OBDConnectionManager.shared.updateConnectionDetails()
+          self.controllers.forEach { $0.refreshFromHandsetBridge() }
+        }
       }
     )
 
@@ -175,8 +177,10 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate,
         queue: .main
       ) { [weak self] _ in
         guard let self else { return }
-        PIDStore.shared.reloadFromUserDefaults()
-        self.controllers.forEach { $0.refreshFromHandsetBridge() }
+        Task { @MainActor in
+          PIDStore.shared.reloadFromUserDefaults()
+          self.controllers.forEach { $0.refreshFromHandsetBridge() }
+        }
       }
     )
   }
@@ -187,3 +191,4 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate,
     handsetBridgeObservers.removeAll()
   }
 }
+
