@@ -88,7 +88,7 @@ class _PidToggleListViewState extends State<PidToggleListView> {
 
     return ReorderableListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      proxyDecorator: (child, _, __) => Material(
+      proxyDecorator: (child, _, _) => Material(
         type: MaterialType.transparency,
         child: child,
       ),

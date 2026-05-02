@@ -7,7 +7,6 @@
 //   5. Diagnostics — Share Logs button (uses share_plus)
 //   6. About — version string
 
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';

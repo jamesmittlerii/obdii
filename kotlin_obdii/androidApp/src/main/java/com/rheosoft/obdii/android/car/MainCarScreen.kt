@@ -116,7 +116,7 @@ class MainCarScreen(carContext: CarContext) : Screen(carContext) {
         } catch (e: Exception) {
             Log.e("MainCarScreen", "Fatal error in onGetTemplate", e)
             return MessageTemplate.Builder("Display Error: ${e.message}")
-                .setHeaderAction(Action.APP_ICON)
+                .setHeader(Header.Builder().setStartHeaderAction(Action.APP_ICON).build())
                 .build()
         }
     }

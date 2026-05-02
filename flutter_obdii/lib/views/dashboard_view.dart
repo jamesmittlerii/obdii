@@ -5,7 +5,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../viewmodels/gauges_viewmodel.dart';
 import 'gauge_detail_view.dart';
@@ -15,7 +14,6 @@ import 'ring_gauge_widget.dart';
 // Display mode (persisted, mirrors @AppStorage)
 // ─────────────────────────────────────────────
 
-enum _GaugesDisplayMode { gauges, list }
 
 // ─────────────────────────────────────────────
 // Container — holds the segmented picker

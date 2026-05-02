@@ -7,7 +7,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart' show Colors, Color;
 import 'package:flutter/services.dart';
-import 'package:flutter_obd2/src/commands/commands.dart' as obd2lib;
+import 'package:flutter_obd2/flutter_obd2.dart' as obd2lib;
 
 // ─────────────────────────────────────────────
 // MARK: ValueRange
