@@ -20,24 +20,15 @@ struct GaugesView: View {
   // Stable observable view model instance
   @State private var viewModel: GaugesViewModel
 
-  // Demand-driven polling token (set in @MainActor init to avoid nonisolated call)
-  @State private var interestToken: UUID
-
   @MainActor
   init() {
     _viewModel = State(initialValue: GaugesViewModel())
-    // Create the token on the main actor inside the initializer body
-    let token = PIDInterestRegistry.shared.makeToken()
-    _interestToken = State(initialValue: token)
   }
 
   // Injectable initializer for testing/mocking
   @MainActor
-  init(viewModel: GaugesViewModel, interestToken: UUID? = nil) {
+  init(viewModel: GaugesViewModel) {
     _viewModel = State(initialValue: viewModel)
-    // If no token provided, create one here on the main actor
-    let token = interestToken ?? PIDInterestRegistry.shared.makeToken()
-    _interestToken = State(initialValue: token)
   }
 
   // Adaptive layout: 2–4 columns depending on device width
@@ -45,41 +36,27 @@ struct GaugesView: View {
     GridItem(.adaptive(minimum: 160, maximum: 240), spacing: 16, alignment: .top)
   ]
 
-  // Identity list ignoring measurements
-  private var tileIdentities: [TileIdentity] {
-    viewModel.tiles.map { TileIdentity(id: $0.id, name: $0.pid.name) }
-  }
-
   var body: some View {
     ScrollView {
       LazyVGrid(columns: columns, spacing: 16) {
-        ForEach(viewModel.tiles) { tile in
+        ForEach(viewModel.displayTiles) { tile in
           NavigationLink {
-            GaugeDetailView(pid: tile.pid)
+            GaugeDetailView(viewModel: tile.detailViewModel)
           } label: {
-            GaugeTile(pid: tile.pid, measurement: tile.measurement)
+            GaugeTile(tile: tile)
           }
           .buttonStyle(.plain)
-          .accessibilityIdentifier("GaugeTile_\(tile.pid.id.uuidString)")
+          .accessibilityIdentifier(tile.tileAccessibilityIdentifier)
         }
       }
       .padding()
     }
     .onAppear {
-      updateInterest()
+      viewModel.onAppear()
     }
     .onDisappear {
-      PIDInterestRegistry.shared.clear(token: interestToken)
+      viewModel.onDisappear()
     }
-    .onChange(of: tileIdentities) {
-      updateInterest()
-    }
-  }
-
-  private func updateInterest() {
-    // Demand-driven PID activation
-    let commands: Set<OBDCommand> = Set(viewModel.tiles.map { $0.pid.pid })
-    PIDInterestRegistry.shared.replace(pids: commands, for: interestToken)
   }
 }
 
@@ -89,16 +66,16 @@ struct TileIdentity: Equatable {
 }
 
 private struct GaugeTile: View {
-  let pid: OBDPID
-  let measurement: MeasurementResult?
+  let tile: GaugesViewModel.DisplayTile
 
   var body: some View {
     VStack(spacing: 8) {
 
-      RingGaugeView(pid: pid, measurement: measurement)
-        .frame(width: 120, height: 98)
 
-      Text(pid.label)
+      RingGaugeView(model: tile.ring)
+        .frame(width: 120, height: 96)
+
+      Text(tile.shortTitle)
         .font(.headline)
         .lineLimit(1)
         .minimumScaleFactor(0.8)

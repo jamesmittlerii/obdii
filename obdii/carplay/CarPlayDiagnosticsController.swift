@@ -52,17 +52,17 @@ class CarPlayDiagnosticsController: CarPlayBaseTemplateController<DiagnosticsVie
     let sections: [CPListSection] = viewModel.sections.map { section in
       let items: [CPListItem] = section.items.map { code in
         let item = CPListItem(
-          text: "\(code.code) • \(code.title)",
-          detailText: code.severity.rawValue
+          text: code.title,
+          detailText: code.severityText
         )
         item.setImage(
           tintedSymbol(
-            named: imageName(for: code.severity),
-            severity: code.severity
+            named: code.symbolName,
+            severity: code.detailViewModel.code.severity
           )
         )
         item.handler = { [weak self] _, completion in
-          self?.presentOBDDetail(for: code)
+          self?.presentOBDDetail(for: code.detailViewModel.code)
           completion()
         }
         return item

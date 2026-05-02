@@ -13,7 +13,11 @@ import SwiftOBD2
 import SwiftUI
 
 struct DTCDetailView: View {
-  let code: TroubleCodeMetadata
+  @State private var viewModel: DTCDetailViewModel
+
+  init(viewModel: DTCDetailViewModel) {
+    _viewModel = State(initialValue: viewModel)
+  }
 
     // our view for the DTC details
   var body: some View {
@@ -23,30 +27,30 @@ struct DTCDetailView: View {
       causesSection
       remediesSection
     }
-    .navigationTitle(code.code)
+    .navigationTitle(viewModel.navigationTitle)
     .navigationBarTitleDisplayMode(.inline)
   }
 
   private var overviewSection: some View {
     Section(header: Text("Overview")) {
-      LabeledContent("Code", value: code.code)
-      LabeledContent("Title", value: code.title)
-      LabeledContent("Severity", value: code.severity.rawValue)
+      ForEach(viewModel.overviewItems) { item in
+        LabeledContent(item.label, value: item.value)
+      }
     }
   }
 
   private var descriptionSection: some View {
     Section(header: Text("Description")) {
-      Text(code.description)
+      Text(viewModel.descriptionText)
         .fixedSize(horizontal: false, vertical: true)
     }
   }
 
   private var causesSection: some View {
     Group {
-      if !code.causes.isEmpty {
+      if !viewModel.causes.isEmpty {
         Section(header: Text("Potential Causes")) {
-          ForEach(code.causes, id: \.self) { cause in
+          ForEach(viewModel.causes, id: \.self) { cause in
             Text("• \(cause)")
               .fixedSize(horizontal: false, vertical: true)
           }
@@ -57,9 +61,9 @@ struct DTCDetailView: View {
 
   private var remediesSection: some View {
     Group {
-      if !code.remedies.isEmpty {
+      if !viewModel.remedies.isEmpty {
         Section(header: Text("Possible Remedies")) {
-          ForEach(code.remedies, id: \.self) { remedy in
+          ForEach(viewModel.remedies, id: \.self) { remedy in
             Text("• \(remedy)")
               .fixedSize(horizontal: false, vertical: true)
           }
@@ -75,6 +79,6 @@ struct DTCDetailView: View {
     ?? troubleCodeDictionary.values.first!
 
   NavigationStack {
-    DTCDetailView(code: sample)
+    DTCDetailView(viewModel: DTCDetailViewModel(code: sample))
   }
 }

@@ -30,7 +30,16 @@ extension OBDConnectionManager: FuelStatusProviding {
 @Observable
 final class FuelStatusViewModel: BaseViewModel {
 
+  struct BankRow: Identifiable, Equatable {
+    let id: String
+    let title: String
+    let description: String
+    let accessibilityLabel: String
+  }
+
   private let provider: FuelStatusProviding
+  private let interestRegistry: PIDInterestManaging
+  private let interestToken: UUID
   // nil = waiting for first update
   // non-nil = data received (may contain nils for missing banks)
   private(set) var status: [StatusCodeMetadata?]? = nil {
@@ -44,8 +53,14 @@ final class FuelStatusViewModel: BaseViewModel {
   private var cancellables = Set<AnyCancellable>()
 
   // Designated initializer without default argument (nonisolated-safe)
-  init(provider: FuelStatusProviding) {
+  init(
+    provider: FuelStatusProviding,
+    interestRegistry: PIDInterestManaging? = nil
+  ) {
     self.provider = provider
+    let interestRegistry = interestRegistry ?? PIDInterestRegistry.shared
+    self.interestRegistry = interestRegistry
+    self.interestToken = interestRegistry.makeToken()
     super.init()
 
     provider.fuelStatusPublisher
@@ -61,18 +76,32 @@ final class FuelStatusViewModel: BaseViewModel {
   override convenience init() {
     self.init(provider: OBDConnectionManager.shared)
   }
-  // Fuel system status for Bank 1
-  var bank1: StatusCodeMetadata? {
-    status?[safe: 0] ?? nil
+
+  var isWaiting: Bool { status == nil }
+  var bank1: StatusCodeMetadata? { status?[safe: 0] ?? nil }
+  var bank2: StatusCodeMetadata? { status?[safe: 1] ?? nil }
+  var bankRows: [BankRow] {
+    [
+      bank1.map {
+        BankRow(id: "bank1", title: "Bank 1", description: $0.description, accessibilityLabel: "Bank 1, \($0.description)")
+      },
+      bank2.map {
+        BankRow(id: "bank2", title: "Bank 2", description: $0.description, accessibilityLabel: "Bank 2, \($0.description)")
+      },
+    ].compactMap { $0 }
   }
-  // Fuel system status for Bank 2
-  var bank2: StatusCodeMetadata? {
-    status?[safe: 1] ?? nil
+
+  func onAppear() {
+    interestRegistry.replace(pids: [.mode1(.fuelStatus)], for: interestToken)
   }
+
+  func onDisappear() {
+    interestRegistry.clear(token: interestToken)
+  }
+
   // True if any bank contains a non-nil status value
   var hasAnyStatus: Bool {
-    guard let status else { return false }
-    return status.contains { $0 != nil }
+    !bankRows.isEmpty
   }
 }
 

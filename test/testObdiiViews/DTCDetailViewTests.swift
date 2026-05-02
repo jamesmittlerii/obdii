@@ -61,16 +61,20 @@ final class DTCDetailViewTests: XCTestCase {
         testDTCNoCausesOrRemedies = nil
     }
 
+    private func makeView(code: TroubleCodeMetadata) -> DTCDetailView {
+        DTCDetailView(viewModel: DTCDetailViewModel(code: code))
+    }
+
     
     func testHasList() throws {
-        let view = DTCDetailView(code: testDTC)
+        let view = makeView(code: testDTC)
         
         let list = try view.inspect().find(ViewType.List.self)
         XCTAssertNotNil(list, "DTCDetailView should contain a List")
     }
     
     func testHasSections() throws {
-        let view = DTCDetailView(code: testDTC)
+        let view = makeView(code: testDTC)
         
         let sections = try view.inspect().findAll(ViewType.Section.self)
         XCTAssertGreaterThan(sections.count, 0, "Should have at least one section")
@@ -78,7 +82,7 @@ final class DTCDetailViewTests: XCTestCase {
 
     
     func testNavigationTitleIsCode() throws {
-        let view = DTCDetailView(code: testDTC)
+        let view = makeView(code: testDTC)
         
         // Navigation title should be the DTC code
         XCTAssertNotNil(view, "View should initialize with DTC code as title")
@@ -86,14 +90,14 @@ final class DTCDetailViewTests: XCTestCase {
 
     
     func testOverviewSectionExists() throws {
-        let view = DTCDetailView(code: testDTC)
+        let view = makeView(code: testDTC)
         
         let sections = try view.inspect().findAll(ViewType.Section.self)
         XCTAssertGreaterThanOrEqual(sections.count, 1, "Should have overview section")
     }
     
     func testOverviewSectionContainsLabeledContent() throws {
-        let view = DTCDetailView(code: testDTC)
+        let view = makeView(code: testDTC)
         
         // LabeledContent is used for Code, Title, and Severity
         let labeledContents = try view.inspect().findAll(ViewType.LabeledContent.self)
@@ -102,7 +106,7 @@ final class DTCDetailViewTests: XCTestCase {
 
     
     func testDescriptionSectionExists() throws {
-        let view = DTCDetailView(code: testDTC)
+        let view = makeView(code: testDTC)
         
         let texts = try view.inspect().findAll(ViewType.Text.self)
         
@@ -119,7 +123,7 @@ final class DTCDetailViewTests: XCTestCase {
     }
     
     func testDescriptionTextNotEmpty() throws {
-        let view = DTCDetailView(code: testDTC)
+        let view = makeView(code: testDTC)
         
         let texts = try view.inspect().findAll(ViewType.Text.self)
         XCTAssertGreaterThan(texts.count, 0, "Should have text elements")
@@ -127,7 +131,7 @@ final class DTCDetailViewTests: XCTestCase {
 
     
     func testCausesSectionWithCauses() throws {
-        let view = DTCDetailView(code: testDTCWithCausesAndRemedies)
+        let view = makeView(code: testDTCWithCausesAndRemedies)
         
         let texts = try view.inspect().findAll(ViewType.Text.self)
         
@@ -144,7 +148,7 @@ final class DTCDetailViewTests: XCTestCase {
     }
     
     func testCausesSectionEmptyWhenNoCauses() throws {
-        let view = DTCDetailView(code: testDTCNoCausesOrRemedies)
+        let view = makeView(code: testDTCNoCausesOrRemedies)
         
         let texts = try view.inspect().findAll(ViewType.Text.self)
         
@@ -162,7 +166,7 @@ final class DTCDetailViewTests: XCTestCase {
 
     
     func testRemediesSectionWithRemedies() throws {
-        let view = DTCDetailView(code: testDTCWithCausesAndRemedies)
+        let view = makeView(code: testDTCWithCausesAndRemedies)
         
         let texts = try view.inspect().findAll(ViewType.Text.self)
         
@@ -179,7 +183,7 @@ final class DTCDetailViewTests: XCTestCase {
     }
     
     func testRemediesSectionEmptyWhenNoRemedies() throws {
-        let view = DTCDetailView(code: testDTCNoCausesOrRemedies)
+        let view = makeView(code: testDTCNoCausesOrRemedies)
         
         // View should still render without remedies
         XCTAssertNoThrow(try view.inspect(), "Should render without remedies")
@@ -187,14 +191,14 @@ final class DTCDetailViewTests: XCTestCase {
 
     
     func testRenderWithAllData() throws {
-        let view = DTCDetailView(code: testDTCWithCausesAndRemedies)
+        let view = makeView(code: testDTCWithCausesAndRemedies)
         
         // Should render successfully with all data
         XCTAssertNoThrow(try view.inspect(), "Should render with complete data")
     }
     
     func testRenderWithMinimalData() throws {
-        let view = DTCDetailView(code: testDTCNoCausesOrRemedies)
+        let view = makeView(code: testDTCNoCausesOrRemedies)
         
         // Should render successfully with minimal data
         XCTAssertNoThrow(try view.inspect(), "Should render with minimal data")
@@ -211,7 +215,7 @@ final class DTCDetailViewTests: XCTestCase {
             remedies: []
         )
         
-        let view = DTCDetailView(code: minorDTC)
+        let view = makeView(code: minorDTC)
         XCTAssertNoThrow(try view.inspect(), "Should render minor severity")
     }
     
@@ -225,7 +229,7 @@ final class DTCDetailViewTests: XCTestCase {
             remedies: []
         )
         
-        let view = DTCDetailView(code: moderateDTC)
+        let view = makeView(code: moderateDTC)
         XCTAssertNoThrow(try view.inspect(), "Should render moderate severity")
     }
     
@@ -239,7 +243,7 @@ final class DTCDetailViewTests: XCTestCase {
             remedies: []
         )
         
-        let view = DTCDetailView(code: severeDTC)
+        let view = makeView(code: severeDTC)
         XCTAssertNoThrow(try view.inspect(), "Should render severe severity")
     }
 
@@ -260,7 +264,7 @@ final class DTCDetailViewTests: XCTestCase {
             remedies: []
         )
         
-        let view = DTCDetailView(code: dtcWithManyCauses)
+        let view = makeView(code: dtcWithManyCauses)
         
         let texts = try view.inspect().findAll(ViewType.Text.self)
         
@@ -291,7 +295,7 @@ final class DTCDetailViewTests: XCTestCase {
             ]
         )
         
-        let view = DTCDetailView(code: dtcWithManyRemedies)
+        let view = makeView(code: dtcWithManyRemedies)
         
         let texts = try view.inspect().findAll(ViewType.Text.self)
         
@@ -317,7 +321,7 @@ final class DTCDetailViewTests: XCTestCase {
             remedies: []
         )
         
-        let view = DTCDetailView(code: pCode)
+        let view = makeView(code: pCode)
         XCTAssertNoThrow(try view.inspect(), "Should render P-code")
     }
     
@@ -331,7 +335,7 @@ final class DTCDetailViewTests: XCTestCase {
             remedies: []
         )
         
-        let view = DTCDetailView(code: cCode)
+        let view = makeView(code: cCode)
         XCTAssertNoThrow(try view.inspect(), "Should render C-code")
     }
     
@@ -345,7 +349,7 @@ final class DTCDetailViewTests: XCTestCase {
             remedies: []
         )
         
-        let view = DTCDetailView(code: bCode)
+        let view = makeView(code: bCode)
         XCTAssertNoThrow(try view.inspect(), "Should render B-code")
     }
     
@@ -359,7 +363,7 @@ final class DTCDetailViewTests: XCTestCase {
             remedies: []
         )
         
-        let view = DTCDetailView(code: uCode)
+        let view = makeView(code: uCode)
         XCTAssertNoThrow(try view.inspect(), "Should render U-code")
     }
 }

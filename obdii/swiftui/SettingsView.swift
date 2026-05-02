@@ -23,8 +23,6 @@ struct SettingsView: View {
   #if canImport(UIKit)
     @State private var isPresentingShare = false
     @State private var shareItems: [Any] = []
-    @State private var isGeneratingLogs = false
-    @State private var shareError: String?
   #endif
 
   private var runningOnMac: Bool {
@@ -98,10 +96,10 @@ struct SettingsView: View {
           #if canImport(UIKit)
             Button {
               if !runningOnMac {
-                Task { await shareLogs_iOS() }
+                Task { await viewModel.prepareLogShare() }
               }
             } label: {
-              if isGeneratingLogs {
+              if viewModel.isGeneratingLogs {
                 HStack {
                   ProgressView()
                   Text("Preparing Logs…")
@@ -110,14 +108,14 @@ struct SettingsView: View {
                 Text("Share Logs")
               }
             }
-            .disabled(isGeneratingLogs || runningOnMac)
+            .disabled(viewModel.isGeneratingLogs || runningOnMac)
             .alert(
               "Could not prepare logs",
-              isPresented: .constant(shareError != nil)
+              isPresented: .constant(viewModel.shareErrorMessage != nil)
             ) {
-              Button("OK") { shareError = nil }
+              Button("OK") { viewModel.clearShareError() }
             } message: {
-              Text(shareError ?? "")
+              Text(viewModel.shareErrorMessage ?? "")
             }
           #else
             Button("Share Logs") {}
@@ -128,7 +126,7 @@ struct SettingsView: View {
         }
         Section(header: Text("About")) {
           HStack {
-            Text(aboutDetailString())
+            Text(viewModel.aboutText)
               .multilineTextAlignment(.trailing)
           }
         }
@@ -137,10 +135,20 @@ struct SettingsView: View {
       #if canImport(UIKit)
         .sheet(isPresented: $isPresentingShare) {
           ShareSheet(activityItems: shareItems)
-          .onDisappear { shareItems = [] }
+          .onDisappear {
+            shareItems = []
+            viewModel.clearShareURL()
+          }
         }
       #endif
     }
+    #if canImport(UIKit)
+      .onChange(of: viewModel.shareURL) { _, url in
+        guard let url else { return }
+        shareItems = [url]
+        isPresentingShare = true
+      }
+    #endif
   }
 
   @ViewBuilder
@@ -182,45 +190,6 @@ struct SettingsView: View {
       .disabled(viewModel.isConnectButtonDisabled)
       Spacer()
     }
-  }
-
-  #if canImport(UIKit)
-    private func sanitizedFilename(from name: String) -> String {
-      let allowed = CharacterSet.alphanumerics
-        .union(.whitespaces)
-        .union(CharacterSet(charactersIn: "-_."))
-      let cleanedScalars = name.unicodeScalars.map {
-        allowed.contains($0) ? Character($0) : "-"
-      }
-      let interim = String(cleanedScalars)
-        .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-        .replacingOccurrences(of: "-{2,}", with: "-", options: .regularExpression)
-        .trimmingCharacters(in: .whitespacesAndNewlines)
-      return interim.isEmpty ? "App" : interim
-    }
-
-    private func shareLogs_iOS() async {
-      isGeneratingLogs = true
-      defer { isGeneratingLogs = false }
-
-      do {
-        // collect last 5 minutes
-        let data = try await collectLogs(since: -300)
-        let safeBase = sanitizedFilename(from: aboutDetailString())
-        let fileName = "\(safeBase)-logs.json"
-        let url = try writeToTemporaryFile(data: data, suggestedName: fileName)
-        shareItems = [url]
-        isPresentingShare = true
-      } catch {
-        shareError = error.localizedDescription
-      }
-    }
-  #endif
-
-  private func writeToTemporaryFile(data: Data, suggestedName: String) throws -> URL {
-    let url = FileManager.default.temporaryDirectory.appendingPathComponent(suggestedName)
-    try data.write(to: url, options: .atomic)
-    return url
   }
 }
 

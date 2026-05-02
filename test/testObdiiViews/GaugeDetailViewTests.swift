@@ -55,7 +55,12 @@ final class GaugeDetailViewTests: XCTestCase {
         statsProvider: MockStatsProvider,
         unitsProvider: MockUnitsProvider
     ) -> (GaugeDetailViewModel, MockStatsProvider, MockUnitsProvider) {
-        let vm = GaugeDetailViewModel(pid: pid, statsProvider: statsProvider, unitsProvider: unitsProvider)
+        let vm = GaugeDetailViewModel(
+            pid: pid,
+            statsProvider: statsProvider,
+            unitsProvider: unitsProvider,
+            interestRegistry: PIDInterestRegistry.shared
+        )
         return (vm, statsProvider, unitsProvider)
     }
     
@@ -65,16 +70,20 @@ final class GaugeDetailViewTests: XCTestCase {
         await Task.yield()
     }
 
+    private func makeView() -> GaugeDetailView {
+        GaugeDetailView(viewModel: GaugeDetailViewModel(pid: testPID))
+    }
+
     
     func testHasList() throws {
-        let view = GaugeDetailView(pid: testPID)
+        let view = makeView()
         let list = try view.inspect().find(ViewType.List.self)
         XCTAssertNotNil(list, "GaugeDetailView should contain a List")
     }
 
     
     func testHasStatisticsSection() throws {
-        let view = GaugeDetailView(pid: testPID)
+        let view = makeView()
         
         // Should have List with sections
         let list = try view.inspect().find(ViewType.List.self)
@@ -127,9 +136,10 @@ final class GaugeDetailViewTests: XCTestCase {
         let list = try inspected.find(ViewType.List.self)
         // Sections: 0=Current, 1=Statistics, 2=Maximum Range
         let statsSection = try list.section(1)
-        let minText = try statsSection.text(0).string()
-        let maxText = try statsSection.text(1).string()
-        let samplesText = try statsSection.text(2).string()
+        let rows = try statsSection.forEach(0)
+        let minText = try rows.text(0).string()
+        let maxText = try rows.text(1).string()
+        let samplesText = try rows.text(2).string()
         
         // Assert
         XCTAssertTrue(minText.contains("Min:"), "Should label Min")
@@ -161,13 +171,13 @@ final class GaugeDetailViewTests: XCTestCase {
 
     
     func testHasSections() throws {
-        let view = GaugeDetailView(pid: testPID)
+        let view = makeView()
         let sections = try view.inspect().findAll(ViewType.Section.self)
         XCTAssertGreaterThan(sections.count, 0, "Should have sections")
     }
     
     func testHasSectionHeaders() throws {
-        let view = GaugeDetailView(pid: testPID)
+        let view = makeView()
         let texts = try view.inspect().findAll(ViewType.Text.self)
         let hasHeaderText = texts.contains { text in
             guard let string = try? text.string() else { return false }
@@ -190,14 +200,14 @@ final class GaugeDetailViewTests: XCTestCase {
 
     
     func testUsesGaugeNameAsTitle() throws {
-        let view = GaugeDetailView(pid: testPID)
+        let view = makeView()
         let list = try view.inspect().find(ViewType.List.self)
         XCTAssertNotNil(list, "View structure should be correct")
     }
 
     
     func testStatisticsHaveAccessibilityIdentifiers() throws {
-        let view = GaugeDetailView(pid: testPID)
+        let view = makeView()
         let texts = try view.inspect().findAll(ViewType.Text.self)
         XCTAssertGreaterThan(texts.count, 0, "Statistics should have accessibility identifiers")
     }
@@ -210,7 +220,8 @@ final class GaugeDetailViewTests: XCTestCase {
         let viewModel = GaugeDetailViewModel(
             pid: testPID,
             statsProvider: statsProvider,
-            unitsProvider: unitsProvider
+            unitsProvider: unitsProvider,
+            interestRegistry: PIDInterestRegistry.shared
         )
         
         // Seed a stat for the PID
@@ -235,7 +246,8 @@ final class GaugeDetailViewTests: XCTestCase {
         let viewModel = GaugeDetailViewModel(
             pid: testPID,
             statsProvider: statsProvider,
-            unitsProvider: unitsProvider
+            unitsProvider: unitsProvider,
+            interestRegistry: PIDInterestRegistry.shared
         )
         
         // Seed initial stat

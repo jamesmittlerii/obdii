@@ -14,8 +14,7 @@ import SwiftOBD2
 import SwiftUI
 
 struct RingGaugeView: View {
-  let pid: OBDPID
-  let measurement: MeasurementResult?
+  let model: GaugesViewModel.RingDisplayData
 
   private let startAngle: Angle = .radians((5.0 / 6.0) * .pi)  // ~300° (8 o’clock)
   private let sweepAngle: Angle = .radians((4.0 / 3.0) * .pi)  // 240°
@@ -26,41 +25,10 @@ struct RingGaugeView: View {
   private let tickLengthRatio: CGFloat = 0.10
   private let tickThickness: CGFloat = 2
 
-  private var colorUnitSystem: MeasurementUnit {
-    if let m = measurement { return measurementUnit(from: m.unit) }
-    return ConfigData.shared.units
-  }
-
-  private var combinedRange: ValueRange {
-    let ranges = [pid.typicalRange, pid.warningRange, pid.dangerRange].compactMap { $0 }
-    let fallback = pid.typicalRange ?? ValueRange(min: 0, max: 1)
-
-    let metricMin = ranges.map(\.min).min() ?? fallback.min
-    let metricMax = ranges.map(\.max).max() ?? fallback.max
-    var combined = ValueRange(min: metricMin, max: metricMax)
-
-    // Convert only if the PID defines explicit units
-    if let units = pid.units, measurement != nil {
-      combined = combined.converted(from: units, to: colorUnitSystem)
-    }
-    return combined
-  }
-
-  private var typicalBand: ValueRange? { pid.typicalRange(for: colorUnitSystem) }
-  private var warnBand: ValueRange? { pid.warningRange(for: colorUnitSystem) }
-  private var dangerBand: ValueRange? { pid.dangerRange(for: colorUnitSystem) }
-
-  private var value: Double? { measurement?.value }
-
-  private var displayText: String {
-    measurement.map { pid.formatted(measurement: $0, includeUnits: true) }
-      ?? "— \(pid.unitLabel(for: colorUnitSystem))"
-  }
-
   private enum SplitPart { case first, second }
 
   private func splitDisplayText(_ part: SplitPart) -> String {
-    let s = displayText
+    let s = model.displayText
     guard let idx = s.firstIndex(of: " ") else { return part == .first ? s : "" }
 
     let first = String(s[..<idx])
@@ -106,19 +74,18 @@ struct RingGaugeView: View {
         // band(warnBand,    color: .yellow, lineWidth: lineWidth)
         // band(dangerBand,  color: .red, lineWidth: lineWidth)
 
-        if let v = value {
-          let normalized = combinedRange.normalizedPosition(for: v).clamped01
+        if let progress = model.progress {
           let progressEnd = Angle(
-            radians: startAngle.radians + sweepAngle.radians * normalized
+            radians: startAngle.radians + sweepAngle.radians * progress.clamped01
           )
 
           ArcShape(start: startAngle, end: progressEnd)
             .inset(by: lineWidth / 2)
             .stroke(
-              progressColor(for: v),
+              model.progressColor,
               style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
             )
-            .animation(.easeInOut(duration: 0.35), value: v)
+            .animation(.easeInOut(duration: 0.35), value: progress)
         }
 
         VStack(spacing: 4) {
@@ -136,47 +103,8 @@ struct RingGaugeView: View {
       .frame(width: dim, height: dim)
       .position(x: proxy.frame(in: .local).midX, y: dim / 2)
     }
-    .accessibilityLabel(pid.name)
-    .accessibilityValue(displayText)
-  }
-
-  private func measurementUnit(from unit: Unit) -> MeasurementUnit {
-    switch unit {
-    case is UnitTemperature:
-      return unit == UnitTemperature.fahrenheit ? .imperial : .metric
-    case is UnitSpeed:
-      return unit == UnitSpeed.milesPerHour ? .imperial : .metric
-    case is UnitPressure:
-      return unit == UnitPressure.poundsForcePerSquareInch ? .imperial : .metric
-    case is UnitLength:
-      return unit == UnitLength.miles ? .imperial : .metric
-    default:
-      return .metric
-    }
-  }
-
-  private func band(_ range: ValueRange?, color: Color, lineWidth: CGFloat) -> some View {
-    guard let r = range else { return AnyView(EmptyView()) }
-
-    let start = angle(for: r.min, in: combinedRange)
-    let end = angle(for: r.max, in: combinedRange)
-
-    return AnyView(
-      ArcShape(start: start, end: end)
-        .inset(by: lineWidth / 2)
-        .stroke(
-          color.opacity(0.25),
-          style: StrokeStyle(lineWidth: lineWidth, lineCap: .butt))
-    )
-  }
-
-  private func angle(for value: Double, in range: ValueRange) -> Angle {
-    let n = range.normalizedPosition(for: value).clamped01
-    return Angle(radians: startAngle.radians + sweepAngle.radians * n)
-  }
-
-  private func progressColor(for value: Double) -> Color {
-    pid.color(for: value, unit: colorUnitSystem)
+    .accessibilityLabel(model.accessibilityLabel)
+    .accessibilityValue(model.accessibilityValue)
   }
 }
 

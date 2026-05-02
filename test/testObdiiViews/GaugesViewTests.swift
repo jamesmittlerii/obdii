@@ -55,7 +55,8 @@ final class GaugesViewTests: XCTestCase {
         GaugesViewModel(
             pidProvider: MockPIDListProvider(pids: pids),
             statsProvider: MockPIDStatsProvider(stats: stats),
-            unitsProvider: MockUnitsProvider(units: units)
+            unitsProvider: MockUnitsProvider(units: units),
+            interestRegistry: PIDInterestRegistry.shared
         )
     }
     
@@ -65,7 +66,7 @@ final class GaugesViewTests: XCTestCase {
         units: MeasurementUnit = .metric
     ) -> GaugesView {
         let vm = makeViewModelWithMocks(pids: pids, stats: stats, units: units)
-        return GaugesView(viewModel: vm, interestToken: UUID())
+        return GaugesView(viewModel: vm)
     }
     
     private func pidStats(
