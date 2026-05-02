@@ -44,7 +44,7 @@ dependencies:
   flutter_obd2:
     git:
       url: https://github.com/jamesmittlerii/SwiftOBD2.git
-      ref: flutter
+      ref: main
       path: flutterobd2
   file_selector: ^1.1.0
   permission_handler: ^12.0.1
