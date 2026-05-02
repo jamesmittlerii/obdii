@@ -31,6 +31,7 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 .metadata
+pubspec_overrides.yaml
 /build/
 /coverage/
 
