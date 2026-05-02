@@ -18,7 +18,7 @@ on:
       - ".github/workflows/caller_flutter.yml"
 
 concurrency:
-  group: ${{ github.repository }}-ios-release-${{ github.ref }}
+  group: ${{ github.repository }}-release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -50,10 +50,17 @@ jobs:
           path = pathlib.Path("pubspec.yaml")
           text = path.read_text(encoding="utf-8")
           m = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$", text, re.MULTILINE)
-          if not m: sys.exit(1)
+          if not m:
+              sys.exit(1)
           major, minor, patch, build = map(int, m.groups())
           new_version = f"{major}.{minor}.{patch + 1}+{build + 1}"
-          updated = re.sub(r"^version:\s*.*$", f"version: {new_version}", text, count=1, flags=re.MULTILINE)
+          updated = re.sub(
+              r"^version:\s*.*$",
+              f"version: {new_version}",
+              text,
+              count=1,
+              flags=re.MULTILINE,
+          )
           path.write_text(updated, encoding="utf-8")
           PY
 
@@ -167,8 +174,6 @@ jobs:
           ref: ${{ needs.prepare.outputs.commit_sha }}
           submodules: recursive
           token: ${{ secrets.PAT_TOKEN }}
-
-      - uses: gradle/actions/setup-gradle@v4
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -310,7 +315,8 @@ jobs:
           java-version: "21"
           cache: gradle
 
-      - uses: gradle/actions/setup-gradle@v4
+      - name: Setup Gradle cache
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -318,12 +324,6 @@ jobs:
           channel: stable
           cache: true
           pub-cache: true
-
-      - name: Install Android CMake
-        run: |
-          if [ ! -d "$ANDROID_HOME/cmake/3.22.1" ]; then
-            sdkmanager "cmake;3.22.1"
-          fi
 
       - name: Install dependencies
         working-directory: flutter_obdii
