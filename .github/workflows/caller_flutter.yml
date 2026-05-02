@@ -231,7 +231,7 @@ jobs:
           path: ${{ steps.msix.outputs.path }}
 
       - name: Setup Microsoft Store CLI
-        uses: microsoft/microsoft-store-apppublisher@v2
+        uses: microsoft/microsoft-store-apppublisher@v1
 
       - name: Preflight Store secrets
         shell: pwsh
