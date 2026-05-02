@@ -64,7 +64,8 @@ final class GaugeDetailViewModelTests: XCTestCase {
         viewModel = GaugeDetailViewModel(
             pid: testPID,
             statsProvider: statsProvider,
-            unitsProvider: unitsProvider
+            unitsProvider: unitsProvider,
+            interestRegistry: PIDInterestRegistry.shared
         )
     }
 

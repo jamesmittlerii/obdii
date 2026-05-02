@@ -30,7 +30,24 @@ extension OBDConnectionManager: MILStatusProviding {
 @Observable
 final class MILStatusViewModel: BaseViewModel {
 
+  struct SummaryRow: Equatable {
+    let symbolName: String
+    let symbolColor: String
+    let text: String
+  }
+
+  struct MonitorRow: Identifiable, Equatable {
+    let id: String
+    let name: String
+    let readyText: String
+    let symbolName: String
+    let symbolColor: String
+    let accessibilityLabel: String
+  }
+
   private let provider: MILStatusProviding
+  private let interestRegistry: PIDInterestManaging
+  private let interestToken: UUID
 
   private(set) var status: Status? {
     didSet {
@@ -42,8 +59,14 @@ final class MILStatusViewModel: BaseViewModel {
 
   private var cancellables = Set<AnyCancellable>()
 
-  init(provider: MILStatusProviding) {
+  init(
+    provider: MILStatusProviding,
+    interestRegistry: PIDInterestManaging? = nil
+  ) {
     self.provider = provider
+    let interestRegistry = interestRegistry ?? PIDInterestRegistry.shared
+    self.interestRegistry = interestRegistry
+    self.interestToken = interestRegistry.makeToken()
     super.init()
 
     provider.milStatusPublisher
@@ -59,6 +82,10 @@ final class MILStatusViewModel: BaseViewModel {
     self.init(provider: OBDConnectionManager.shared)
   }
 
+  var isWaiting: Bool {
+    status == nil
+  }
+
   var headerText: String {
     guard let status else { return "No MIL Status" }
     let dtcLabel = status.dtcCount == 1 ? "1 DTC" : "\(status.dtcCount) DTCs"
@@ -67,6 +94,15 @@ final class MILStatusViewModel: BaseViewModel {
 
   var hasStatus: Bool {
     status != nil
+  }
+
+  var summaryRow: SummaryRow? {
+    guard let status else { return nil }
+    return SummaryRow(
+      symbolName: "wrench.and.screwdriver",
+      symbolColor: status.milOn ? "orange" : "blue",
+      text: headerText
+    )
   }
 
   var sortedSupportedMonitors: [ReadinessMonitor] {
@@ -92,5 +128,26 @@ final class MILStatusViewModel: BaseViewModel {
       // Tie-break alphabetically
       return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
     }
+  }
+
+  var monitorRows: [MonitorRow] {
+    sortedSupportedMonitors.map {
+      MonitorRow(
+        id: $0.name,
+        name: $0.name,
+        readyText: $0.ready ? "Ready" : "Not Ready",
+        symbolName: "gauge",
+        symbolColor: $0.ready ? "blue" : "orange",
+        accessibilityLabel: "\($0.name), \($0.ready ? "Ready" : "Not Ready")"
+      )
+    }
+  }
+
+  func onAppear() {
+    interestRegistry.replace(pids: [.mode1(.status)], for: interestToken)
+  }
+
+  func onDisappear() {
+    interestRegistry.clear(token: interestToken)
   }
 }

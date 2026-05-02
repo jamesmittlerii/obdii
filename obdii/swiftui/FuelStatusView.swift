@@ -1,4 +1,3 @@
-import SwiftOBD2
 /**
  * __Final Project__
  * Jim Mittler
@@ -17,7 +16,6 @@ import SwiftUI
 struct FuelStatusView: View {
 
   @State private var viewModel: FuelStatusViewModel
-  @State private var interestToken = PIDInterestRegistry.shared.makeToken()
 
   // Default initializer preserves existing app behavior
   init() {
@@ -38,34 +36,22 @@ struct FuelStatusView: View {
       }
       .navigationTitle("Fuel Control Status")
     }
-    .onAppear {
-      PIDInterestRegistry.shared.replace(
-        pids: [.mode1(.fuelStatus)],
-        for: interestToken
-      )
-    }
-    .onDisappear {
-      PIDInterestRegistry.shared.clear(token: interestToken)
-    }
+    .onAppear { viewModel.onAppear() }
+    .onDisappear { viewModel.onDisappear() }
   }
 
   @ViewBuilder
   private var content: some View {
 
     // 1) Waiting state
-    if viewModel.status == nil {
+    if viewModel.isWaiting {
       waitingRow
 
       // 2) Loaded content
     } else {
-      if let b1 = viewModel.bank1 {
-        fuelRow(title: "Bank 1", description: b1.description)
-          .accessibilityLabel("Bank 1, \(b1.description)")
-      }
-
-      if let b2 = viewModel.bank2 {
-        fuelRow(title: "Bank 2", description: b2.description)
-          .accessibilityLabel("Bank 2, \(b2.description)")
+      ForEach(viewModel.bankRows) { row in
+        fuelRow(title: row.title, description: row.description)
+          .accessibilityLabel(row.accessibilityLabel)
       }
 
       if !viewModel.hasAnyStatus {

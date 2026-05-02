@@ -1,4 +1,3 @@
-import SwiftOBD2
 /**
  * __Final Project__
  * Jim Mittler
@@ -28,15 +27,12 @@ struct MILStatusView: View {
     _viewModel = State(initialValue: viewModel)
   }
 
-  // Demand-driven PID interest
-  @State private var interestToken: UUID = PIDInterestRegistry.shared.makeToken()
-
   var body: some View {
     NavigationStack {
       List {
 
         Section(header: Text("Malfunction Indicator Lamp")) {
-          if viewModel.status == nil {
+          if viewModel.isWaiting {
             // Waiting for first payload
             HStack(spacing: 12) {
               ProgressView()
@@ -46,16 +42,16 @@ struct MILStatusView: View {
             }
             .accessibilityLabel("Waiting for data")
 
-          } else if viewModel.hasStatus {
+          } else if let summary = viewModel.summaryRow {
             HStack(spacing: 12) {
-              Image(systemName: "wrench.and.screwdriver")
-                .foregroundStyle(viewModel.status!.milOn ? .orange : .blue)
+              Image(systemName: summary.symbolName)
+                .foregroundStyle(summary.symbolColor == "orange" ? .orange : .blue)
                 .imageScale(.large)
 
-              Text(viewModel.headerText)
+              Text(summary.text)
                 .font(.headline)
             }
-            .accessibilityLabel(viewModel.headerText)
+            .accessibilityLabel(summary.text)
 
           } else {
             Label("No MIL Status", systemImage: "info.circle")
@@ -63,12 +59,12 @@ struct MILStatusView: View {
           }
         }
 
-        if viewModel.status != nil {
+        if viewModel.hasStatus {
           Section(header: Text("Readiness Monitors")) {
-            ForEach(viewModel.sortedSupportedMonitors, id: \.name) { monitor in
+            ForEach(viewModel.monitorRows) { monitor in
               HStack(spacing: 12) {
-                Image(systemName: "gauge")
-                  .foregroundStyle(monitor.ready ? .blue : .orange)
+                Image(systemName: monitor.symbolName)
+                  .foregroundStyle(monitor.symbolColor == "blue" ? .blue : .orange)
                   .imageScale(.medium)
 
                 Text(monitor.name)
@@ -78,26 +74,15 @@ struct MILStatusView: View {
                 Text(monitor.readyText)
                   .foregroundStyle(.secondary)
               }
-              .accessibilityLabel("\(monitor.name), \(monitor.readyText)")
+              .accessibilityLabel(monitor.accessibilityLabel)
             }
           }
         }
       }
       .navigationTitle("MIL Status")
     }
-    .onAppear {
-      PIDInterestRegistry.shared.replace(pids: [.mode1(.status)], for: interestToken)
-    }
-    .onDisappear {
-      PIDInterestRegistry.shared.clear(token: interestToken)
-    }
-  }
-}
-
-extension ReadinessMonitor {
-  fileprivate var readyText: String {
-    // ready is a non-optional Bool per the compiler error.
-    return ready ? "Ready" : "Not Ready"
+    .onAppear { viewModel.onAppear() }
+    .onDisappear { viewModel.onDisappear() }
   }
 }
 

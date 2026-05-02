@@ -1,4 +1,5 @@
 import Combine
+import Foundation
 import Observation
 /**
  * __Final Project__
@@ -18,9 +19,17 @@ import SwiftOBD2
 @Observable
 final class GaugeDetailViewModel: BaseViewModel {
 
+  struct StatisticRow: Identifiable, Equatable {
+    let id: String
+    let text: String
+  }
+
   let pid: OBDPID
   private let statsProvider: PIDStatsProviding
   private let unitsProvider: UnitsProviding
+  private let interestRegistry: PIDInterestManaging
+  private let interestToken: UUID
+  private var currentUnits: MeasurementUnit = .metric
 
   private(set) var stats: OBDConnectionManager.PIDStats? {
     didSet {
@@ -35,11 +44,14 @@ final class GaugeDetailViewModel: BaseViewModel {
   init(
     pid: OBDPID,
     statsProvider: PIDStatsProviding,
-    unitsProvider: UnitsProviding
+    unitsProvider: UnitsProviding,
+    interestRegistry: PIDInterestManaging
   ) {
     self.pid = pid
     self.statsProvider = statsProvider
     self.unitsProvider = unitsProvider
+    self.interestRegistry = interestRegistry
+    self.interestToken = interestRegistry.makeToken()
     self.stats = statsProvider.currentStats(for: pid.pid)
 
     super.init()
@@ -52,8 +64,49 @@ final class GaugeDetailViewModel: BaseViewModel {
     self.init(
       pid: pid,
       statsProvider: OBDConnectionManager.shared,
-      unitsProvider: ConfigData.shared
+      unitsProvider: ConfigData.shared,
+      interestRegistry: PIDInterestRegistry.shared
     )
+  }
+
+  var title: String {
+    pid.name
+  }
+
+  var currentValueText: String {
+    if let stats {
+      pid.formatted(measurement: stats.latest, includeUnits: true)
+    } else {
+      "— \(pid.unitLabel(for: currentUnits))"
+    }
+  }
+
+  var statisticsRows: [StatisticRow] {
+    guard let stats else { return [] }
+
+    return [
+      StatisticRow(
+        id: "min",
+        text: "Min: \(formatted(value: stats.min, unit: stats.latest.unit))"
+      ),
+      StatisticRow(
+        id: "max",
+        text: "Max: \(formatted(value: stats.max, unit: stats.latest.unit))"
+      ),
+      StatisticRow(id: "samples", text: "Samples: \(stats.sampleCount)"),
+    ]
+  }
+
+  var maximumRangeText: String {
+    pid.displayRange(for: currentUnits)
+  }
+
+  func onAppear() {
+    interestRegistry.replace(pids: [pid.pid], for: interestToken)
+  }
+
+  func onDisappear() {
+    interestRegistry.clear(token: interestToken)
   }
 
   private func bindPIDStats() {
@@ -71,12 +124,21 @@ final class GaugeDetailViewModel: BaseViewModel {
   private func bindUnits() {
     unitsProvider.unitsPublisher
       .removeDuplicates()
-      .sink { [unowned self] _ in
+      .sink { [unowned self] units in
+        self.currentUnits = units
         // Force a refresh so the UI re-renders with new unit formatting
         self.stats = self.statsProvider.currentStats(for: self.pid.pid)
       }
       .store(in: &cancellables)
   }
+
+  private func formatted(value: Double, unit: Unit) -> String {
+    pid.formatted(
+      measurement: MeasurementResult(value: value, unit: unit),
+      includeUnits: true
+    )
+  }
+
   // Prevents UI from updating unless the change is meaningful.
   private static func isSameStats(
     _ lhs: OBDConnectionManager.PIDStats?,

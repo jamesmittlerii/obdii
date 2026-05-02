@@ -14,6 +14,50 @@ import Foundation
 import Observation
 import SwiftOBD2
 
+protocol AppInfoProviding {
+  var aboutText: String { get }
+}
+
+struct BundleAppInfoProvider: AppInfoProviding {
+  let bundle: Bundle
+
+  init(bundle: Bundle = .main) {
+    self.bundle = bundle
+  }
+
+  var aboutText: String {
+    aboutDetailString(bundle: bundle)
+  }
+}
+
+protocol SettingsLogExporting {
+  func exportLogs(baseName: String) async throws -> URL
+}
+
+struct DefaultSettingsLogExporter: SettingsLogExporting {
+  func exportLogs(baseName: String) async throws -> URL {
+    let data = try await collectLogs(since: -300)
+    let fileName = "\(sanitizedFilename(from: baseName))-logs.json"
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+    try data.write(to: url, options: .atomic)
+    return url
+  }
+
+  private func sanitizedFilename(from name: String) -> String {
+    let allowed = CharacterSet.alphanumerics
+      .union(.whitespaces)
+      .union(CharacterSet(charactersIn: "-_."))
+    let cleanedScalars = name.unicodeScalars.map {
+      allowed.contains($0) ? Character($0) : "-"
+    }
+    let interim = String(cleanedScalars)
+      .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+      .replacingOccurrences(of: "-{2,}", with: "-", options: .regularExpression)
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    return interim.isEmpty ? "App" : interim
+  }
+}
+
 // ---------------------------------------------
 
 @MainActor
@@ -76,6 +120,8 @@ final class SettingsViewModel: BaseViewModel {
 
   private let config: SettingsConfigProviding
   private let connection: OBDConnectionControlling
+  private let appInfoProvider: AppInfoProviding
+  private let logExporter: SettingsLogExporting
 
   var wifiHost: String {
     didSet {
@@ -109,6 +155,18 @@ final class SettingsViewModel: BaseViewModel {
     didSet { onChanged?() }
   }
 
+  private(set) var shareURL: URL? {
+    didSet { onChanged?() }
+  }
+
+  private(set) var isGeneratingLogs = false {
+    didSet { onChanged?() }
+  }
+
+  private(set) var shareErrorMessage: String? {
+    didSet { onChanged?() }
+  }
+
   var units: MeasurementUnit {
     didSet {
       guard oldValue != units else { return }
@@ -136,12 +194,20 @@ final class SettingsViewModel: BaseViewModel {
     connectionState == .connecting
   }
 
+  var aboutText: String {
+    appInfoProvider.aboutText
+  }
+
   init(
     config: SettingsConfigProviding,
-    connection: OBDConnectionControlling
+    connection: OBDConnectionControlling,
+    appInfoProvider: AppInfoProviding = BundleAppInfoProvider(),
+    logExporter: SettingsLogExporting = DefaultSettingsLogExporter()
   ) {
     self.config = config
     self.connection = connection
+    self.appInfoProvider = appInfoProvider
+    self.logExporter = logExporter
 
     self.wifiHost = config.wifiHost
     self.wifiPort = config.wifiPort
@@ -149,6 +215,8 @@ final class SettingsViewModel: BaseViewModel {
     self.connectionType = config.connectionType
     self.units = config.units
     self.connectionState = connection.connectionState
+    self.shareURL = nil
+    self.shareErrorMessage = nil
 
     super.init()
     bindExternalPublishers()
@@ -234,5 +302,25 @@ final class SettingsViewModel: BaseViewModel {
     case .connecting:
       break
     }
+  }
+
+  func prepareLogShare() async {
+    isGeneratingLogs = true
+    shareErrorMessage = nil
+    defer { isGeneratingLogs = false }
+
+    do {
+      shareURL = try await logExporter.exportLogs(baseName: aboutText)
+    } catch {
+      shareErrorMessage = error.localizedDescription
+    }
+  }
+
+  func clearShareURL() {
+    shareURL = nil
+  }
+
+  func clearShareError() {
+    shareErrorMessage = nil
   }
 }

@@ -14,24 +14,44 @@ import Combine
 import Foundation
 import Observation
 import SwiftOBD2
+import SwiftUI
+
+@MainActor
+protocol PIDStoreProviding: AnyObject {
+  var pids: [OBDPID] { get }
+  var pidsPublisher: AnyPublisher<[OBDPID], Never> { get }
+  func toggle(_ pid: OBDPID)
+  func moveEnabled(fromOffsets offsets: IndexSet, toOffset newOffset: Int)
+}
+
+extension PIDStore: PIDStoreProviding {}
 
 @MainActor
 @Observable
 final class PIDToggleListViewModel {
+  struct Row: Identifiable, Equatable {
+    let id: UUID
+    let title: String
+    let subtitle: String
+    let isOn: Bool
+    let accessibilityIdentifier: String
+  }
+
   // Local mirror of the store’s PID list (copied for sorting/filtering UI).
   private(set) var pids: [OBDPID] = []
   // Raw search string from the UI.
   var searchText: String = ""
 
-  private let store: PIDStore
+  private let store: PIDStoreProviding
   private var cancellables = Set<AnyCancellable>()
 
-  init() {
-    self.store = .shared
+  init(store: PIDStoreProviding? = nil) {
+    let store = store ?? PIDStore.shared
+    self.store = store
     self.pids = store.pids  // seed mirror
 
     // Keep local mirror in sync with the store without mutating during view computation
-    store.$pids
+    store.pidsPublisher
       .receive(on: RunLoop.main)
       .sink { [weak self] in self?.pids = $0 }
       .store(in: &cancellables)
@@ -53,6 +73,23 @@ final class PIDToggleListViewModel {
   var filteredDisabled: [OBDPID] {
     let base = pids.filter { !$0.enabled && $0.kind == .gauge }
     return applySearch(base)
+  }
+
+  var enabledRows: [Row] {
+    filteredEnabled.map(makeRow)
+  }
+
+  var disabledRows: [Row] {
+    filteredDisabled.map(makeRow)
+  }
+
+  var isSearchActive: Bool {
+    !searchText.isEmpty
+  }
+
+  var emptySearchMessage: String? {
+    guard enabledRows.isEmpty && disabledRows.isEmpty && isSearchActive else { return nil }
+    return "No results for “\(searchText)”"
   }
 
   private var normalizedQuery: String {
@@ -85,5 +122,28 @@ final class PIDToggleListViewModel {
 
   func moveEnabled(fromOffsets offsets: IndexSet, toOffset newOffset: Int) {
     store.moveEnabled(fromOffsets: offsets, toOffset: newOffset)  // subscription will update pids
+  }
+
+  func binding(for rowID: UUID) -> Binding<Bool> {
+    Binding(
+      get: {
+        self.pids.first(where: { $0.id == rowID })?.enabled ?? false
+      },
+      set: { newValue in
+        if let index = self.pids.firstIndex(where: { $0.id == rowID }) {
+          self.toggle(at: index, to: newValue)
+        }
+      }
+    )
+  }
+
+  private func makeRow(_ pid: OBDPID) -> Row {
+    Row(
+      id: pid.id,
+      title: pid.name,
+      subtitle: pid.displayRange,
+      isOn: pid.enabled,
+      accessibilityIdentifier: "PIDToggle_\(pid.id.uuidString)"
+    )
   }
 }

@@ -66,7 +66,8 @@ final class GaugeListViewTests: XCTestCase {
         GaugesViewModel(
             pidProvider: MockPIDListProvider(pids: pids),
             statsProvider: MockPIDStatsProvider(stats: stats),
-            unitsProvider: MockUnitsProvider(units: units)
+            unitsProvider: MockUnitsProvider(units: units),
+            interestRegistry: PIDInterestRegistry.shared
         )
     }
     
