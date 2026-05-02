@@ -22,7 +22,6 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # --- COMMON PREPARATION JOB ---
   prepare:
     name: Versioning & Dependencies
     runs-on: macos-26
@@ -71,7 +70,6 @@ jobs:
         id: capture_sha
         run: echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-  # --- PARALLEL DEPLOYMENT JOBS ---
   deploy:
     name: ${{ matrix.platform }} ${{ matrix.display_name }}
     needs: prepare
@@ -79,7 +77,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # This creates the 4 parallel combinations
         platform: [ios, macos]
         project: [obdiif, obdiic]
         include:
@@ -98,12 +95,12 @@ jobs:
           submodules: recursive
           token: ${{ secrets.PAT_TOKEN }}
 
-      # Common Tooling Setup (Required per-runner)
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+          pub-cache: true
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -130,7 +127,6 @@ jobs:
           unzip -q bws.zip -d "$HOME/.local/bin"
           chmod +x "$HOME/.local/bin/bws"
 
-      # Platform Specific Setup
       - name: Install Pods
         working-directory: flutter_obdii/${{ matrix.platform }}
         run: |
@@ -146,13 +142,11 @@ jobs:
           cp ../../fastlane/Appfile fastlane/Appfile
           cp ../../fastlane/Matchfile fastlane/Matchfile
 
-      # Execution
       - name: Build & Upload to TestFlight
         working-directory: flutter_obdii/${{ matrix.platform }}
         run: |
           bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta
 
-      # Failure Handling
       - name: Upload Logs on Failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -162,7 +156,6 @@ jobs:
 
   windows_store_material:
     name: Windows Store Material
-    if: true
     needs: prepare
     runs-on: windows-latest
     env:
@@ -175,11 +168,14 @@ jobs:
           submodules: recursive
           token: ${{ secrets.PAT_TOKEN }}
 
+      - uses: gradle/actions/setup-gradle@v4
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+          pub-cache: true
 
       - name: Install dependencies
         working-directory: flutter_obdii
@@ -201,7 +197,6 @@ jobs:
             throw "Could not parse pubspec version from $pubspecPath"
           }
 
-          # Microsoft Store requires the 4th segment (revision) to be 0.
           $msixVersion = "$($versionMatch.Groups[1].Value).$($versionMatch.Groups[2].Value).$($versionMatch.Groups[3].Value).0"
           $updated = [regex]::Replace($content, '(?m)^(\s*)msix_version:\s*.*$', "`${1}msix_version: $msixVersion", 1)
           if ($updated -eq $content) {
@@ -262,8 +257,7 @@ jobs:
 
       - name: Preflight msstore CLI
         shell: pwsh
-        run: |
-          msstore --version
+        run: msstore --version
 
       - name: Preflight package path
         shell: pwsh
@@ -286,13 +280,13 @@ jobs:
       - name: Clear existing Store draft submission
         shell: pwsh
         run: |
-          msstore submission delete "${{ secrets.MS_STORE_PRODUCT_ID }}" --flightId  "f02525fd-3718-40e0-b657-bf60db9af138" --no-confirm
+          msstore submission delete "${{ secrets.MS_STORE_PRODUCT_ID }}" --flightId "f02525fd-3718-40e0-b657-bf60db9af138" --no-confirm
         continue-on-error: true
 
       - name: Publish package to Microsoft Store (internal flight)
         shell: pwsh
         run: |
-          msstore publish "${{ steps.msix.outputs.path }}" --flightId  "f02525fd-3718-40e0-b657-bf60db9af138" -id "${{ secrets.MS_STORE_PRODUCT_ID }}"
+          msstore publish "${{ steps.msix.outputs.path }}" --flightId "f02525fd-3718-40e0-b657-bf60db9af138" -id "${{ secrets.MS_STORE_PRODUCT_ID }}"
 
   google_play_material:
     name: Google Play Material
@@ -316,11 +310,20 @@ jobs:
           java-version: "21"
           cache: gradle
 
+      - uses: gradle/actions/setup-gradle@v4
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+          pub-cache: true
+
+      - name: Install Android CMake
+        run: |
+          if [ ! -d "$ANDROID_HOME/cmake/3.22.1" ]; then
+            sdkmanager "cmake;3.22.1"
+          fi
 
       - name: Install dependencies
         working-directory: flutter_obdii
@@ -373,8 +376,7 @@ jobs:
 
       - name: Build Material release app bundle
         working-directory: flutter_obdii
-        run: |
-          flutter build appbundle --release --flavor material --target ${{ env.FLUTTER_TARGET }}
+        run: flutter build appbundle --release --flavor material --target ${{ env.FLUTTER_TARGET }}
 
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
