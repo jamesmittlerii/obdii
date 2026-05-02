@@ -73,7 +73,7 @@ private struct GaugeTile: View {
 
 
       RingGaugeView(model: tile.ring)
-        .frame(width: 120, height: 120)
+        .frame(width: 120, height: 96)
 
       Text(tile.shortTitle)
         .font(.headline)
