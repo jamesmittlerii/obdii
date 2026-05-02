@@ -156,7 +156,7 @@ jobs:
 
       - name: Upload Logs on Failure
         if: failure()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: gym-logs-${{ matrix.platform }}-${{ matrix.project }}
           path: ~/Library/Logs/gym/*.log
@@ -225,7 +225,7 @@ jobs:
           "path=$($pkg.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Upload Windows package artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: windows-material-msixupload
           path: ${{ steps.msix.outputs.path }}
@@ -316,7 +316,7 @@ jobs:
           cache: gradle
 
       - name: Setup Gradle cache
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
