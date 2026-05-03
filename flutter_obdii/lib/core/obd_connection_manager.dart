@@ -363,11 +363,11 @@ class OBDConnectionManager extends ChangeNotifier
         _setConnectionState(OBDConnectionState.failed);
         break;
       case obd2lib.ConnectionState.connecting:
+      case obd2lib.ConnectionState.connectedToAdapter:
         if (connectionState != OBDConnectionState.connecting) {
           _setConnectionState(OBDConnectionState.connecting);
         }
         break;
-      case obd2lib.ConnectionState.connectedToAdapter:
       case obd2lib.ConnectionState.connectedToVehicle:
         if (connectionState != OBDConnectionState.connected) {
           _setConnectionState(OBDConnectionState.connected);
@@ -419,12 +419,8 @@ class OBDConnectionManager extends ChangeNotifier
 
     if (commands.isEmpty) return;
 
-    for (final cmd in commands) {
-      _obdService!.addPID(cmd);
-    }
-
     _dataSub = _obdService!
-        .startContinuousUpdates(unit: unit)
+        .startContinuousUpdates(pids: commands, unit: unit)
         .listen(_handleUpdateBatch);
   }
 

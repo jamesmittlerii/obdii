@@ -55,13 +55,14 @@ import kotlinx.coroutines.launch
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-fun KotlinObdiiApp() {
+fun KotlinObdiiApp(permissionsReady: Boolean = true) {
     val context = LocalContext.current
     val uiPrefs = remember(context) { context.getSharedPreferences("kotlin_obdii_prefs", Context.MODE_PRIVATE) }
     var selected by remember { mutableIntStateOf(uiPrefs.getInt("ui.selectedTab", 0)) }
     var ready by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     var showGaugePicker by remember { mutableStateOf(false) }
+    var attemptedAutoConnect by remember { mutableStateOf(false) }
     val settingsVm = remember { SettingsViewModel() }
     val settingsView = remember { SettingsScreenModel(settingsVm) }
     val gaugePickerVm = remember { PidToggleListViewModel(DefaultPidStore) }
@@ -90,8 +91,11 @@ fun KotlinObdiiApp() {
         dtcView.setActive(selected == 4)
         gaugesVm.setVisible(selected == 1)
         ready = true
-        // Keep first paint responsive: auto-connect runs in background.
-        if (ConfigData.autoConnectToOBD) {
+    }
+    LaunchedEffect(ready, permissionsReady) {
+        // Keep first paint responsive: auto-connect runs in background once Android BLE permissions are ready.
+        if (ready && permissionsReady && ConfigData.autoConnectToOBD && !attemptedAutoConnect) {
+            attemptedAutoConnect = true
             scope.launch {
                 runCatching {
                     OBDConnectionManager.connect()

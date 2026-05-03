@@ -121,6 +121,7 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
             streamJob = null
             _connectedPeripheralName = null
             _connectionState = OBDConnectionState.failed
+            println("OBDConnectionManager: connect failed: ${t.message}")
             throw t
         }
     }
@@ -228,8 +229,9 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
                 clearForTerminalState()
                 _connectionState = OBDConnectionState.failed
             }
-            AdapterConnectionState.connecting -> _connectionState = OBDConnectionState.connecting
+            AdapterConnectionState.connecting,
             AdapterConnectionState.connectedToAdapter,
+            -> _connectionState = OBDConnectionState.connecting
             AdapterConnectionState.connectedToVehicle,
             -> _connectionState = OBDConnectionState.connected
         }

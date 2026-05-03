@@ -47,7 +47,7 @@ private class GattSession(
 
 class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapter {
     private val tag = "OBDII-BLE"
-    private val bleDebugLogs = false
+    private val bleDebugLogs = true
     private val bluetoothManager: BluetoothManager? =
         context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
     private val adapter: BluetoothAdapter?
