@@ -103,6 +103,7 @@ iOSInjectionProject/
 
 # Gradle local caches
 **/.gradle/
+**/.kotlin/
 
 # Local Android SDK paths
 **/local.properties

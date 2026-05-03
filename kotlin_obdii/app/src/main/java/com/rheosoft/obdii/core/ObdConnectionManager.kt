@@ -222,6 +222,7 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
     private fun handleServiceConnectionState(state: AdapterConnectionState) {
         when (state) {
             AdapterConnectionState.disconnected -> {
+                if (_connectionState == OBDConnectionState.connecting) return
                 clearForTerminalState()
                 _connectionState = OBDConnectionState.disconnected
             }
@@ -233,7 +234,9 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
             AdapterConnectionState.connectedToAdapter,
             -> _connectionState = OBDConnectionState.connecting
             AdapterConnectionState.connectedToVehicle,
-            -> _connectionState = OBDConnectionState.connected
+            -> if (_connectionState != OBDConnectionState.connecting) {
+                _connectionState = OBDConnectionState.connected
+            }
         }
         _connectedPeripheralName = service.connectedPeripheral?.name
     }
@@ -241,6 +244,7 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
     private fun clearForTerminalState() {
         streamJob?.cancel()
         streamJob = null
+        supportedMode1Pids = emptySet()
         lastStreamingPids = emptySet()
         _pidStats = emptyMap()
         _troubleCodes = null

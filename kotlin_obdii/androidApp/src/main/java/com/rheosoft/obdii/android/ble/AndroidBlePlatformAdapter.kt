@@ -77,11 +77,15 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
             val mainHandler = Handler(Looper.getMainLooper())
             var completed = false
 
-            // Include bonded devices up front as fallback candidates.
+            // Include only bonded OBD-like devices as fallback candidates.
             runCatching {
                 @SuppressLint("MissingPermission")
                 bt.bondedDevices?.forEach { device ->
                     val id = device.address ?: return@forEach
+                    if (!isLikelyObdDeviceName(device.name)) {
+                        logD("scan:bonded-skip id=$id name=${device.name}")
+                        return@forEach
+                    }
                     devices[id] = device
                     found[id] = BlePeripheral(id = id, name = device.name)
                     logD("scan:bonded-candidate id=$id name=${device.name}")
@@ -96,8 +100,7 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
                     found[id] = BlePeripheral(id = id, name = device.name, rssi = result.rssi)
                     logD("scan:found id=$id name=${device.name} rssi=${result.rssi}")
                     // Swift parity behavior: as soon as a likely OBD adapter is seen, stop scanning.
-                    val name = device.name?.uppercase().orEmpty()
-                    if (!completed && (name.contains("OBD") || name.contains("ELM") || name.contains("VLINK") || name.contains("VGATE"))) {
+                    if (!completed && isLikelyObdDeviceName(device.name)) {
                         completed = true
                         mainHandler.removeCallbacksAndMessages(null)
                         runCatching { scanner.stopScan(this) }
@@ -429,6 +432,14 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
 
     private fun listenerKey(peripheralId: String, characteristicUuid: String): String =
         "$peripheralId|${shortUuid(characteristicUuid)}"
+
+    private fun isLikelyObdDeviceName(name: String?): Boolean {
+        val normalized = name?.uppercase().orEmpty()
+        return normalized.contains("OBD") ||
+            normalized.contains("ELM") ||
+            normalized.contains("VLINK") ||
+            normalized.contains("VGATE")
+    }
 
     private fun shortUuid(uuid: UUID): String = shortUuid(uuid.toString())
 
