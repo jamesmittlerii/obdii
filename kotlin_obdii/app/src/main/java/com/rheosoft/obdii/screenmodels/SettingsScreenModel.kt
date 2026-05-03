@@ -8,11 +8,11 @@ class SettingsScreenModel(val viewModel: SettingsViewModel) {
     val title: String = "Settings"
     val sectionHeaders: List<String>
         get() = buildList {
-            add("UNITS")
-            add("CONNECTION")
-            if (viewModel.connectionType == ConnectionType.wifi) add("CONNECTION DETAILS")
-            add("DIAGNOSTICS")
-            add("ABOUT")
+            add("Units")
+            add("Connection")
+            if (viewModel.connectionType == ConnectionType.wifi) add("Connection details")
+            add("Diagnostics")
+            add("About")
         }
 
     val unitsLabels: List<String> = listOf("Metric", "Imperial")

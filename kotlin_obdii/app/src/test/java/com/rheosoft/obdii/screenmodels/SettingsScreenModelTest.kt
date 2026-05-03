@@ -51,9 +51,9 @@ class SettingsViewTest {
             ),
         )
         assertEquals("Settings", view.title)
-        assertTrue(view.sectionHeaders.contains("UNITS"))
-        assertTrue(view.sectionHeaders.contains("CONNECTION"))
-        assertTrue(view.sectionHeaders.contains("DIAGNOSTICS"))
+        assertTrue(view.sectionHeaders.contains("Units"))
+        assertTrue(view.sectionHeaders.contains("Connection"))
+        assertTrue(view.sectionHeaders.contains("Diagnostics"))
         assertTrue(view.hasGaugesNavigationRow)
     }
 
@@ -62,7 +62,7 @@ class SettingsViewTest {
         val wifiConfig = MockSettingsConfig().apply { connectionType = ConnectionType.wifi }
         val wifiView = SettingsScreenModel(SettingsViewModel(wifiConfig, MockConn(OBDConnectionState.disconnected)))
         assertTrue(wifiView.showsWifiDetails)
-        assertTrue(wifiView.sectionHeaders.contains("CONNECTION DETAILS"))
+        assertTrue(wifiView.sectionHeaders.contains("Connection details"))
 
         val btConfig = MockSettingsConfig().apply { connectionType = ConnectionType.bluetooth }
         val btView = SettingsScreenModel(SettingsViewModel(btConfig, MockConn(OBDConnectionState.disconnected)))

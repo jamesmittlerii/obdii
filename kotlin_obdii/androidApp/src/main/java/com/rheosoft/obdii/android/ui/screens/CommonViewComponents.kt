@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -41,42 +40,44 @@ fun SegmentedPicker(
     onOptionSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-        val selectedBg = Color(0xFFC5DAE7)
-        val selectedText = Color(0xFF3B4E5A)
-        val normalText = Color(0xFF222222)
-        val segmentWidth = maxWidth / options.size
-        
-        Row(modifier = Modifier.border(1.dp, Color(0xFF7E8993), shape = RoundedCornerShape(999.dp))) {
-            options.forEachIndexed { index, label ->
-                Row(
-                    modifier = Modifier
-                        .width(segmentWidth)
-                        .background(
-                            if (selectedIndex == index) selectedBg else Color.Transparent,
-                            shape = when (index) {
-                                0 -> RoundedCornerShape(topStart = 999.dp, bottomStart = 999.dp)
-                                options.size - 1 -> RoundedCornerShape(topEnd = 999.dp, bottomEnd = 999.dp)
-                                else -> RoundedCornerShape(0.dp)
-                            }
-                        )
-                        .clickable { onOptionSelected(index) }
-                        .padding(vertical = 10.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(modifier = Modifier.size(18.dp), contentAlignment = Alignment.Center) {
-                        if (selectedIndex == index) {
-                            Icon(Icons.Outlined.Check, contentDescription = null, tint = selectedText)
-                        }
-                    }
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        label,
-                        color = if (selectedIndex == index) selectedText else normalText,
-                        fontWeight = FontWeight.SemiBold
+    val selectedBg = Color(0xFFC5DAE7)
+    val selectedText = Color(0xFF3B4E5A)
+    val normalText = Color(0xFF222222)
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .border(1.dp, Color(0xFF7E8993), shape = RoundedCornerShape(999.dp)),
+    ) {
+        options.forEachIndexed { index, label ->
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .background(
+                        if (selectedIndex == index) selectedBg else Color.Transparent,
+                        shape = when (index) {
+                            0 -> RoundedCornerShape(topStart = 999.dp, bottomStart = 999.dp)
+                            options.size - 1 -> RoundedCornerShape(topEnd = 999.dp, bottomEnd = 999.dp)
+                            else -> RoundedCornerShape(0.dp)
+                        },
                     )
+                    .clickable { onOptionSelected(index) }
+                    .padding(vertical = 10.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(modifier = Modifier.size(18.dp), contentAlignment = Alignment.Center) {
+                    if (selectedIndex == index) {
+                        Icon(Icons.Outlined.Check, contentDescription = null, tint = selectedText)
+                    }
                 }
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    label,
+                    color = if (selectedIndex == index) selectedText else normalText,
+                    fontWeight = FontWeight.SemiBold,
+                )
             }
         }
     }

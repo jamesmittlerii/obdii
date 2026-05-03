@@ -1,7 +1,8 @@
 package com.rheosoft.obdii.android.ui.screens
 
-import com.rheosoft.obdii.bootstrap.AppBootstrap
 import android.content.Context
+import androidx.core.content.edit
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Engineering
@@ -15,7 +16,6 @@ import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,11 +28,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.padding
+import com.rheosoft.obdii.bootstrap.AppBootstrap
+import com.rheosoft.obdii.core.ConfigData
 import com.rheosoft.obdii.core.DefaultPidStore
 import com.rheosoft.obdii.core.MeasurementUnit
-import com.rheosoft.obdii.core.ConfigData
 import com.rheosoft.obdii.core.OBDConnectionManager
+import com.rheosoft.obdii.screenmodels.DashboardScreenModel
+import com.rheosoft.obdii.screenmodels.DiagnosticsScreenModel
+import com.rheosoft.obdii.screenmodels.DtcDetailScreenModel
+import com.rheosoft.obdii.screenmodels.FuelStatusScreenModel
+import com.rheosoft.obdii.screenmodels.GaugeDetailScreenModel
+import com.rheosoft.obdii.screenmodels.MainScaffoldScreenModel
+import com.rheosoft.obdii.screenmodels.MilStatusScreenModel
+import com.rheosoft.obdii.screenmodels.PidToggleListScreenModel
+import com.rheosoft.obdii.screenmodels.SettingsScreenModel
 import com.rheosoft.obdii.viewmodels.DiagnosticsViewModel
 import com.rheosoft.obdii.viewmodels.FuelStatusViewModel
 import com.rheosoft.obdii.viewmodels.GaugeDetailViewModel
@@ -40,16 +49,6 @@ import com.rheosoft.obdii.viewmodels.GaugesViewModel
 import com.rheosoft.obdii.viewmodels.MilStatusViewModel
 import com.rheosoft.obdii.viewmodels.PidToggleListViewModel
 import com.rheosoft.obdii.viewmodels.SettingsViewModel
-import com.rheosoft.obdii.screenmodels.DashboardScreenModel
-import com.rheosoft.obdii.screenmodels.DiagnosticsScreenModel
-import com.rheosoft.obdii.screenmodels.DtcDetailScreenModel
-import com.rheosoft.obdii.screenmodels.FuelStatusScreenModel
-import com.rheosoft.obdii.screenmodels.GaugeDetailScreenModel
-import com.rheosoft.obdii.core.GaugesDisplayMode
-import com.rheosoft.obdii.screenmodels.MainScaffoldScreenModel
-import com.rheosoft.obdii.screenmodels.MilStatusScreenModel
-import com.rheosoft.obdii.screenmodels.PidToggleListScreenModel
-import com.rheosoft.obdii.screenmodels.SettingsScreenModel
 import kotlinx.coroutines.launch
 
 @Composable
@@ -60,7 +59,7 @@ fun KotlinObdiiApp(permissionsReady: Boolean = true) {
     var selected by remember { mutableIntStateOf(uiPrefs.getInt("ui.selectedTab", 0)) }
     var ready by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    var showGaugePicker by remember { mutableStateOf(false) }
+    val showGaugePicker = remember { mutableStateOf(false) }
     var attemptedAutoConnect by remember { mutableStateOf(false) }
     val settingsVm = remember { SettingsViewModel() }
     val settingsView = remember { SettingsScreenModel(settingsVm) }
@@ -76,13 +75,13 @@ fun KotlinObdiiApp(permissionsReady: Boolean = true) {
     val fuelView = remember { FuelStatusScreenModel(FuelStatusViewModel(), isActive = false) }
     val milView = remember { MilStatusScreenModel(MilStatusViewModel(), isActive = false) }
     val dtcView = remember { DiagnosticsScreenModel(DiagnosticsViewModel(), isActive = false) }
-    var selectedGaugeDetail by remember { mutableStateOf<GaugeDetailScreenModel?>(null) }
-    var selectedDtcDetail by remember { mutableStateOf<DtcDetailScreenModel?>(null) }
+    val selectedGaugeDetail = remember { mutableStateOf<GaugeDetailScreenModel?>(null) }
+    val selectedDtcDetail = remember { mutableStateOf<DtcDetailScreenModel?>(null) }
 
     LaunchedEffect(Unit) {
         if (DefaultPidStore.pids.isEmpty()) {
             val pidsFromJson = loadPidsFromJson(context)
-            DefaultPidStore.seededPidsProvider = { if (pidsFromJson.isNotEmpty()) pidsFromJson else defaultGaugeSeedPids() }
+            DefaultPidStore.seededPidsProvider = { pidsFromJson.ifEmpty { defaultGaugeSeedPids() } }
         }
         runCatching { AppBootstrap.initialize() }
         fuelView.setActive(selected == 2)
@@ -105,7 +104,7 @@ fun KotlinObdiiApp(permissionsReady: Boolean = true) {
     }
 
     LaunchedEffect(selected) {
-        uiPrefs.edit().putInt("ui.selectedTab", selected).apply()
+        uiPrefs.edit { putInt("ui.selectedTab", selected) }
     }
     LaunchedEffect(selected, ready) {
         if (ready) {
@@ -157,40 +156,40 @@ fun KotlinObdiiApp(permissionsReady: Boolean = true) {
             0 -> SettingsScreen(
                 view = settingsView,
                 modifier = Modifier.padding(pad),
-                onOpenGaugePicker = { showGaugePicker = true },
+                onOpenGaugePicker = { showGaugePicker.value = true },
             )
             1 -> DashboardScreen(
                 view = dashboardView,
                 isMetric = settingsVm.units == MeasurementUnit.Metric,
                 modifier = Modifier.padding(pad),
-                onGaugeTap = { pid -> selectedGaugeDetail = GaugeDetailScreenModel(GaugeDetailViewModel(pid)) },
+                onGaugeTap = { pid -> selectedGaugeDetail.value = GaugeDetailScreenModel(GaugeDetailViewModel(pid)) },
             )
             2 -> FuelStatusScreen(fuelView, Modifier.padding(pad))
             3 -> MilStatusScreen(milView, Modifier.padding(pad))
             else -> DiagnosticsScreen(
                 view = dtcView,
                 modifier = Modifier.padding(pad),
-                onDtcTap = { selectedDtcDetail = it },
+                onDtcTap = { selectedDtcDetail.value = it },
             )
         }
     }
 
-    if (showGaugePicker) {
+    if (showGaugePicker.value) {
         PidToggleListScreen(
             view = gaugePickerView,
             isMetric = settingsVm.units == MeasurementUnit.Metric,
-            onClose = { showGaugePicker = false },
+            onClose = { showGaugePicker.value = false },
             scope = scope,
         )
     }
-    selectedGaugeDetail?.let { detail ->
+    selectedGaugeDetail.value?.let { detail ->
         GaugeDetailScreen(
             detail = detail,
             isMetric = settingsVm.units == MeasurementUnit.Metric,
-            onClose = { selectedGaugeDetail = null },
+            onClose = { selectedGaugeDetail.value = null },
         )
     }
-    selectedDtcDetail?.let { detail ->
-        DtcDetailScreen(detail = detail, onClose = { selectedDtcDetail = null })
+    selectedDtcDetail.value?.let { detail ->
+        DtcDetailScreen(detail = detail, onClose = { selectedDtcDetail.value = null })
     }
 }

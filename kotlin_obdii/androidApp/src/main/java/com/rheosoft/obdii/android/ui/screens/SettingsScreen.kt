@@ -3,8 +3,6 @@ package com.rheosoft.obdii.android.ui.screens
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.border
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -58,7 +56,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     val vm = view.viewModel
     val uiState by vm.uiStateStream.collectAsState()
-    var typeMenuExpanded by remember { mutableStateOf(false) }
+    var typeMenuExpanded by remember { mutableStateOf(value = false) }
     var selectedUnits by remember { mutableStateOf(uiState.units) }
     var selectedType by remember { mutableStateOf(uiState.connectionType) }
     var autoConnect by remember { mutableStateOf(uiState.autoConnectToOBD) }
@@ -101,7 +99,7 @@ fun SettingsScreen(
                             val next = if (index == 0) MeasurementUnit.Metric else MeasurementUnit.Imperial
                             selectedUnits = next
                             vm.onUnitsChanged(next)
-                        }
+                        },
                     )
                 }
             }
@@ -151,22 +149,34 @@ fun SettingsScreen(
                                 modifier = Modifier.padding(start = 4.dp),
                             )
                         }
-                        DropdownMenu(expanded = typeMenuExpanded, onDismissRequest = { typeMenuExpanded = false }) {
-                            DropdownMenuItem(text = { Text("Demo") }, onClick = {
-                                selectedType = ConnectionType.demo
-                                vm.onConnectionTypeChanged(ConnectionType.demo)
-                                typeMenuExpanded = false
-                            })
-                            DropdownMenuItem(text = { Text("WiFi") }, onClick = {
-                                selectedType = ConnectionType.wifi
-                                vm.onConnectionTypeChanged(ConnectionType.wifi)
-                                typeMenuExpanded = false
-                            })
-                            DropdownMenuItem(text = { Text("Bluetooth LE") }, onClick = {
-                                selectedType = ConnectionType.bluetooth
-                                vm.onConnectionTypeChanged(ConnectionType.bluetooth)
-                                typeMenuExpanded = false
-                            })
+                        DropdownMenu(
+                            expanded = typeMenuExpanded,
+                            onDismissRequest = { typeMenuExpanded = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Demo") },
+                                onClick = {
+                                    selectedType = ConnectionType.demo
+                                    vm.onConnectionTypeChanged(ConnectionType.demo)
+                                    typeMenuExpanded = false
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("WiFi") },
+                                onClick = {
+                                    selectedType = ConnectionType.wifi
+                                    vm.onConnectionTypeChanged(ConnectionType.wifi)
+                                    typeMenuExpanded = false
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Bluetooth LE") },
+                                onClick = {
+                                    selectedType = ConnectionType.bluetooth
+                                    vm.onConnectionTypeChanged(ConnectionType.bluetooth)
+                                    typeMenuExpanded = false
+                                },
+                            )
                         }
                     }
                 }

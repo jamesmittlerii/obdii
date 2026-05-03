@@ -37,8 +37,8 @@ import com.rheosoft.obdii.screenmodels.DtcDetailScreenModel
 @Composable
 fun DiagnosticsScreen(view: DiagnosticsScreenModel, modifier: Modifier, onDtcTap: (DtcDetailScreenModel) -> Unit) {
     DisposableEffect(view) {
-        view.setActive(true)
-        onDispose { view.setActive(false) }
+        view.setActive(active = true)
+        onDispose { view.setActive(active = false) }
     }
     val uiState = view.viewModel.uiStateStream.collectAsState().value
     ObserveChanges(view.viewModel)
@@ -70,10 +70,18 @@ fun DiagnosticsScreen(view: DiagnosticsScreenModel, modifier: Modifier, onDtcTap
             items(state.sections) { section ->
                 SectionLabel(section.header)
                 section.rows.forEach { row ->
-                    PremiumCard(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).clickable {
-                        val raw = view.viewModel.sections.flatMap { it.items }.firstOrNull { it.code == row.code }
-                        if (raw != null) onDtcTap(view.detailFor(raw))
-                    }) {
+                    PremiumCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                            .clickable {
+                                val raw = view.viewModel.sections
+                                    .asSequence()
+                                    .flatMap { it.items }
+                                    .firstOrNull { it.code == row.code }
+                                raw?.let { onDtcTap(view.detailFor(it)) }
+                            },
+                    ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
@@ -115,10 +123,12 @@ fun DtcDetailScreen(detail: DtcDetailScreenModel, onClose: () -> Unit) {
                     SectionLabel(header)
                     PremiumCard(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
                         Column(modifier = Modifier.padding(12.dp)) {
-                            if (header == "Overview") detail.overviewRows.forEach { (k, v) -> Text("$k: $v") }
-                            else if (header == "Description") Text(detail.description)
-                            else if (header == "Potential causes") detail.causes.forEach { Text("• $it") }
-                            else if (header == "Possible remedies") detail.remedies.forEach { Text("• $it") }
+                            when (header) {
+                                "Overview" -> detail.overviewRows.forEach { (k, v) -> Text("$k: $v") }
+                                "Description" -> Text(detail.description)
+                                "Potential causes" -> detail.causes.forEach { Text("• $it") }
+                                "Possible remedies" -> detail.remedies.forEach { Text("• $it") }
+                            }
                         }
                     }
                 }

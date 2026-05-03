@@ -68,7 +68,7 @@ class DiagnosticsViewTest {
         Thread.sleep(50)
 
         val state = view.contentState(OBDConnectionState.connected) as DiagnosticsContentState.Sections
-        assertEquals(listOf("CRITICAL", "HIGH"), state.sections.map { it.header })
+        assertEquals(listOf("Critical", "High"), state.sections.map { it.header })
         assertEquals("P0002 • Test DTC P0002", state.sections.first().rows.first().title)
     }
 
@@ -85,9 +85,9 @@ class DiagnosticsViewTest {
             ),
         )
         assertEquals("P0012", detail.title)
-        assertTrue(detail.sectionHeaders.contains("OVERVIEW"))
-        assertTrue(detail.sectionHeaders.contains("DESCRIPTION"))
-        assertTrue(detail.sectionHeaders.contains("POTENTIAL CAUSES"))
-        assertTrue(detail.sectionHeaders.contains("POSSIBLE REMEDIES"))
+        assertTrue(detail.sectionHeaders.contains("Overview"))
+        assertTrue(detail.sectionHeaders.contains("Description"))
+        assertTrue(detail.sectionHeaders.contains("Potential causes"))
+        assertTrue(detail.sectionHeaders.contains("Possible remedies"))
     }
 }

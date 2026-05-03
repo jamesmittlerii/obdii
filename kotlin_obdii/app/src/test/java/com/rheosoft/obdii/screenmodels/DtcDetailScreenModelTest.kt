@@ -19,10 +19,10 @@ class DtcDetailViewTest {
             ),
         )
         assertEquals("P0420", detail.title)
-        assertTrue(detail.sectionHeaders.contains("OVERVIEW"))
-        assertTrue(detail.sectionHeaders.contains("DESCRIPTION"))
-        assertTrue(detail.sectionHeaders.contains("POTENTIAL CAUSES"))
-        assertTrue(detail.sectionHeaders.contains("POSSIBLE REMEDIES"))
+        assertTrue(detail.sectionHeaders.contains("Overview"))
+        assertTrue(detail.sectionHeaders.contains("Description"))
+        assertTrue(detail.sectionHeaders.contains("Potential causes"))
+        assertTrue(detail.sectionHeaders.contains("Possible remedies"))
         assertEquals(listOf("Code", "Title", "Severity"), detail.overviewRows.map { it.first })
     }
 }

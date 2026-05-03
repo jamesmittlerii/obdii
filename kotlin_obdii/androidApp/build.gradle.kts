@@ -55,3 +55,10 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.11.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.11.0")
 }
+
+tasks.register<Exec>("runDebug") {
+    group = "application"
+    description = "Installs and launches the debug app."
+    dependsOn("installDebug")
+    commandLine("adb", "shell", "am", "start", "-n", "com.rheosoft.obdii.android/.MainActivity")
+}

@@ -72,7 +72,7 @@ class StatusViewsTest {
         val view = MilStatusScreenModel(MilStatusViewModel(provider, PidInterestRegistry()))
         val waiting = view.milContentState() as MilLampState.Waiting
         assertEquals("Waiting for data...", waiting.message)
-        assertEquals("MALFUNCTION INDICATOR LAMP", view.milHeader)
+        assertEquals("Malfunction indicator lamp", view.milHeader)
     }
 
     @Test

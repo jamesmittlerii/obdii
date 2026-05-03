@@ -18,8 +18,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -62,7 +60,7 @@ fun DashboardScreen(
                 selectedIndex = if (listMode) 1 else 0,
                 onOptionSelected = { index ->
                     view.viewModel.setDisplayMode(if (index == 1) GaugesDisplayMode.list else GaugesDisplayMode.gauges)
-                }
+                },
             )
             Spacer(Modifier.height(12.dp))
         }
@@ -108,7 +106,7 @@ fun DashboardScreen(
                         // Replaced BoxWithConstraints with Column + Padding
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(10.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             RingGaugeMini(tile = tile, isMetric = isMetric, modifier = Modifier.fillMaxWidth())
                             Text(tile.pid.label, fontWeight = FontWeight.SemiBold)
@@ -142,12 +140,12 @@ private fun RingGaugeMini(tile: GaugeTile, isMetric: Boolean, modifier: Modifier
             Canvas(modifier = Modifier.size(dim)) {
                 // Keep a square drawing surface so the ring is always circular.
                 val strokeWidth = max(4f, size.width * 0.18f)
-                val radius = (size.width / 2f) - strokeWidth / 2f
+                val radius = (size.width / 2f) - (strokeWidth / 2f)
                 val rect = androidx.compose.ui.geometry.Rect(
-                    left = size.width / 2f - radius,
-                    top = size.width / 2f - radius,
-                    right = size.width / 2f + radius,
-                    bottom = size.width / 2f + radius,
+                    left = (size.width / 2f) - radius,
+                    top = (size.width / 2f) - radius,
+                    right = (size.width / 2f) + radius,
+                    bottom = (size.width / 2f) + radius,
                 )
                 val stroke = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                 drawArc(color = Color(0xFF7C7C82), startAngle = 150f, sweepAngle = 240f, useCenter = false, topLeft = rect.topLeft, size = rect.size, style = stroke)

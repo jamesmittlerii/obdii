@@ -21,16 +21,16 @@ class MainActivityUiTest {
 
     @Test
     fun settings_screen_shows_core_sections() {
-        composeRule.onNodeWithText("UNITS").assertIsDisplayed()
-        composeRule.onNodeWithText("CONNECTION").assertIsDisplayed()
-        composeRule.onNodeWithText("DIAGNOSTICS").assertIsDisplayed()
-        composeRule.onNodeWithText("ABOUT").assertIsDisplayed()
+        composeRule.onNodeWithText("Units").assertIsDisplayed()
+        composeRule.onNodeWithText("Connection").assertIsDisplayed()
+        composeRule.onNodeWithText("Diagnostics").assertIsDisplayed()
+        composeRule.onNodeWithText("About").assertIsDisplayed()
     }
 
     @Test
     fun gauge_picker_open_path_is_visible() {
         composeRule.onAllNodesWithText("Gauges")[0].performClick()
-        composeRule.onNodeWithText("ENABLED").assertIsDisplayed()
+        composeRule.onNodeWithText("Enabled").assertIsDisplayed()
         composeRule.onNodeWithText("Share Logs").assertIsDisplayed()
     }
 
@@ -84,7 +84,7 @@ class MainActivityUiTest {
     fun gauges_tab_can_switch_to_list_mode() {
         composeRule.onAllNodesWithText("Gauges")[1].performClick()
         composeRule.onNodeWithText("List").performClick()
-        composeRule.onNodeWithText("GAUGES").assertIsDisplayed()
+        composeRule.onNodeWithText("Gauges").assertIsDisplayed()
     }
 
     @Test
@@ -101,6 +101,6 @@ class MainActivityUiTest {
         composeRule.onAllNodesWithText("MIL")[0].performClick()
         composeRule.onAllNodesWithText("DTCs")[0].performClick()
         composeRule.onAllNodesWithText("Settings")[0].performClick()
-        composeRule.onNodeWithText("UNITS").assertIsDisplayed()
+        composeRule.onNodeWithText("Units").assertIsDisplayed()
     }
 }
