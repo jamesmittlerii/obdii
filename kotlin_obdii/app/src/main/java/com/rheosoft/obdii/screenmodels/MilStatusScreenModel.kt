@@ -10,8 +10,8 @@ class MilStatusScreenModel(
         private set
 
     val title: String = "MIL Status"
-    val milHeader: String = "MALFUNCTION INDICATOR LAMP"
-    val readinessHeader: String = "READINESS MONITORS"
+    val milHeader: String = "Malfunction indicator lamp"
+    val readinessHeader: String = "Readiness monitors"
 
     init {
         viewModel.setVisible(isActive)

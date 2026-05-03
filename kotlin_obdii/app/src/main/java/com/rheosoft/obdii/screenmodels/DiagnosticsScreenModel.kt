@@ -40,7 +40,7 @@ class DiagnosticsScreenModel(
         }
         return DiagnosticsContentState.Sections(viewModel.sections.map { section ->
             DiagnosticsSection(
-                header = section.severity.uppercase(),
+                header = section.severity,
                 rows = section.items.map { it.toRow() },
             )
         })
@@ -64,10 +64,10 @@ data class DtcRowModel(
 class DtcDetailScreenModel(private val dtc: TroubleCodeMetadata) {
     val title: String = dtc.code
     val sectionHeaders: List<String> = buildList {
-        add("OVERVIEW")
-        add("DESCRIPTION")
-        if (dtc.causes.isNotEmpty()) add("POTENTIAL CAUSES")
-        if (dtc.remedies.isNotEmpty()) add("POSSIBLE REMEDIES")
+        add("Overview")
+        add("Description")
+        if (dtc.causes.isNotEmpty()) add("Potential causes")
+        if (dtc.remedies.isNotEmpty()) add("Possible remedies")
     }
     val overviewRows: List<Pair<String, String>> = listOf(
         "Code" to dtc.code,

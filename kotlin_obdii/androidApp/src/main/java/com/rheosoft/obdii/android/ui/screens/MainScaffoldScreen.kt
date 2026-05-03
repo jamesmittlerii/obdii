@@ -15,7 +15,6 @@ import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -92,6 +91,7 @@ fun KotlinObdiiApp(permissionsReady: Boolean = true) {
         gaugesVm.setVisible(selected == 1)
         ready = true
     }
+
     LaunchedEffect(ready, permissionsReady) {
         // Keep first paint responsive: auto-connect runs in background once Android BLE permissions are ready.
         if (ready && permissionsReady && ConfigData.autoConnectToOBD && !attemptedAutoConnect) {
@@ -103,6 +103,7 @@ fun KotlinObdiiApp(permissionsReady: Boolean = true) {
             }
         }
     }
+
     LaunchedEffect(selected) {
         uiPrefs.edit().putInt("ui.selectedTab", selected).apply()
     }
@@ -119,16 +120,6 @@ fun KotlinObdiiApp(permissionsReady: Boolean = true) {
     ObservePidChanges(gaugePickerVm)
 
     Scaffold(
-        topBar = {
-            val title = if (selected == 1) dashboardView.title else MainScaffoldScreenModel.destinations[selected]
-            TopAppBar(
-                title = { Text(title) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = AppBackground,
-                    titleContentColor = Color(0xFF1D2433),
-                ),
-            )
-        },
         bottomBar = {
             NavigationBar(
                 containerColor = Color(0xFFF1F3F8),

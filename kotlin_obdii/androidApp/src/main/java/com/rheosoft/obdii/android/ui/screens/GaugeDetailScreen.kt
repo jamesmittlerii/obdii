@@ -28,12 +28,12 @@ fun GaugeDetailScreen(detail: GaugeDetailScreenModel, isMetric: Boolean, onClose
         LazyColumn(modifier = Modifier.fillMaxSize().padding(pad).padding(16.dp)) {
             item {
                 TextButton(onClick = onClose) { Text("Back") }
-                SectionLabel("CURRENT")
+                SectionLabel("Current")
                 PremiumCard(modifier = Modifier.fillMaxWidth()) {
                     Text(detail.currentValueText, modifier = Modifier.padding(12.dp))
                 }
                 Spacer(Modifier.height(12.dp))
-                SectionLabel("STATISTICS")
+                SectionLabel("Statistics")
                 PremiumCard(modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp)) {
                         val stats = uiState.stats
@@ -47,7 +47,7 @@ fun GaugeDetailScreen(detail: GaugeDetailScreenModel, isMetric: Boolean, onClose
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-                SectionLabel("MAXIMUM RANGE")
+                SectionLabel("Maximum range")
                 PremiumCard(modifier = Modifier.fillMaxWidth()) {
                     Text(detail.viewModel.pid.displayRange(isMetric), modifier = Modifier.padding(12.dp))
                 }
