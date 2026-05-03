@@ -163,6 +163,7 @@ jobs:
 
   windows_store_material:
     name: Windows Store Material
+    if: false
     needs: prepare
     runs-on: windows-latest
     env:
