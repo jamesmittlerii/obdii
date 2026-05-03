@@ -14,6 +14,7 @@ import 'package:flutter_obd2/flutter_obd2.dart' as obd2lib;
 import 'package:permission_handler/permission_handler.dart';
 
 import 'config_data.dart';
+import 'logger.dart';
 import 'pid_interest_registry.dart';
 
 // ─────────────────────────────────────────────
@@ -23,6 +24,8 @@ import 'pid_interest_registry.dart';
 enum OBDConnectionState {
   disconnected,
   connecting,
+  connectedToAdapter,
+  settingUpVehicle,
   connected,
   failed,
 }
@@ -229,6 +232,10 @@ class OBDConnectionManager extends ChangeNotifier
     _unitsSub?.cancel();
     _unitsSub = ConfigData.instance.unitsStream.listen((_) {
       if (connectionState == OBDConnectionState.connected) {
+        obdInfo(
+          'Units changed to ${ConfigData.instance.units.name}; resetting stats and restarting updates.',
+          category: LogCategory.service,
+        );
         _resetAllStats();
         _lastStreamingPids = {};
         _restartContinuousUpdates(PidInterestRegistry.instance.interested);
@@ -244,6 +251,8 @@ class OBDConnectionManager extends ChangeNotifier
   Future<void> connect() async {
     if (connectionState == OBDConnectionState.connected ||
         connectionState == OBDConnectionState.connecting) {
+      obdWarning('Connection attempt ignored, already connected or connecting.',
+          category: LogCategory.service);
       return;
     }
 
@@ -274,27 +283,22 @@ class OBDConnectionManager extends ChangeNotifier
 
     try {
       await obd2lib.Commands.ensureInitialized();
-      await _obdService!.startConnection(
+      final info = await _obdService!.startConnection(
         timeout: 30.0,
         querySupportedPIDs: _querySupportedPids,
       );
-      if (_querySupportedPids) {
-        try {
-          final supported = await _obdService!.getSupportedPIDs();
-          _supportedMode1Pids = supported
-              .map((cmd) => cmd.properties.command)
-              .where((cmd) => cmd.startsWith('01'))
-              .toSet();
-          _hasSupportedMode1Snapshot = true;
-        } catch (e) {
-          _supportedMode1Pids = {};
-          _hasSupportedMode1Snapshot = false;
-          debugPrint('OBDConnectionManager: failed to query supported PIDs: $e');
-        }
+
+      if (_querySupportedPids && info.supportedPIDs != null) {
+        _supportedMode1Pids = info.supportedPIDs!
+            .map((cmd) => cmd.properties.command)
+            .where((cmd) => cmd.startsWith('01'))
+            .toSet();
+        _hasSupportedMode1Snapshot = true;
+        obdInfo('OBD-II connected successfully.', category: LogCategory.service);
       }
     } catch (e) {
       _setConnectionState(OBDConnectionState.failed);
-      debugPrint('OBDConnectionManager: connect failed: $e');
+      obdError('connect failed: $e', category: LogCategory.service);
     }
   }
 
@@ -311,9 +315,10 @@ class OBDConnectionManager extends ChangeNotifier
         (entry) => !entry.value.isGranted,
       );
       if (missingBluetoothPerm) {
-        debugPrint(
-          'OBDConnectionManager: bluetooth permission denied: '
+        obdError(
+          'bluetooth permission denied: '
           '${statuses.map((k, v) => MapEntry(k.toString(), v.toString()))}',
+          category: LogCategory.service,
         );
         return false;
       }
@@ -323,13 +328,12 @@ class OBDConnectionManager extends ChangeNotifier
       if (!locationStatus.isGranted) {
         final requested = await Permission.locationWhenInUse.request();
         if (!requested.isGranted) {
-          debugPrint(
-            'OBDConnectionManager: location permission denied: $requested',
-          );
+          obdWarning('location permission denied: $requested',
+              category: LogCategory.service);
         }
       }
     } catch (e) {
-      debugPrint('OBDConnectionManager: permission request failed: $e');
+      obdError('permission request failed: $e', category: LogCategory.service);
       return false;
     }
 
@@ -355,6 +359,8 @@ class OBDConnectionManager extends ChangeNotifier
   void _handleServiceState(obd2lib.ConnectionState serviceState) {
     switch (serviceState) {
       case obd2lib.ConnectionState.disconnected:
+        obdDebug('Mirrored service disconnect to manager state and cleared data.',
+            category: LogCategory.service);
         _clearForTerminalState();
         _setConnectionState(OBDConnectionState.disconnected);
         break;
@@ -363,17 +369,25 @@ class OBDConnectionManager extends ChangeNotifier
         _setConnectionState(OBDConnectionState.failed);
         break;
       case obd2lib.ConnectionState.connecting:
+        _setConnectionState(OBDConnectionState.connecting);
+        break;
       case obd2lib.ConnectionState.connectedToAdapter:
-        if (connectionState != OBDConnectionState.connecting) {
-          _setConnectionState(OBDConnectionState.connecting);
-        }
+        _setConnectionState(OBDConnectionState.connectedToAdapter);
         break;
       case obd2lib.ConnectionState.connectedToVehicle:
         if (connectionState != OBDConnectionState.connected) {
+          obdInfo('Connected to vehicle.', category: LogCategory.service);
           _setConnectionState(OBDConnectionState.connected);
           _startContinuousUpdates(PidInterestRegistry.instance.interested);
         }
         break;
+    }
+  }
+
+  /// Externally trigger the vehicle setup state (usually via log interception).
+  void setSettingUpVehicle() {
+    if (connectionState == OBDConnectionState.connectedToAdapter) {
+      _setConnectionState(OBDConnectionState.settingUpVehicle);
     }
   }
 
@@ -417,7 +431,15 @@ class OBDConnectionManager extends ChangeNotifier
         .whereType<obd2lib.ObdCommand>()
         .toList();
 
-    if (commands.isEmpty) return;
+    if (commands.isEmpty) {
+      obdInfo('No interested PIDs to monitor.', category: LogCategory.service);
+      return;
+    }
+
+    obdInfo(
+      'Starting continuous updates for ${commands.length} PIDs.',
+      category: LogCategory.service,
+    );
 
     _dataSub = _obdService!
         .startContinuousUpdates(pids: commands, unit: unit)

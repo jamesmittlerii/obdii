@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../core/config_data.dart';
+import '../core/logger.dart';
 import '../core/obd_connection_manager.dart';
 import 'base_view_model.dart';
 
@@ -140,7 +141,9 @@ class SettingsViewModel extends BaseViewModel {
   // ── Connect button ───────────────────────────────
 
   bool get isConnectButtonDisabled =>
-      connectionState == OBDConnectionState.connecting;
+      connectionState == OBDConnectionState.connecting ||
+      connectionState == OBDConnectionState.connectedToAdapter ||
+      connectionState == OBDConnectionState.settingUpVehicle;
 
   void handleConnectionButtonTap() {
     switch (connectionState) {
@@ -152,6 +155,8 @@ class SettingsViewModel extends BaseViewModel {
         _connection.disconnect();
         break;
       case OBDConnectionState.connecting:
+      case OBDConnectionState.connectedToAdapter:
+      case OBDConnectionState.settingUpVehicle:
         // Do nothing while connecting
         break;
     }
@@ -161,19 +166,25 @@ class SettingsViewModel extends BaseViewModel {
 
   Future<({String fileName, List<int> bytes})> prepareLogExport() async {
     final info = await PackageInfo.fromPlatform();
+    final history = ObdLogger.instance.getHistory().map((e) => e.toJson()).toList();
+
     final logs = {
-      'timestamp': DateTime.now().toIso8601String(),
-      'appVersion': '${info.version}+${info.buildNumber}',
-      'connectionType': _config.connectionType.toString(),
-      'units': _config.units.toString(),
-      'connectionState': _connection.connectionState.toString(),
-      'wifiHost': _config.wifiHost,
-      'wifiPort': _config.wifiPort,
+      'metadata': {
+        'timestamp': DateTime.now().toIso8601String(),
+        'appVersion': '${info.version}+${info.buildNumber}',
+        'connectionType': _config.connectionType.toString(),
+        'units': _config.units.toString(),
+        'connectionState': _connection.connectionState.toString(),
+        'wifiHost': _config.wifiHost,
+        'wifiPort': _config.wifiPort,
+      },
+      'entries': history,
     };
 
     final jsonStr = const JsonEncoder.withIndent('  ').convert(logs);
     final bytes = utf8.encode(jsonStr);
-    final fileName = '${info.appName.replaceAll(' ', '_')}-v${info.version}-logs.json';
+    final fileName =
+        '${info.appName.replaceAll(' ', '_')}-v${info.version}-logs.json';
 
     return (fileName: fileName, bytes: bytes);
   }

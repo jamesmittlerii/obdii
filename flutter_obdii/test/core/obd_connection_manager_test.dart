@@ -3,15 +3,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_obdii/core/config_data.dart';
+import 'package:flutter_obdii/core/logger.dart';
 import 'package:flutter_obdii/core/obd_connection_manager.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   SharedPreferences.setMockInitialValues(<String, Object>{});
+  ObdLogger.instance.mutesConsole = true;
 
   final manager = OBDConnectionManager.instance;
 
   setUp(() {
+    // Setup the log bridge to handle the 'Setting up vehicle' transition in tests
+    obd2lib.ObdLog.setHandler(
+        (message, {level = 'info', category = 'Communication'}) {
+      if (message.contains('Setting up vehicle')) {
+        OBDConnectionManager.instance.setSettingUpVehicle();
+      }
+    });
+
     manager.disconnect();
     ConfigData.instance.connectionType = ConnectionType.demo;
     manager.initialize();
@@ -40,7 +50,7 @@ void main() {
     ConfigData.instance.connectionType = ConnectionType.demo;
     manager.updateConnectionDetails();
     await manager.connect();
-    await Future<void>.delayed(const Duration(milliseconds: 400));
+    await Future<void>.delayed(const Duration(milliseconds: 600));
     expect(manager.connectionState, OBDConnectionState.connected);
   });
 
@@ -48,7 +58,7 @@ void main() {
     ConfigData.instance.connectionType = ConnectionType.demo;
     manager.updateConnectionDetails();
     await manager.connect();
-    await Future<void>.delayed(const Duration(milliseconds: 400));
+    await Future<void>.delayed(const Duration(milliseconds: 600));
     manager.disconnect();
     expect(manager.connectionState, OBDConnectionState.disconnected);
     expect(manager.pidStats, isEmpty);
@@ -59,7 +69,7 @@ void main() {
     manager.updateConnectionDetails();
     await manager.connect();
     await manager.connect();
-    await Future<void>.delayed(const Duration(milliseconds: 400));
+    await Future<void>.delayed(const Duration(milliseconds: 600));
     expect(manager.connectionState, OBDConnectionState.connected);
   });
 

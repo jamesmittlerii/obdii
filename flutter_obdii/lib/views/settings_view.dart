@@ -29,7 +29,8 @@ class SettingsView extends StatefulWidget {
 
 class _SettingsViewState extends State<SettingsView> {
   bool _isGeneratingLogs = false;
-  String? _shareError;
+  String? _shareStatus;
+  bool _shareStatusIsError = false;
 
   @override
   void initState() {
@@ -101,18 +102,21 @@ class _SettingsViewState extends State<SettingsView> {
                     // Type picker
                     ListTile(
                       title: const Text('Type'),
-                      trailing: DropdownButton<ConnectionType>(
-                        value: vm.connectionType,
-                        underline: const SizedBox(),
-                        items: ConnectionType.values
-                            .map((t) => DropdownMenuItem(
-                                  value: t,
-                                  child: Text(t.displayName),
-                                ))
-                            .toList(),
-                        onChanged: (v) {
-                          if (v != null) vm.onConnectionTypeChanged(v);
-                        },
+                      trailing: DropdownButtonHideUnderline(
+                        child: DropdownButton<ConnectionType>(
+                          value: vm.connectionType,
+                          isDense: true,
+                          focusColor: Colors.transparent,
+                          items: ConnectionType.values
+                              .map((t) => DropdownMenuItem(
+                                    value: t,
+                                    child: Text(t.displayName),
+                                  ))
+                              .toList(),
+                          onChanged: (v) {
+                            if (v != null) vm.onConnectionTypeChanged(v);
+                          },
+                        ),
                       ),
                     ),
                     const Divider(height: 1),
@@ -132,6 +136,9 @@ class _SettingsViewState extends State<SettingsView> {
                         final label = switch (state) {
                           OBDConnectionState.disconnected => 'Connect',
                           OBDConnectionState.connecting => 'Connecting…',
+                          OBDConnectionState.connectedToAdapter =>
+                            'Connecting…',
+                          OBDConnectionState.settingUpVehicle => 'Connecting…',
                           OBDConnectionState.connected => 'Disconnect',
                           OBDConnectionState.failed => 'Connect',
                         };
@@ -139,7 +146,10 @@ class _SettingsViewState extends State<SettingsView> {
                           onPressed: vm.isConnectButtonDisabled
                               ? null
                               : vm.handleConnectionButtonTap,
-                          child: state == OBDConnectionState.connecting
+                          child: state == OBDConnectionState.connecting ||
+                                  state ==
+                                      OBDConnectionState.connectedToAdapter ||
+                                  state == OBDConnectionState.settingUpVehicle
                               ? Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -248,12 +258,15 @@ class _SettingsViewState extends State<SettingsView> {
                   onTap: _shareLogs,
                 ),
               ),
-              if (_shareError != null)
+              if (_shareStatus != null)
                 Padding(
                   padding: const EdgeInsets.only(left: 16, top: 4),
                   child: Text(
-                    _shareError!,
-                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                    _shareStatus!,
+                    style: TextStyle(
+                      color: _shareStatusIsError ? Colors.red : Colors.grey,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               const SizedBox(height: 16),
@@ -280,6 +293,10 @@ class _SettingsViewState extends State<SettingsView> {
     final (label, color) = switch (state) {
       OBDConnectionState.disconnected => ('Disconnected', Colors.grey),
       OBDConnectionState.connecting => ('Connecting…', Colors.orange),
+      OBDConnectionState.connectedToAdapter =>
+        ('Connected to Adapter...', Colors.blue),
+      OBDConnectionState.settingUpVehicle =>
+        ('Setting up vehicle...', Colors.orange),
       OBDConnectionState.connected => ('Connected', Colors.green),
       OBDConnectionState.failed => ('Failed', Colors.red),
     };
@@ -308,7 +325,8 @@ class _SettingsViewState extends State<SettingsView> {
   Future<void> _shareLogs() async {
     setState(() {
       _isGeneratingLogs = true;
-      _shareError = null;
+      _shareStatus = null;
+      _shareStatusIsError = false;
     });
 
     String? exportedPath;
@@ -334,7 +352,8 @@ class _SettingsViewState extends State<SettingsView> {
         exportedPath = outFile.path;
         if (mounted) {
           setState(() {
-            _shareError = 'Log file exported to:\n$exportedPath';
+            _shareStatus = 'Log file exported to:\n$exportedPath';
+            _shareStatusIsError = false;
           });
         }
         return;
@@ -356,14 +375,17 @@ class _SettingsViewState extends State<SettingsView> {
       if (mounted) {
         final message = e.toString();
         final lowered = message.toLowerCase();
-        final shareSheetUnavailable = lowered.contains('couldn\'t show you all the ways you could share') ||
-            lowered.contains('could not show you all the ways you could share');
+        final shareSheetUnavailable =
+            lowered.contains('couldn\'t show you all the ways you could share') ||
+                lowered.contains('could not show you all the ways you could share');
         setState(() {
+          _shareStatusIsError = true;
           if (shareSheetUnavailable && exportedPath != null) {
-            _shareError =
+            _shareStatus =
                 'Share sheet unavailable on this device. Log file exported to:\n$exportedPath';
+            _shareStatusIsError = false; // This is a success fallback
           } else {
-            _shareError = message;
+            _shareStatus = message;
           }
         });
       }

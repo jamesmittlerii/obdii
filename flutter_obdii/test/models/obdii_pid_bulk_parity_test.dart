@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flutter_obd2/flutter_obd2.dart' as obd2lib;
+import 'package:flutter_obdii/core/logger.dart';
 import 'package:flutter_obdii/core/obdiipid.dart';
 
 ObdiiPid _pidFromCommandName(String command) {
@@ -43,6 +45,12 @@ ObdiiPid _pidWithRanges({
 }
 
 void main() {
+  ObdLogger.instance.mutesConsole = true;
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    await obd2lib.Commands.ensureInitialized();
+  });
+
   // command mapping parity
   test('testMapsRpm', () => expect(_pidFromCommandName('rpm').pidCommand, '010C'));
   test('testMapsSpeed', () => expect(_pidFromCommandName('speed').pidCommand, '010D'));

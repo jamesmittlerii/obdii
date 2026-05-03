@@ -29,6 +29,15 @@ void main() {
 
   setUpAll(() async {
     SharedPreferences.setMockInitialValues({});
+    
+    // Suppress console logging during tests but preserve state transitions
+    obd2lib.ObdLog.setHandler(
+        (message, {level = 'info', category = 'Communication'}) {
+      if (message.contains('Setting up vehicle')) {
+        OBDConnectionManager.instance.setSettingUpVehicle();
+      }
+    });
+
     await config.load();
     config.connectionType = ConnectionType.demo;
     manager.initialize();
