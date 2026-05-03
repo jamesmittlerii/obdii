@@ -106,22 +106,32 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
     }
 
     override suspend fun connect() {
-        if (_connectionState == OBDConnectionState.connected || _connectionState == OBDConnectionState.connecting) return
+        if (_connectionState == OBDConnectionState.connected || _connectionState == OBDConnectionState.connecting) {
+            obdWarning("Connection attempt ignored, already connected or connecting.", LogCategory.Service)
+            return
+        }
         _connectionState = OBDConnectionState.connecting
+        obdInfo("Starting connection with timeout: 30s", LogCategory.Connection)
 
         try {
+            obdDebug("Connecting to adapter...", LogCategory.Connection)
             service.startConnection(timeoutMs = 30_000)
+
+            _connectionState = OBDConnectionState.settingUpVehicle
+            obdDebug("Initializing vehicle connection...", LogCategory.Connection)
+
             supportedMode1Pids = if (querySupportedPids) querySupportedMode1Pids() else emptySet()
             _connectionState = OBDConnectionState.connected
             _connectedPeripheralName = service.connectedPeripheral?.name
             syncInterestedPids()
             startContinuousUpdates(interestedPids)
+            obdInfo("Successfully connected to vehicle: ${service.connectedPeripheral?.name ?: "Unknown"}", LogCategory.Connection)
         } catch (t: Throwable) {
             streamJob?.cancel()
             streamJob = null
             _connectedPeripheralName = null
             _connectionState = OBDConnectionState.failed
-            println("OBDConnectionManager: connect failed: ${t.message}")
+            obdError("Connection failed: ${t.message}", LogCategory.Connection)
             throw t
         }
     }
@@ -177,6 +187,7 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
     private fun bindUnitChanges() {
         managerScope.launch {
             ConfigData.unitsStream.collectLatest {
+                obdInfo("Units changed to ${ConfigData.units.name}; resetting stats and restarting updates.", LogCategory.Service)
                 resetAllStats()
                 if (_connectionState == OBDConnectionState.connected) {
                     lastStreamingPids = emptySet()
@@ -220,6 +231,7 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
     }
 
     private fun handleServiceConnectionState(state: AdapterConnectionState) {
+        val oldState = _connectionState
         when (state) {
             AdapterConnectionState.disconnected -> {
                 if (_connectionState == OBDConnectionState.connecting) return
@@ -230,15 +242,30 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
                 clearForTerminalState()
                 _connectionState = OBDConnectionState.failed
             }
-            AdapterConnectionState.connecting,
-            AdapterConnectionState.connectedToAdapter,
-            -> _connectionState = OBDConnectionState.connecting
-            AdapterConnectionState.connectedToVehicle,
-            -> if (_connectionState != OBDConnectionState.connecting) {
-                _connectionState = OBDConnectionState.connected
+            AdapterConnectionState.connecting -> {
+                _connectionState = OBDConnectionState.connecting
+            }
+            AdapterConnectionState.connectedToAdapter -> {
+                if (_connectionState == OBDConnectionState.connecting) {
+                    _connectionState = OBDConnectionState.connectedToAdapter
+                }
+            }
+            AdapterConnectionState.connectedToVehicle -> {
+                if (_connectionState != OBDConnectionState.connected) {
+                    _connectionState = OBDConnectionState.connected
+                }
             }
         }
+        if (oldState != _connectionState) {
+            obdInfo("Connection state changed: $oldState → $_connectionState", LogCategory.Connection)
+        }
         _connectedPeripheralName = service.connectedPeripheral?.name
+    }
+
+    fun setSettingUpVehicle() {
+        if (_connectionState == OBDConnectionState.connectedToAdapter) {
+            _connectionState = OBDConnectionState.settingUpVehicle
+        }
     }
 
     private fun clearForTerminalState() {
@@ -280,12 +307,14 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
             streamJob?.cancel()
             streamJob = null
             lastStreamingPids = emptySet()
+            obdInfo("No interested PIDs to monitor.", LogCategory.Service)
             return
         }
         if (enabledNow == lastStreamingPids) return
 
         streamJob?.cancel()
         lastStreamingPids = enabledNow
+        obdInfo("Starting continuous updates for ${enabledNow.size} PIDs.", LogCategory.Service)
         streamJob = managerScope.launch {
             val statsAccumulator = _pidStats.toMutableMap()
             while (isActive && _connectionState == OBDConnectionState.connected) {
@@ -313,6 +342,7 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
             .sorted()
 
         for (command in getterCommands) {
+            obdInfo("Getting supported PIDs for $command", LogCategory.Communication)
             val bytes = runCatching { responseBytes(service.sendCommand(command)) }.getOrNull() ?: continue
             val serviceIndex = bytes.indexOf(0x41)
             if (serviceIndex < 0 || bytes.getOrNull(serviceIndex + 1) != command.takeLast(2).toInt(16)) continue
@@ -345,10 +375,21 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
                 statsAccumulator[pid] = existing?.copyWith(result.value) ?: PIDStats(pid, result.value)
                 _pidStats = statsAccumulator.toMap()
             }
-            is DecodeResult.StatusResult -> _milStatus = result.value
-            is DecodeResult.TroubleCodes -> _troubleCodes = result.codes
-            is DecodeResult.FuelStatusResult -> _fuelStatus = result.status
-            is DecodeResult.Failure -> Unit
+            is DecodeResult.StatusResult -> {
+                _milStatus = result.value
+                obdDebug("Status response: ${result.value}", LogCategory.Communication)
+            }
+            is DecodeResult.TroubleCodes -> {
+                _troubleCodes = result.codes
+                obdInfo("Found ${result.codes.size} trouble codes", LogCategory.Communication)
+            }
+            is DecodeResult.FuelStatusResult -> {
+                _fuelStatus = result.status
+                obdDebug("Fuel status updated", LogCategory.Communication)
+            }
+            is DecodeResult.Failure -> {
+                obdError("Failed to decode command $pid: ${result.message} | Data: ${bytes.joinToString(" ") { "%02X".format(it) }}", LogCategory.Parsing)
+            }
         }
     }
 

@@ -126,7 +126,9 @@ class SettingsViewModel(
     }
 
     val isConnectButtonDisabled: Boolean
-        get() = connectionState == OBDConnectionState.connecting
+        get() = connectionState == OBDConnectionState.connecting ||
+                connectionState == OBDConnectionState.connectedToAdapter ||
+                connectionState == OBDConnectionState.settingUpVehicle
 
     fun handleConnectionButtonTap() {
         when (connectionState) {
@@ -134,7 +136,9 @@ class SettingsViewModel(
                 runCatching { connection.connect() }
             }
             OBDConnectionState.connected -> connection.disconnect()
-            OBDConnectionState.connecting -> Unit
+            OBDConnectionState.connecting,
+            OBDConnectionState.connectedToAdapter,
+            OBDConnectionState.settingUpVehicle -> Unit
         }
     }
 
@@ -146,15 +150,19 @@ class SettingsViewModel(
 
     fun prepareLogExport(): String {
         val uiState = _uiStateStream.value
+        val historyJson = com.rheosoft.obdii.core.ObdLogger.getHistory().joinToString(prefix = "[", postfix = "]") { it.toJson() }
         return """
             {
-              "timestamp":"${java.time.Instant.now()}",
-              "connectionType":"${uiState.connectionType}",
-              "units":"${uiState.units}",
-              "connectionState":"${uiState.connectionState}",
-              "appVersion":"${uiState.appVersion}",
-              "wifiHost":"${uiState.wifiHost}",
-              "wifiPort":${uiState.wifiPort}
+              "metadata": {
+                "timestamp":"${java.time.Instant.now()}",
+                "connectionType":"${uiState.connectionType}",
+                "units":"${uiState.units}",
+                "connectionState":"${uiState.connectionState}",
+                "appVersion":"${uiState.appVersion}",
+                "wifiHost":"${uiState.wifiHost}",
+                "wifiPort":${uiState.wifiPort}
+              },
+              "entries": $historyJson
             }
         """.trimIndent()
     }

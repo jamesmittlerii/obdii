@@ -18,6 +18,8 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.rheosoft.obdii.core.LogCategory
+import com.rheosoft.obdii.core.ObdLogger
 import com.rheosoft.obdii.core.communication.ble.BleCharacteristic
 import com.rheosoft.obdii.core.communication.ble.BlePeripheral
 import com.rheosoft.obdii.core.communication.ble.BlePlatformAdapter
@@ -46,7 +48,6 @@ private class GattSession(
 }
 
 class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapter {
-    private val tag = "OBDII-BLE"
     private val bleDebugLogs = true
     private val bluetoothManager: BluetoothManager? =
         context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
@@ -476,14 +477,14 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
     }
 
     private fun logD(message: String) {
-        if (bleDebugLogs) Log.d(tag, message)
+        if (bleDebugLogs) ObdLogger.log(message, LogCategory.Communication, "debug")
     }
 
     private fun logI(message: String) {
-        if (bleDebugLogs) Log.i(tag, message)
+        if (bleDebugLogs) ObdLogger.log(message, LogCategory.Communication, "info")
     }
 
     private fun logE(message: String) {
-        if (bleDebugLogs) Log.e(tag, message)
+        if (bleDebugLogs) ObdLogger.log(message, LogCategory.Communication, "error")
     }
 }

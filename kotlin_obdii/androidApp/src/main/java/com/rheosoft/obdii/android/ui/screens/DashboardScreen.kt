@@ -10,9 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -127,39 +125,56 @@ private fun RingGaugeMini(tile: GaugeTile, isMetric: Boolean, modifier: Modifier
         PidColor.RED -> Color(0xFFE53935)
         PidColor.BLUE_GREY -> Color.Gray
     }
-    BoxWithConstraints(modifier = modifier) {
-        val dim = maxWidth
-        val clippedHeight = dim * 0.8167f
-        Box(
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(1f / 0.8167f),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(clippedHeight)
-                .clipToBounds(),
-            contentAlignment = Alignment.TopCenter,
+                .aspectRatio(1f)
+                .align(Alignment.TopCenter)
+                .padding(top = 14.dp, start = 4.dp, end = 4.dp, bottom = 4.dp)
         ) {
-            Canvas(modifier = Modifier.size(dim)) {
-                // Keep a square drawing surface so the ring is always circular.
-                val strokeWidth = max(4f, size.width * 0.18f)
-                val radius = (size.width / 2f) - (strokeWidth / 2f)
-                val rect = androidx.compose.ui.geometry.Rect(
-                    left = (size.width / 2f) - radius,
-                    top = (size.width / 2f) - radius,
-                    right = (size.width / 2f) + radius,
-                    bottom = (size.width / 2f) + radius,
-                )
-                val stroke = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                drawArc(color = Color(0xFF7C7C82), startAngle = 150f, sweepAngle = 240f, useCenter = false, topLeft = rect.topLeft, size = rect.size, style = stroke)
-                drawArc(color = progressColor, startAngle = 150f, sweepAngle = (240f * gauge.normalized).toFloat(), useCenter = false, topLeft = rect.topLeft, size = rect.size, style = stroke)
-            }
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .offset(y = 9.dp),
-            ) {
-                Text(gauge.valueLine, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold, fontSize = 30.sp)
-                Text(gauge.unitLine, textAlign = TextAlign.Center, color = Color(0xFFB1B1B6))
-            }
+            // Keep a square drawing surface so the ring is always circular.
+            val strokeWidth = max(4f, size.width * 0.18f)
+            val radius = (size.width / 2f) - (strokeWidth / 2f)
+            val rect = androidx.compose.ui.geometry.Rect(
+                left = (size.width / 2f) - radius,
+                top = (size.width / 2f) - radius,
+                right = (size.width / 2f) + radius,
+                bottom = (size.width / 2f) + radius,
+            )
+            val stroke = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+            drawArc(
+                color = Color(0xFF7C7C82),
+                startAngle = 150f,
+                sweepAngle = 240f,
+                useCenter = false,
+                topLeft = rect.topLeft,
+                size = rect.size,
+                style = stroke
+            )
+            drawArc(
+                color = progressColor,
+                startAngle = 150f,
+                sweepAngle = (240f * gauge.normalized).toFloat(),
+                useCenter = false,
+                topLeft = rect.topLeft,
+                size = rect.size,
+                style = stroke
+            )
+        }
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .align(Alignment.Center)
+                .offset(y = 17.dp),
+        ) {
+            Text(gauge.valueLine, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold, fontSize = 30.sp)
+            Text(gauge.unitLine, textAlign = TextAlign.Center, color = Color(0xFFB1B1B6))
         }
     }
 }

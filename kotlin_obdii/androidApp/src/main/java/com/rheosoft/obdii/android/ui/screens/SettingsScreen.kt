@@ -20,10 +20,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -44,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rheosoft.obdii.core.ConnectionType
 import com.rheosoft.obdii.core.MeasurementUnit
+import com.rheosoft.obdii.core.OBDConnectionState
 import com.rheosoft.obdii.screenmodels.SettingsScreenModel
 import java.io.File
 
@@ -119,6 +122,8 @@ fun SettingsScreen(
                     val statusColor = when (statusLabel) {
                         "Connected" -> Color(0xFF2E7D32)
                         "Connecting..." -> Color(0xFFEF6C00)
+                        "Connected to Adapter..." -> Color(0xFF1976D2)
+                        "Setting up vehicle..." -> Color(0xFFEF6C00)
                         "Failed" -> Color(0xFFC62828)
                         else -> Color.Gray
                     }
@@ -212,7 +217,26 @@ fun SettingsScreen(
                         onClick = {
                             vm.handleConnectionButtonTap()
                         },
-                    ) { Text(connectButtonLabel) }
+                        enabled = !vm.isConnectButtonDisabled,
+                    ) {
+                        val isConnecting = vm.connectionState == OBDConnectionState.connecting ||
+                            vm.connectionState == OBDConnectionState.connectedToAdapter ||
+                            vm.connectionState == OBDConnectionState.settingUpVehicle
+
+                        if (isConnecting) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(connectButtonLabel)
+                                Spacer(Modifier.width(8.dp))
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(14.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else {
+                            Text(connectButtonLabel)
+                        }
+                    }
                 }
             }
             if (selectedType == ConnectionType.wifi) {

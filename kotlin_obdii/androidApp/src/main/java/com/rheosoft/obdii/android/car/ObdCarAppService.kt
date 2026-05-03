@@ -7,20 +7,23 @@ import androidx.car.app.CarAppService
 import androidx.car.app.Session
 import androidx.car.app.validation.HostValidator
 
+import com.rheosoft.obdii.core.LogCategory
+import com.rheosoft.obdii.core.ObdLogger
+
 class ObdCarAppService : CarAppService() {
     companion object {
         init {
-            Log.d("ObdCarAppService", "Class Loaded Static")
+            ObdLogger.log("Class Loaded Static", LogCategory.App, "debug")
         }
     }
 
     override fun createHostValidator(): HostValidator {
-        Log.d("ObdCarAppService", "createHostValidator called")
+        ObdLogger.log("createHostValidator called", LogCategory.App, "debug")
         return HostValidator.ALLOW_ALL_HOSTS_VALIDATOR
     }
 
     override fun onCreateSession(): Session {
-        Log.d("ObdCarAppService", "onCreateSession")
+        ObdLogger.log("onCreateSession", LogCategory.App, "debug")
         return ObdCarSession()
     }
 }

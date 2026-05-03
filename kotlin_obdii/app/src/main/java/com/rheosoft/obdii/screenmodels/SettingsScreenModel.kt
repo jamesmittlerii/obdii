@@ -23,7 +23,9 @@ class SettingsScreenModel(val viewModel: SettingsViewModel) {
     val connectButtonLabel: String
         get() = when (viewModel.connectionState) {
             OBDConnectionState.disconnected, OBDConnectionState.failed -> "Connect"
-            OBDConnectionState.connecting -> "Connecting..."
+            OBDConnectionState.connecting,
+            OBDConnectionState.connectedToAdapter,
+            OBDConnectionState.settingUpVehicle -> "Connecting..."
             OBDConnectionState.connected -> "Disconnect"
         }
 
@@ -31,6 +33,8 @@ class SettingsScreenModel(val viewModel: SettingsViewModel) {
         get() = when (viewModel.connectionState) {
             OBDConnectionState.disconnected -> "Disconnected"
             OBDConnectionState.connecting -> "Connecting..."
+            OBDConnectionState.connectedToAdapter -> "Connected to Adapter..."
+            OBDConnectionState.settingUpVehicle -> "Setting up vehicle..."
             OBDConnectionState.connected -> "Connected"
             OBDConnectionState.failed -> "Failed"
         }

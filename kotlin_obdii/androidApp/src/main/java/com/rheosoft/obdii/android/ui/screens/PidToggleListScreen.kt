@@ -42,6 +42,7 @@ import androidx.compose.ui.zIndex
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.runtime.mutableFloatStateOf
 import com.rheosoft.obdii.models.ObdPidKind
 import com.rheosoft.obdii.models.ObdiiPid
 import com.rheosoft.obdii.screenmodels.PidToggleListScreenModel
@@ -64,7 +65,7 @@ fun PidToggleListScreen(
     var searchText by remember { mutableStateOf(vm.searchText) }
     var draggingKey by remember { mutableStateOf<String?>(null) }
     var draggingEnabledIndex by remember { mutableStateOf<Int?>(null) }
-    var draggingOffsetY by remember { mutableStateOf(0f) }
+    var draggingOffsetY by remember { mutableFloatStateOf(0f) }
     val rowHeightPx = with(LocalDensity.current) { 84.dp.toPx() }
     LaunchedEffect(vm.searchText) { searchText = vm.searchText }
     Scaffold(

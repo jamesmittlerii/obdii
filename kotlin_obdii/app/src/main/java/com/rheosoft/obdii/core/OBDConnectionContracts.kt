@@ -2,7 +2,7 @@ package com.rheosoft.obdii.core
 
 import kotlinx.coroutines.flow.StateFlow
 
-enum class OBDConnectionState { disconnected, connecting, connected, failed }
+enum class OBDConnectionState { disconnected, connecting, connectedToAdapter, settingUpVehicle, connected, failed }
 
 interface PidStatsProviding {
     val pidStats: Map<String, PIDStats>

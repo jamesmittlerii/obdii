@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.getValue
@@ -17,6 +18,7 @@ import com.rheosoft.obdii.android.ui.screens.KotlinObdiiApp
 import com.rheosoft.obdii.core.ConfigData
 import com.rheosoft.obdii.core.DefaultPidStore
 import com.rheosoft.obdii.core.OBDConnectionManager
+import com.rheosoft.obdii.core.ObdLogger
 
 class MainActivity : ComponentActivity() {
     private var permissionsReady by mutableStateOf(false)
@@ -33,6 +35,25 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Initialize logging to use Android Log instead of System.out
+        ObdLogger.platformLogDelegate = { message, tag, level ->
+            // Detect intermediate states that aren't explicit enums in the library
+            if (message.contains("Initializing vehicle connection")) {
+                OBDConnectionManager.setSettingUpVehicle()
+            }
+
+            val emoji = ObdLogger.getEmoji(level)
+            val fullMessage = "[$emoji] $message"
+            when (level.lowercase()) {
+                "error" -> Log.e(tag, fullMessage)
+                "warning" -> Log.w(tag, fullMessage)
+                "info" -> Log.i(tag, fullMessage)
+                else -> Log.d(tag, fullMessage)
+            }
+        }
+        ObdLogger.mutesConsole = true // Stop System.out to avoid double logging
+
         val persistentStore = AndroidPreferencesKeyValueStore.from(this)
         ConfigData.store = persistentStore
         DefaultPidStore.store = persistentStore
