@@ -115,10 +115,10 @@ fun DtcDetailScreen(detail: DtcDetailScreenModel, onClose: () -> Unit) {
                     SectionLabel(header)
                     PremiumCard(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
                         Column(modifier = Modifier.padding(12.dp)) {
-                            if (header == "OVERVIEW") detail.overviewRows.forEach { (k, v) -> Text("$k: $v") }
-                            else if (header == "DESCRIPTION") Text(detail.description)
-                            else if (header == "POTENTIAL CAUSES") detail.causes.forEach { Text("• $it") }
-                            else if (header == "POSSIBLE REMEDIES") detail.remedies.forEach { Text("• $it") }
+                            if (header == "Overview") detail.overviewRows.forEach { (k, v) -> Text("$k: $v") }
+                            else if (header == "Description") Text(detail.description)
+                            else if (header == "Potential causes") detail.causes.forEach { Text("• $it") }
+                            else if (header == "Possible remedies") detail.remedies.forEach { Text("• $it") }
                         }
                     }
                 }

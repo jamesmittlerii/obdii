@@ -57,29 +57,13 @@ fun DashboardScreen(
     val listMode = uiState.displayMode == GaugesDisplayMode.list
     LazyColumn(modifier = modifier.fillMaxSize().padding(16.dp)) {
         item {
-            Row {
-                FilterChip(
-                    selected = !listMode,
-                    onClick = {
-                        view.viewModel.setDisplayMode(GaugesDisplayMode.gauges)
-                    },
-                    label = { Text("Gauges") },
-                    modifier = Modifier.padding(end = 8.dp),
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFFD9E8F5),
-                    ),
-                )
-                FilterChip(
-                    selected = listMode,
-                    onClick = {
-                        view.viewModel.setDisplayMode(GaugesDisplayMode.list)
-                    },
-                    label = { Text("List") },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFFD9E8F5),
-                    ),
-                )
-            }
+            SegmentedPicker(
+                options = listOf("Gauges", "List"),
+                selectedIndex = if (listMode) 1 else 0,
+                onOptionSelected = { index ->
+                    view.viewModel.setDisplayMode(if (index == 1) GaugesDisplayMode.list else GaugesDisplayMode.gauges)
+                }
+            )
             Spacer(Modifier.height(12.dp))
         }
         if (enabled.isEmpty()) {
@@ -87,7 +71,7 @@ fun DashboardScreen(
             return@LazyColumn
         }
         if (listMode) {
-            item { SectionLabel("GAUGES") }
+            item { SectionLabel("Gauges") }
             items(enabled) { tile ->
                 val gauge = RingGaugeModel(tile.pid, tile.stats?.latest?.value, isMetric)
                 val valueColor = when (gauge.progressColor) {

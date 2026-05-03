@@ -115,16 +115,6 @@ fun KotlinObdiiApp() {
     ObservePidChanges(gaugePickerVm)
 
     Scaffold(
-        topBar = {
-            val title = if (selected == 1) dashboardView.title else MainScaffoldScreenModel.destinations[selected]
-            TopAppBar(
-                title = { Text(title) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = AppBackground,
-                    titleContentColor = Color(0xFF1D2433),
-                ),
-            )
-        },
         bottomBar = {
             NavigationBar(
                 containerColor = Color(0xFFF1F3F8),

@@ -84,65 +84,29 @@ fun SettingsScreen(
                         .clickable(onClick = onOpenGaugePicker)
                         .padding(horizontal = 16.dp, vertical = 18.dp),
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Text("Gauges", modifier = Modifier.fillMaxWidth(0.85f))
+                    Text("Gauges")
                     Icon(Icons.Outlined.ChevronRight, contentDescription = null)
                 }
             }
             Spacer(Modifier.height(16.dp))
-            SectionLabel("UNITS")
+            SectionLabel("Units")
             PremiumCard(modifier = Modifier.fillMaxWidth()) {
-                BoxWithConstraints(modifier = Modifier.fillMaxWidth().padding(10.dp)) {
-                    val selectedBg = Color(0xFFC5DAE7)
-                    val selectedText = Color(0xFF3B4E5A)
-                    val normalText = Color(0xFF222222)
-                    val segmentWidth = maxWidth / 2
-                    Row(modifier = Modifier.border(1.dp, Color(0xFF7E8993), shape = androidx.compose.foundation.shape.RoundedCornerShape(999.dp))) {
-                        Row(
-                            modifier = Modifier
-                                .width(segmentWidth)
-                                .background(if (selectedUnits == MeasurementUnit.Metric) selectedBg else Color.Transparent)
-                                .clickable {
-                                    selectedUnits = MeasurementUnit.Metric
-                                    vm.onUnitsChanged(MeasurementUnit.Metric)
-                                }
-                                .padding(vertical = 10.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Box(modifier = Modifier.size(18.dp), contentAlignment = Alignment.Center) {
-                                if (selectedUnits == MeasurementUnit.Metric) {
-                                    Icon(Icons.Outlined.Check, contentDescription = null, tint = selectedText)
-                                }
-                            }
-                            Spacer(Modifier.width(6.dp))
-                            Text("Metric", color = if (selectedUnits == MeasurementUnit.Metric) selectedText else normalText, fontWeight = FontWeight.SemiBold)
+                Box(modifier = Modifier.padding(10.dp)) {
+                    SegmentedPicker(
+                        options = listOf("Metric", "Imperial"),
+                        selectedIndex = if (selectedUnits == MeasurementUnit.Metric) 0 else 1,
+                        onOptionSelected = { index ->
+                            val next = if (index == 0) MeasurementUnit.Metric else MeasurementUnit.Imperial
+                            selectedUnits = next
+                            vm.onUnitsChanged(next)
                         }
-                        Row(
-                            modifier = Modifier
-                                .width(segmentWidth)
-                                .background(if (selectedUnits == MeasurementUnit.Imperial) selectedBg else Color.Transparent)
-                                .clickable {
-                                    selectedUnits = MeasurementUnit.Imperial
-                                    vm.onUnitsChanged(MeasurementUnit.Imperial)
-                                }
-                                .padding(vertical = 10.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Box(modifier = Modifier.size(18.dp), contentAlignment = Alignment.Center) {
-                                if (selectedUnits == MeasurementUnit.Imperial) {
-                                    Icon(Icons.Outlined.Check, contentDescription = null, tint = selectedText)
-                                }
-                            }
-                            Spacer(Modifier.width(6.dp))
-                            Text("Imperial", color = if (selectedUnits == MeasurementUnit.Imperial) selectedText else normalText, fontWeight = FontWeight.SemiBold)
-                        }
-                    }
+                    )
                 }
             }
             Spacer(Modifier.height(12.dp))
-            SectionLabel("CONNECTION")
+            SectionLabel("Connection")
             val connectionRowMinHeight = 52.dp
             PremiumCard(modifier = Modifier.fillMaxWidth()) {
                 Row(
@@ -151,8 +115,9 @@ fun SettingsScreen(
                         .heightIn(min = connectionRowMinHeight)
                         .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Text("Status", modifier = Modifier.fillMaxWidth(0.7f))
+                    Text("Status")
                     val statusColor = when (statusLabel) {
                         "Connected" -> Color(0xFF2E7D32)
                         "Connecting..." -> Color(0xFFEF6C00)
@@ -168,8 +133,9 @@ fun SettingsScreen(
                         .heightIn(min = connectionRowMinHeight)
                         .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Text("Type", modifier = Modifier.fillMaxWidth(0.35f))
+                    Text("Type")
                     Box {
                         TextButton(onClick = { typeMenuExpanded = true }) {
                             Text(
@@ -211,8 +177,9 @@ fun SettingsScreen(
                         .heightIn(min = connectionRowMinHeight)
                         .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Text("Automatically Connect", modifier = Modifier.fillMaxWidth(0.7f))
+                    Text("Automatically Connect")
                     Switch(
                         checked = autoConnect,
                         onCheckedChange = {
@@ -240,26 +207,43 @@ fun SettingsScreen(
             }
             if (selectedType == ConnectionType.wifi) {
                 Spacer(Modifier.height(12.dp))
-                SectionLabel("CONNECTION DETAILS")
+                SectionLabel("Connection details")
                 PremiumCard(modifier = Modifier.fillMaxWidth()) {
-                    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("Host", modifier = Modifier.fillMaxWidth(0.35f))
-                        OutlinedTextField(value = uiState.wifiHost, onValueChange = vm::onWifiHostChanged, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text("Host")
+                        OutlinedTextField(
+                            value = uiState.wifiHost,
+                            onValueChange = vm::onWifiHostChanged,
+                            singleLine = true,
+                            modifier = Modifier.width(200.dp),
+                        )
                     }
                     HorizontalDivider()
-                    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("Port", modifier = Modifier.fillMaxWidth(0.35f))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text("Port")
                         OutlinedTextField(
                             value = uiState.wifiPort.toString(),
                             onValueChange = { it.toIntOrNull()?.let(vm::onWifiPortChanged) },
                             singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.width(200.dp),
                         )
                     }
                 }
             }
             Spacer(Modifier.height(16.dp))
-            SectionLabel("DIAGNOSTICS")
+            SectionLabel("Diagnostics")
             PremiumCard(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier.fillMaxWidth().clickable {
@@ -278,10 +262,14 @@ fun SettingsScreen(
                         }
                     }.padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                ) { Text(view.diagnosticsActionLabel) }
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) { 
+                    Text(view.diagnosticsActionLabel)
+                    Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = Color.Gray)
+                }
             }
             Spacer(Modifier.height(16.dp))
-            SectionLabel("ABOUT")
+            SectionLabel("About")
             PremiumCard(modifier = Modifier.fillMaxWidth()) {
                 Text(uiState.appVersion.ifEmpty { "Loading version…" }, modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp))
             }

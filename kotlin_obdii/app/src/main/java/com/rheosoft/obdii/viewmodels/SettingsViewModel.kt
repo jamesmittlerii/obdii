@@ -47,6 +47,7 @@ class SettingsViewModel(
         private set
     var connectionState: OBDConnectionState = connection.connectionState
         private set
+    private var _appVersion: String = ""
     private val _uiStateStream = MutableStateFlow(buildUiState())
     val uiStateStream: StateFlow<SettingsUiState> = _uiStateStream.asStateFlow()
 
@@ -138,8 +139,9 @@ class SettingsViewModel(
     }
 
     fun setAppVersion(version: String) {
-        if (_uiStateStream.value.appVersion == version) return
-        _uiStateStream.value = _uiStateStream.value.copy(appVersion = version)
+        if (_appVersion == version) return
+        _appVersion = version
+        emitUiState()
     }
 
     fun prepareLogExport(): String {
@@ -168,5 +170,6 @@ class SettingsViewModel(
         connectionType = connectionType,
         units = units,
         connectionState = connectionState,
+        appVersion = _appVersion,
     )
 }

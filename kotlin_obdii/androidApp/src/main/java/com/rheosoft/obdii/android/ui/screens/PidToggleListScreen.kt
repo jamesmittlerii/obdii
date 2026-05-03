@@ -1,5 +1,6 @@
 package com.rheosoft.obdii.android.ui.screens
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -117,7 +118,7 @@ fun PidToggleListScreen(
         val disabled = if (query.isEmpty()) disabledBase else disabledBase.filter { it.matchesQuery(query) }
         LazyColumn(modifier = Modifier.fillMaxSize().padding(pad).padding(16.dp)) {
             if (!searching) item { Spacer(Modifier.height(2.dp)) }
-            if (enabled.isNotEmpty()) item { SectionLabel("ENABLED") }
+            if (enabled.isNotEmpty()) item { SectionLabel("Enabled") }
             itemsIndexed(
                 items = enabled,
                 key = { _, pid -> pid.stableKey() },
@@ -172,17 +173,12 @@ fun PidToggleListScreen(
                             }
                             .padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Column(modifier = Modifier.fillMaxWidth(0.72f)) {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(pid.name)
                             Text(pid.displayRange(isMetric), color = Color.Gray)
                         }
-                        Icon(
-                            Icons.Outlined.DragIndicator,
-                            contentDescription = "Reorder",
-                            tint = if (isDragging) Color(0xFF1976D2) else Color.Gray,
-                            modifier = Modifier.padding(end = 6.dp),
-                        )
                         Switch(
                             checked = pid.enabled,
                             onCheckedChange = { on -> scope.launch { vm.toggleById(pidKey, on) } },
@@ -190,7 +186,7 @@ fun PidToggleListScreen(
                     }
                 }
             }
-            if (disabled.isNotEmpty()) item { SectionLabel("DISABLED") }
+            if (disabled.isNotEmpty()) item { SectionLabel("Disabled") }
             items(
                 items = disabled,
                 key = { pid -> pid.stableKey() },
@@ -202,8 +198,9 @@ fun PidToggleListScreen(
                             .fillMaxWidth()
                             .padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Column(modifier = Modifier.fillMaxWidth(0.75f)) {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(pid.name)
                             Text(pid.displayRange(isMetric), color = Color.Gray)
                         }
