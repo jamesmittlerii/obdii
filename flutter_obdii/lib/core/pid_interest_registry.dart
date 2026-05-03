@@ -8,7 +8,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_obd2/flutter_obd2.dart' as obd2lib;
 import 'logger.dart';
-import 'obdiipid.dart';
 
 class PidInterestRegistry extends ChangeNotifier {
   static final PidInterestRegistry instance = PidInterestRegistry._();
