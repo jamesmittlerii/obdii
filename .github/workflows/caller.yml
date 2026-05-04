@@ -10,6 +10,7 @@ on:
   push:
     branches: [ "main" ]
     paths-ignore:
+      - "kotlin_obdii/**"
       - "flutter_obdii/**"
       - ".github/workflows/caller_flutter.yml"
 #  pull_request:
