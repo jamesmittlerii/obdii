@@ -43,14 +43,10 @@ class _MilStatusViewState extends State<MilStatusView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('MIL Status'),
-        centerTitle: false,
-      ),
       body: Consumer<MilStatusViewModel>(
         builder: (context, vm, _) {
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
             children: [
               // ── Malfunction Indicator Lamp ───────────────
               _sectionHeader(context, 'Malfunction Indicator Lamp'),

@@ -34,6 +34,15 @@ class _GaugeDetailBody extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(
+            Icons.chevron_left,
+            color: Theme.of(context).colorScheme.primary,
+            size: 28,
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        titleSpacing: 0,
         title: Text(pid.name),
       ),
       body: ListView(

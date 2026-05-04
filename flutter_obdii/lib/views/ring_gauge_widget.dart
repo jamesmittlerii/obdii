@@ -68,7 +68,7 @@ class RingGaugeWidget extends StatelessWidget {
                 ),
                 child: Align(
                   // Downward nudge to visually center value+unit in the ring.
-                  alignment: const Alignment(0, 0.39),
+                  alignment: const Alignment(0, 0.30),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -77,7 +77,7 @@ class RingGaugeWidget extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          fontFeatures: [FontFeature.tabularFigures()],
+                          height: 1.0,
                         ),
                       ),
                       if (unitLine.isNotEmpty)
@@ -86,7 +86,7 @@ class RingGaugeWidget extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade400,
-                            fontFeatures: const [FontFeature.tabularFigures()],
+                            height: 1.0,
                           ),
                         ),
                     ],

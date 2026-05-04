@@ -43,64 +43,61 @@ class _DiagnosticsViewState extends State<DiagnosticsView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Diagnostic Codes'),
-        centerTitle: false,
-      ),
       body: Consumer<DiagnosticsViewModel>(
         builder: (context, vm, _) {
-          // 1) Waiting for first data
-          if (vm.codes == null) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(
-                    width: 36,
-                    height: 36,
-                    child: CircularProgressIndicator(strokeWidth: 3),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('Waiting for data…',
-                      style: TextStyle(color: Colors.grey)),
-                  if (vm.connectionState != OBDConnectionState.connected)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        'Connect to a vehicle in Settings.',
-                        style: TextStyle(
-                            color: Colors.grey.shade600, fontSize: 12),
-                      ),
+          return CustomScrollView(
+            slivers: [
+              if (vm.codes == null)
+                SliverFillRemaining(
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(
+                          width: 36,
+                          height: 36,
+                          child: CircularProgressIndicator(strokeWidth: 3),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text('Waiting for data…',
+                            style: TextStyle(color: Colors.grey)),
+                        if (vm.connectionState != OBDConnectionState.connected)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              'Connect to a vehicle in Settings.',
+                              style: TextStyle(
+                                  color: Colors.grey.shade600, fontSize: 12),
+                            ),
+                          ),
+                      ],
                     ),
-                ],
-              ),
-            );
-          }
-
-          // 2) Loaded but no codes
-          if (vm.sections.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.check_circle_outline,
-                      size: 64, color: Colors.green),
-                  SizedBox(height: 16),
-                  Text('No Trouble Codes Found',
-                      style: TextStyle(fontSize: 18)),
-                  SizedBox(height: 4),
-                  Text('All systems normal.',
-                      style: TextStyle(color: Colors.grey)),
-                ],
-              ),
-            );
-          }
-
-          // 3) Sections by severity
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: vm.sections.length,
-            itemBuilder: (context, index) {
+                  ),
+                )
+              else if (vm.sections.isEmpty)
+                const SliverFillRemaining(
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle_outline,
+                            size: 64, color: Colors.green),
+                        SizedBox(height: 16),
+                        Text('No Trouble Codes Found',
+                            style: TextStyle(fontSize: 18)),
+                        SizedBox(height: 4),
+                        Text('All systems normal.',
+                            style: TextStyle(color: Colors.grey)),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
               final section = vm.sections[index];
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -119,7 +116,12 @@ class _DiagnosticsViewState extends State<DiagnosticsView> {
                   const SizedBox(height: 8),
                 ],
               );
-            },
+                    },
+                      childCount: vm.sections.length,
+                    ),
+                  ),
+                ),
+            ],
           );
         },
       ),
@@ -155,13 +157,13 @@ class _SectionHeader extends StatelessWidget {
   Color _severityColor(String s) {
     switch (s.toLowerCase()) {
       case 'critical':
-        return Colors.red;
+        return const Color(0xFFEF4444); // AppTheme.criticalRed
       case 'high':
-        return Colors.orange;
+        return const Color(0xFFF59E0B); // AppTheme.highOrange
       case 'moderate':
-        return Colors.amber;
+        return const Color(0xFFFCD34D); // AppTheme.moderateAmber
       case 'low':
-        return Colors.blue;
+        return const Color(0xFF3B82F6); // AppTheme.lowBlue
       default:
         return Colors.grey;
     }
@@ -191,7 +193,10 @@ class _DtcRow extends StatelessWidget {
         dtc.severity?.toString() ?? '',
         style: const TextStyle(fontSize: 12),
       ),
-      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+      trailing: Icon(
+        Icons.chevron_right,
+        color: Theme.of(context).colorScheme.primary,
+      ),
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => _DtcDetailView(dtc: dtc)),
@@ -202,14 +207,14 @@ class _DtcRow extends StatelessWidget {
   Widget _severityIcon(String severity) {
     switch (severity.toLowerCase()) {
       case 'critical':
-        return const Icon(Icons.cancel_outlined, color: Colors.red);
+        return const Icon(Icons.cancel_outlined, color: Color(0xFFEF4444));
       case 'high':
-        return const Icon(Icons.electric_bolt, color: Colors.orange);
+        return const Icon(Icons.electric_bolt, color: Color(0xFFF59E0B));
       case 'moderate':
-        return const Icon(Icons.warning_amber_outlined, color: Colors.amber);
+        return const Icon(Icons.warning_amber_outlined, color: Color(0xFFFCD34D));
       case 'low':
       default:
-        return const Icon(Icons.info_outline, color: Colors.blue);
+        return const Icon(Icons.info_outline, color: Color(0xFF3B82F6));
     }
   }
 }
@@ -231,6 +236,15 @@ class _DtcDetailView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(
+            Icons.chevron_left,
+            color: Theme.of(context).colorScheme.primary,
+            size: 28,
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        titleSpacing: 0,
         title: Text(dtc.code as String? ?? ''),
       ),
       body: ListView(

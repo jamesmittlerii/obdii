@@ -54,6 +54,10 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.11.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.11.0")
+
+    // Nordic BLE Library
+    implementation("no.nordicsemi.android:ble:2.11.0")
+    implementation("no.nordicsemi.android:ble-ktx:2.11.0")
 }
 
 tasks.register<Exec>("runDebug") {

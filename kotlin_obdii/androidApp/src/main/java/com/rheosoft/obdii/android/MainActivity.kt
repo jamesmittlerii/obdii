@@ -56,8 +56,15 @@ class MainActivity : ComponentActivity() {
 
         val persistentStore = AndroidPreferencesKeyValueStore.from(this)
         ConfigData.store = persistentStore
+        ConfigData.load()
         DefaultPidStore.store = persistentStore
-        OBDConnectionManager.setBleAdapter(AndroidBlePlatformAdapter(this))
+
+        val bleAdapter = if (com.rheosoft.obdii.viewmodels.SettingsViewModel.USE_NORDIC_BLE) {
+            com.rheosoft.obdii.android.ble.NordicBlePlatformAdapter(this)
+        } else {
+            AndroidBlePlatformAdapter(this)
+        }
+        OBDConnectionManager.setBleAdapter(bleAdapter)
         permissionsReady = hasBluetoothPermissions()
         requestBluetoothPermissionsIfNeeded()
         setContent { KotlinObdiiApp(permissionsReady = permissionsReady) }

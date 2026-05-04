@@ -42,16 +42,12 @@ class _FuelStatusViewState extends State<FuelStatusView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Fuel Control Status'),
-        centerTitle: false,
-      ),
       body: Consumer<FuelStatusViewModel>(
         builder: (context, vm, _) {
           // Waiting state
           if (vm.status == null) {
             return ListView(
-              padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
               children: [
                 Card(
                   child: ListTile(
@@ -72,7 +68,7 @@ class _FuelStatusViewState extends State<FuelStatusView> {
 
           // Loaded: show Bank 1 / Bank 2 (or empty message)
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
             children: [
               Card(
                 child: Column(

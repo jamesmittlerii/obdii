@@ -32,6 +32,14 @@ class SettingsViewModel(
     private val connection: OBDConnectionControlling = OBDConnectionManager,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + Job()),
 ) : BaseViewModel() {
+    companion object {
+        /**
+         * A/B Test Flag: Set to true to use the Nordic Semiconductor BLE library.
+         * Set to false to use the bare-metal Android BluetoothGatt implementation.
+         */
+        const val USE_NORDIC_BLE = true
+    }
+
     private var hostDebounceVersion = 0L
     private var portDebounceVersion = 0L
 

@@ -40,20 +40,22 @@ class _SettingsViewState extends State<SettingsView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        centerTitle: false,
-      ),
       body: Consumer<SettingsViewModel>(
         builder: (context, vm, _) {
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // ── 1. Gauges nav link ────────────────────────
+          return CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    // ── 1. Gauges nav link ────────────────────────
               Card(
                 child: ListTile(
                   title: const Text('Gauges'),
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: Icon(
+                    Icons.chevron_right,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -107,6 +109,10 @@ class _SettingsViewState extends State<SettingsView> {
                           value: vm.connectionType,
                           isDense: true,
                           focusColor: Colors.transparent,
+                          icon: Icon(
+                            Icons.arrow_drop_down,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                           items: ConnectionType.values
                               .map((t) => DropdownMenuItem(
                                     value: t,
@@ -143,27 +149,34 @@ class _SettingsViewState extends State<SettingsView> {
                           OBDConnectionState.failed => 'Connect',
                         };
                         return TextButton(
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size.fromHeight(56),
+                          ),
                           onPressed: vm.isConnectButtonDisabled
                               ? null
                               : vm.handleConnectionButtonTap,
-                          child: state == OBDConnectionState.connecting ||
-                                  state ==
-                                      OBDConnectionState.connectedToAdapter ||
-                                  state == OBDConnectionState.settingUpVehicle
-                              ? Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(label),
-                                    const SizedBox(width: 8),
-                                    const SizedBox(
-                                      width: 14,
-                                      height: 14,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2),
-                                    ),
-                                  ],
-                                )
-                              : Text(label),
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 300),
+                            child: state == OBDConnectionState.connecting ||
+                                    state ==
+                                        OBDConnectionState.connectedToAdapter ||
+                                    state == OBDConnectionState.settingUpVehicle
+                                ? Row(
+                                    key: const ValueKey('loading'),
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(label),
+                                      const SizedBox(width: 8),
+                                      const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2),
+                                      ),
+                                    ],
+                                  )
+                                : Text(label, key: const ValueKey('ready')),
+                          ),
                         );
                       },
                     ),
@@ -254,6 +267,13 @@ class _SettingsViewState extends State<SettingsView> {
                           ],
                         )
                       : const Text('Share Logs'),
+                  trailing: _isGeneratingLogs
+                      ? null
+                      : Icon(
+                          Icons.ios_share,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 20,
+                        ),
                   enabled: !_isGeneratingLogs,
                   onTap: _shareLogs,
                 ),
@@ -280,6 +300,9 @@ class _SettingsViewState extends State<SettingsView> {
                       : 'Loading version…'),
                 ),
               ),
+                  ]),
+                ),
+              ),
             ],
           );
         },
@@ -300,7 +323,14 @@ class _SettingsViewState extends State<SettingsView> {
       OBDConnectionState.connected => ('Connected', Colors.green),
       OBDConnectionState.failed => ('Failed', Colors.red),
     };
-    return Text(label, style: TextStyle(color: color));
+    return Text(
+      label,
+      style: TextStyle(
+        color: color,
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+      ),
+    );
   }
 
   // ── Section header ─────────────────────────────────────

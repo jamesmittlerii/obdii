@@ -35,6 +35,14 @@ class _PidToggleListViewState extends State<PidToggleListView> {
 
           return Scaffold(
             appBar: AppBar(
+              leading: IconButton(
+                icon: Icon(
+                  Icons.chevron_left,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 28,
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
               title: _isSearching
                   ? TextField(
                       controller: _searchController,
@@ -46,6 +54,7 @@ class _PidToggleListViewState extends State<PidToggleListView> {
                       onChanged: (q) => vm.searchText = q,
                     )
                   : const Text('Gauges'),
+              actionsPadding: const EdgeInsets.only(right: 8),
               actions: [
                 if (_isSearching)
                   IconButton(

@@ -101,6 +101,9 @@ class GaugesViewModel extends BaseViewModel {
     await prefs.setString(_prefKey, mode == GaugesDisplayMode.list ? 'list' : 'gauges');
   }
 
+  Future<void> moveEnabled(int from, int to) =>
+      PidStore.instance.moveEnabled(from, to);
+
   void _bind() {
     // Rebuild whenever pids list changes
     _pidSub = _pidProvider.pidsStream.listen((_) => _rebuildTiles());

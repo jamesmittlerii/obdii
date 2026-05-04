@@ -58,12 +58,29 @@ class _MainScaffoldState extends State<MainScaffold> {
       DiagnosticsView(isActive: _selectedIndex == 4),
     ];
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final topColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFFFFFFF);
+    final bottomColor = Theme.of(context).scaffoldBackgroundColor;
+
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: pages,
+      extendBody: true,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [topColor, bottomColor],
+            stops: const [0.0, 0.4],
+          ),
+        ),
+        child: IndexedStack(
+          index: _selectedIndex,
+          children: pages,
+        ),
       ),
       bottomNavigationBar: NavigationBar(
+        elevation: 0,
+        backgroundColor: Theme.of(context).navigationBarTheme.backgroundColor?.withOpacity(0.85) ?? Colors.transparent,
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onDestinationSelected,
         destinations: const [

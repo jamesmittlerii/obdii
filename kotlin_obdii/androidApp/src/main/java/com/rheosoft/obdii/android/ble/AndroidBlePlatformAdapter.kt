@@ -67,6 +67,7 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
         }
     }
 
+    @SuppressLint("MissingPermission")
     override suspend fun scan(timeoutMs: Long, serviceUuids: Set<String>): List<BlePeripheral> = withContext(Dispatchers.Main) {
         val bt = adapter ?: throw CommunicationError("Bluetooth adapter unavailable")
         if (!bt.isEnabled) throw CommunicationError("Bluetooth is disabled")
@@ -436,10 +437,9 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
 
     private fun isLikelyObdDeviceName(name: String?): Boolean {
         val normalized = name?.uppercase().orEmpty()
-        return normalized.contains("OBD") ||
-            normalized.contains("ELM") ||
-            normalized.contains("VLINK") ||
-            normalized.contains("VGATE")
+        return com.rheosoft.obdii.core.communication.ble.commonObdDeviceNames.any { 
+            normalized.contains(it) 
+        }
     }
 
     private fun shortUuid(uuid: UUID): String = shortUuid(uuid.toString())
