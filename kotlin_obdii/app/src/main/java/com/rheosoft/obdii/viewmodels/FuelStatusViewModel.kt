@@ -21,8 +21,8 @@ data class FuelStatusUiState(
 class FuelStatusViewModel(
     private val provider: FuelStatusProviding = OBDConnectionManager,
     private val interestRegistry: PidInterestRegistry = PidInterestRegistry.instance,
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + Job()),
 ) : BaseViewModel() {
-    private val scope = CoroutineScope(Dispatchers.Default + Job())
     private val interestToken = interestRegistry.makeToken()
     private var isVisible = false
 

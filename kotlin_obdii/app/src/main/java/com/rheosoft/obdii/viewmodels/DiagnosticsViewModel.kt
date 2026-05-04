@@ -26,8 +26,8 @@ class DiagnosticsViewModel(
     private val provider: DiagnosticsProviding = OBDConnectionManager,
     private val interestRegistry: PidInterestRegistry = PidInterestRegistry.instance,
     private val connection: OBDConnectionControlling = OBDConnectionManager,
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + Job()),
 ) : BaseViewModel() {
-    private val scope = CoroutineScope(Dispatchers.Default + Job())
     private val interestToken = interestRegistry.makeToken()
     private var isVisible = false
 

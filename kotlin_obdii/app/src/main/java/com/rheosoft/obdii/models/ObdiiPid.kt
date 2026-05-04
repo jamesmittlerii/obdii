@@ -55,6 +55,9 @@ data class ObdiiPid(
     fun unitLabel(isMetric: Boolean): String =
         units?.let { UnitConversion.fromMetricLabel(it, isMetric)?.displayLabel ?: it } ?: ""
 
+    fun convertedValue(value: Double, isMetric: Boolean): Double =
+        units?.let { UnitConversion.fromMetricLabel(it, isMetric)?.convert?.invoke(value) } ?: value
+
     private fun convertedRange(range: ValueRange?, isMetric: Boolean): ValueRange? {
         if (range == null || units == null) return range
         return range.converted(units, isMetric)
@@ -80,15 +83,19 @@ data class ObdiiPid(
 
     fun formattedValue(value: Double, isMetric: Boolean, includeUnits: Boolean = true): String {
         val label = unitLabel(isMetric)
-        val formatted = fmt(value, preferredFractionDigits(label))
+        val converted = convertedValue(value, isMetric)
+        val formatted = fmt(converted, preferredFractionDigits(label))
         return if (includeUnits && label.isNotEmpty()) "$formatted $label" else formatted
     }
 
-    fun colorForValue(value: Double, isMetric: Boolean): PidColor = when {
-        dangerRangeFor(isMetric)?.contains(value) == true -> PidColor.RED
-        warningRangeFor(isMetric)?.contains(value) == true -> PidColor.ORANGE
-        typicalRangeFor(isMetric)?.contains(value) == true -> PidColor.GREEN
-        else -> PidColor.BLUE_GREY
+    fun colorForValue(value: Double, isMetric: Boolean): PidColor {
+        val converted = convertedValue(value, isMetric)
+        return when {
+            dangerRangeFor(isMetric)?.contains(converted) == true -> PidColor.RED
+            warningRangeFor(isMetric)?.contains(converted) == true -> PidColor.ORANGE
+            typicalRangeFor(isMetric)?.contains(converted) == true -> PidColor.GREEN
+            else -> PidColor.BLUE_GREY
+        }
     }
 
     private fun preferredFractionDigits(label: String): Int = when (label) {

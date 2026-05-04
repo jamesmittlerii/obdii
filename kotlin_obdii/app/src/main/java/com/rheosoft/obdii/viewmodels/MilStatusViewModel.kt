@@ -30,8 +30,8 @@ data class MilStatusUiState(
 class MilStatusViewModel(
     private val provider: MilStatusProviding = OBDConnectionManager,
     private val interestRegistry: PidInterestRegistry = PidInterestRegistry.instance,
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + Job()),
 ) : BaseViewModel() {
-    private val scope = CoroutineScope(Dispatchers.Default + Job())
     private val interestToken = interestRegistry.makeToken()
     private var isVisible = false
 

@@ -53,4 +53,30 @@ class ObdiiPidTest {
         assertEquals(PidColor.RED, pid.colorForValue(5000.0, true))
         assertEquals(PidColor.BLUE_GREY, pid.colorForValue(9000.0, true))
     }
+
+    @Test
+    fun `metric to imperial conversion`() {
+        val tempPid = ObdiiPid(
+            id = "temp",
+            label = "Coolant",
+            name = "Engine Coolant Temp",
+            pidCommand = "0105",
+            units = "°C"
+        )
+        
+        // 100°C should be 212°F
+        assertEquals("100 °C", tempPid.formattedValue(100.0, isMetric = true))
+        assertEquals("212 °F", tempPid.formattedValue(100.0, isMetric = false))
+
+        val speedPid = ObdiiPid(
+            id = "speed",
+            label = "Speed",
+            name = "Vehicle Speed",
+            pidCommand = "010D",
+            units = "km/h"
+        )
+        // 100 km/h should be ~62 mph
+        assertEquals("100 km/h", speedPid.formattedValue(100.0, isMetric = true))
+        assertEquals("62 mph", speedPid.formattedValue(100.0, isMetric = false))
+    }
 }

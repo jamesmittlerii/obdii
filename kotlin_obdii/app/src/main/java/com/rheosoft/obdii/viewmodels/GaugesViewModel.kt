@@ -28,8 +28,8 @@ class GaugesViewModel(
     private val statsProvider: PidStatsProviding = OBDConnectionManager,
     private val unitsProvider: UnitsProviding = ConfigData,
     private val interestRegistry: PidInterestRegistry = PidInterestRegistry.instance,
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + Job()),
 ) : BaseViewModel() {
-    private val scope = CoroutineScope(Dispatchers.Default + Job())
     private val interestToken = interestRegistry.makeToken()
     private var isVisible = false
     var tiles: List<GaugeTile> = emptyList()

@@ -30,8 +30,8 @@ data class SettingsUiState(
 class SettingsViewModel(
     private val config: SettingsConfigProviding = ConfigData,
     private val connection: OBDConnectionControlling = OBDConnectionManager,
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + Job()),
 ) : BaseViewModel() {
-    private val scope = CoroutineScope(Dispatchers.Default + Job())
     private var hostDebounceVersion = 0L
     private var portDebounceVersion = 0L
 

@@ -6,33 +6,45 @@ import com.rheosoft.obdii.core.MeasurementUnit
 import com.rheosoft.obdii.core.OBDConnectionControlling
 import com.rheosoft.obdii.core.OBDConnectionState
 import com.rheosoft.obdii.core.SettingsConfigProviding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.test.runTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlinx.coroutines.test.*
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import kotlin.test.*
 
+@OptIn(ExperimentalCoroutinesApi::class)
 private class MockSettingsConfig : SettingsConfigProviding {
     override var wifiHost: String = "192.168.0.10"
     override var wifiPort: Int = 35000
     override var autoConnectToOBD: Boolean = false
     override var connectionType: ConnectionType = ConnectionType.bluetooth
     override var gaugesDisplayMode: GaugesDisplayMode = GaugesDisplayMode.gauges
-    override val units: MeasurementUnit get() = unitsFlowMutable.value
-    private val unitsFlowMutable = MutableStateFlow(MeasurementUnit.Metric)
-    private val connFlowMutable = MutableStateFlow(ConnectionType.bluetooth)
-    private val modeFlowMutable = MutableStateFlow(GaugesDisplayMode.gauges)
-    override val unitsStream: StateFlow<MeasurementUnit> = unitsFlowMutable
-    override val connectionTypeStream: StateFlow<ConnectionType> = connFlowMutable
-    override val gaugesDisplayModeStream: StateFlow<GaugesDisplayMode> = modeFlowMutable
-    override fun setUnits(units: MeasurementUnit) { unitsFlowMutable.value = units }
+    
+    private val _unitsFlow = MutableStateFlow(MeasurementUnit.Metric)
+    private val _connFlow = MutableStateFlow(ConnectionType.bluetooth)
+    private val _modeFlow = MutableStateFlow(GaugesDisplayMode.gauges)
+    
+    override val units: MeasurementUnit get() = _unitsFlow.value
+    override val unitsStream: StateFlow<MeasurementUnit> = _unitsFlow
+    override val connectionTypeStream: StateFlow<ConnectionType> = _connFlow
+    override val gaugesDisplayModeStream: StateFlow<GaugesDisplayMode> = _modeFlow
+
+    override fun setUnits(units: MeasurementUnit) { _unitsFlow.value = units }
+    fun pushUnits(u: MeasurementUnit) { _unitsFlow.value = u }
+    fun pushConnectionType(t: ConnectionType) { _connFlow.value = t }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 private class MockConn : OBDConnectionControlling {
     private val flow = MutableStateFlow(OBDConnectionState.disconnected)
-    override val connectionState: OBDConnectionState get() = flow.value
+    override var connectionState: OBDConnectionState = OBDConnectionState.disconnected
+        set(value) {
+            field = value
+            flow.value = value
+        }
     override val connectionStateStream: StateFlow<OBDConnectionState> = flow
     var updateCount = 0
     var connectCount = 0
@@ -40,38 +52,157 @@ private class MockConn : OBDConnectionControlling {
     override fun updateConnectionDetails() { updateCount++ }
     override suspend fun connect() { connectCount++ }
     override fun disconnect() { disconnectCount++ }
+    fun pushState(s: OBDConnectionState) { connectionState = s }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {
-    @Test
-    fun `init mirrors config`() {
-        val vm = SettingsViewModel(MockSettingsConfig(), MockConn())
-        assertEquals("192.168.0.10", vm.wifiHost)
-        assertEquals(35000, vm.wifiPort)
-        assertEquals(ConnectionType.bluetooth, vm.connectionType)
+    private lateinit var mockConfig: MockSettingsConfig
+    private lateinit var mockConn: MockConn
+    private lateinit var viewModel: SettingsViewModel
+    private val testDispatcher = StandardTestDispatcher()
+    private val testScope = TestScope(testDispatcher)
+
+    @BeforeEach
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+        mockConfig = MockSettingsConfig()
+        mockConn = MockConn()
+        viewModel = SettingsViewModel(mockConfig, mockConn, testScope)
+        // Let init block's coroutines start
+        testDispatcher.scheduler.runCurrent()
+    }
+
+    @AfterEach
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     @Test
-    fun `connection type change calls update`() {
-        val config = MockSettingsConfig()
-        val conn = MockConn()
-        val vm = SettingsViewModel(config, conn)
-        vm.onConnectionTypeChanged(ConnectionType.wifi)
-        assertEquals(ConnectionType.wifi, vm.connectionType)
-        assertEquals(1, conn.updateCount)
+    fun `testInitializationSeedsFromConfigAndConnection`() {
+        assertNotNull(viewModel)
+        assertEquals("192.168.0.10", viewModel.wifiHost)
+        assertEquals(35000, viewModel.wifiPort)
+        assertFalse(viewModel.autoConnectToOBD)
+        assertEquals(ConnectionType.bluetooth, viewModel.connectionType)
+        assertEquals(MeasurementUnit.Metric, viewModel.units)
+        assertEquals(OBDConnectionState.disconnected, viewModel.connectionState)
     }
 
     @Test
-    fun `connect button state`() = runTest {
-        val vm = SettingsViewModel(MockSettingsConfig(), MockConn())
-        assertFalse(vm.isConnectButtonDisabled)
+    fun `testWifihostUpdatesAfter500msDebounce`() = runTest {
+        viewModel.onWifiHostChanged("192.168.1.100")
+        advanceTimeBy(600)
+        runCurrent()
+        assertEquals("192.168.1.100", viewModel.wifiHost)
+        assertEquals("192.168.1.100", mockConfig.wifiHost)
     }
 
     @Test
-    fun `units change updates config`() {
-        val config = MockSettingsConfig()
-        val vm = SettingsViewModel(config, MockConn())
-        vm.onUnitsChanged(MeasurementUnit.Imperial)
-        assertEquals(MeasurementUnit.Imperial, vm.units)
+    fun `testWifihostDebounceDoesNotCallUpdateConnectionDetailsForBluetooth`() = runTest {
+        assertEquals(ConnectionType.bluetooth, viewModel.connectionType)
+        mockConn.updateCount = 0
+        viewModel.onWifiHostChanged("10.0.0.1")
+        advanceTimeBy(600)
+        runCurrent()
+        assertEquals(0, mockConn.updateCount)
+    }
+
+    @Test
+    fun `testWifihostDebounceCallsUpdateConnectionDetailsWhenWiFiActive`() = runTest {
+        viewModel.onConnectionTypeChanged(ConnectionType.wifi)
+        runCurrent()
+        mockConn.updateCount = 0
+        viewModel.onWifiHostChanged("10.0.0.1")
+        advanceTimeBy(600)
+        runCurrent()
+        assertTrue(mockConn.updateCount >= 1)
+    }
+
+    @Test
+    fun `testWifiportUpdatesAfter500msDebounce`() = runTest {
+        viewModel.onWifiPortChanged(35001)
+        advanceTimeBy(600)
+        runCurrent()
+        assertEquals(35001, viewModel.wifiPort)
+        assertEquals(35001, mockConfig.wifiPort)
+    }
+
+    @Test
+    fun `testOnconnectiontypechangedUpdatesConfigAndCallsUpdateConnectionDetails`() {
+        viewModel.onConnectionTypeChanged(ConnectionType.wifi)
+        testDispatcher.scheduler.runCurrent()
+        assertEquals(ConnectionType.wifi, viewModel.connectionType)
+        assertEquals(ConnectionType.wifi, mockConfig.connectionType)
+        assertEquals(1, mockConn.updateCount)
+    }
+
+    @Test
+    fun `testRedundantConnectionTypeChangeDoesNotCallUpdateConnectionDetails`() {
+        mockConn.updateCount = 0
+        viewModel.onConnectionTypeChanged(ConnectionType.bluetooth) // already bluetooth
+        testDispatcher.scheduler.runCurrent()
+        assertEquals(0, mockConn.updateCount)
+    }
+
+    @Test
+    fun `testOnunitschangedUpdatesConfig`() {
+        viewModel.onUnitsChanged(MeasurementUnit.Imperial)
+        testDispatcher.scheduler.runCurrent()
+        assertEquals(MeasurementUnit.Imperial, viewModel.units)
+        assertEquals(MeasurementUnit.Imperial, mockConfig.units)
+    }
+
+    @Test
+    fun `testOnautoconnectchangedUpdatesConfig`() {
+        viewModel.onAutoConnectChanged(true)
+        testDispatcher.scheduler.runCurrent()
+        assertTrue(viewModel.autoConnectToOBD)
+        assertTrue(mockConfig.autoConnectToOBD)
+    }
+
+    @Test
+    fun `testConnectionstateUpdatesFromStream`() = runTest {
+        mockConn.pushState(OBDConnectionState.connecting)
+        runCurrent()
+        assertEquals(OBDConnectionState.connecting, viewModel.connectionState)
+    }
+
+    @Test
+    fun `testIsconnectbuttondisabledFalseWhenDisconnected`() {
+        assertFalse(viewModel.isConnectButtonDisabled)
+    }
+
+    @Test
+    fun `testIsconnectbuttondisabledTrueWhenConnecting`() {
+        mockConn.pushState(OBDConnectionState.connecting)
+        // Manual push since init collected once
+        val vm2 = SettingsViewModel(MockSettingsConfig(), mockConn, testScope)
+        testDispatcher.scheduler.runCurrent()
+        assertTrue(vm2.isConnectButtonDisabled)
+    }
+
+    @Test
+    fun `testUnitsstreamFromConfigUpdatesViewModel`() = runTest {
+        mockConfig.pushUnits(MeasurementUnit.Imperial)
+        runCurrent()
+        assertEquals(MeasurementUnit.Imperial, viewModel.units)
+    }
+
+    @Test
+    fun `testHandleconnectionbuttontapWhenDisconnectedCallsConnect`() = runTest {
+        mockConn.pushState(OBDConnectionState.disconnected)
+        runCurrent()
+        viewModel.handleConnectionButtonTap()
+        runCurrent()
+        assertEquals(1, mockConn.connectCount)
+    }
+
+    @Test
+    fun `testHandleconnectionbuttontapWhenConnectedCallsDisconnect`() {
+        mockConn.pushState(OBDConnectionState.connected)
+        testDispatcher.scheduler.runCurrent()
+        viewModel.handleConnectionButtonTap()
+        assertEquals(1, mockConn.disconnectCount)
     }
 }
