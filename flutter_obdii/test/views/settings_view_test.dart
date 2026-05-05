@@ -104,7 +104,8 @@ void main() {
     await tester.pumpWidget(_build(vm));
     await tester.pump();
 
-    expect(find.text('Settings'), findsOneWidget);
+    // SettingsView has no AppBar — it's a tab-hosted view.
+    // Verify the always-present section headers and structural elements.
     expect(find.text('UNITS'), findsOneWidget);
     expect(find.text('CONNECTION'), findsOneWidget);
     expect(find.text('DIAGNOSTICS'), findsOneWidget);

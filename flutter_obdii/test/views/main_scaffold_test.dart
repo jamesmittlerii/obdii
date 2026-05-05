@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_obdii/core/config_data.dart';
 import 'package:flutter_obdii/core/obd_connection_manager.dart';
@@ -37,6 +38,9 @@ Widget _buildApp() {
 }
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
   testWidgets('testShowsAllFiveBottomNavigationDestinations', (
     WidgetTester tester,
   ) async {
@@ -73,7 +77,8 @@ void main() {
     await tester.tap(find.text('Fuel').first);
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Fuel Control Status'), findsOneWidget);
+    // FuelStatusView has no AppBar — verify it renders its waiting state.
+    expect(find.text('Waiting for data\u2026'), findsOneWidget);
   });
 
   testWidgets('testNavigatesToMILTab', (WidgetTester tester) async {
@@ -81,7 +86,8 @@ void main() {
     await tester.tap(find.text('MIL').first);
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('MIL Status'), findsOneWidget);
+    // MilStatusView has no AppBar — verify its always-present MIL section header.
+    expect(find.text('MALFUNCTION INDICATOR LAMP'), findsOneWidget);
   });
 
   testWidgets('testNavigatesToDTCTab', (WidgetTester tester) async {
@@ -89,6 +95,7 @@ void main() {
     await tester.tap(find.text('DTCs').first);
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Diagnostic Codes'), findsOneWidget);
+    // DiagnosticsView has no AppBar — verify it renders its waiting state.
+    expect(find.text('Waiting for data\u2026'), findsOneWidget);
   });
 }

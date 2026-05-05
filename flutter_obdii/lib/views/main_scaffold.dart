@@ -80,7 +80,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       ),
       bottomNavigationBar: NavigationBar(
         elevation: 0,
-        backgroundColor: Theme.of(context).navigationBarTheme.backgroundColor?.withOpacity(0.85) ?? Colors.transparent,
+        backgroundColor: Theme.of(context).navigationBarTheme.backgroundColor?.withValues(alpha: 0.85) ?? Colors.transparent,
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onDestinationSelected,
         destinations: const [

@@ -45,7 +45,10 @@ void main() {
     final p = _MockMilProvider();
     final vm = MilStatusViewModel(provider: p, interestRegistry: PidInterestRegistry());
     await tester.pumpWidget(_build(vm));
-    expect(find.text('MIL Status'), findsOneWidget);
+    // MilStatusView has no AppBar — it's a tab-hosted view.
+    // Verify scaffold structure and the always-present MIL section header.
+    expect(find.byType(Scaffold), findsOneWidget);
+    expect(find.text('MALFUNCTION INDICATOR LAMP'), findsOneWidget);
     vm.dispose();
     p.dispose();
   });

@@ -47,7 +47,7 @@ class AppTheme {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: Colors.black.withOpacity(0.10),
+          color: Colors.black.withValues(alpha: 0.10),
           width: 1,
         ),
       ),
@@ -84,13 +84,13 @@ class AppTheme {
       cardTheme: _buildCardTheme(_lightSurface),
       listTileTheme: _buildListTileTheme(),
       dividerTheme: DividerThemeData(
-        color: Colors.black.withOpacity(0.05),
+        color: Colors.black.withValues(alpha: 0.05),
         thickness: 1,
         space: 1,
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: _lightSurface,
-        indicatorColor: _primaryAccent.withOpacity(0.15),
+        indicatorColor: _primaryAccent.withValues(alpha: 0.15),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: _primaryAccentDarker);
@@ -132,20 +132,20 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(
-            color: Colors.white.withOpacity(0.12),
+            color: Colors.white.withValues(alpha: 0.12),
             width: 1,
           ),
         ),
       ),
       listTileTheme: _buildListTileTheme(),
       dividerTheme: DividerThemeData(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         thickness: 1,
         space: 1,
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: _darkBackground,
-        indicatorColor: _primaryAccent.withOpacity(0.2),
+        indicatorColor: _primaryAccent.withValues(alpha: 0.2),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: _primaryAccent);

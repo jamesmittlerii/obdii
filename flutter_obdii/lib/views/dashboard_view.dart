@@ -65,7 +65,7 @@ class _GaugesViewState extends State<GaugesView> {
                 floating: true,
                 toolbarHeight: 0,
                 bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(48),
+                  preferredSize: const Size.fromHeight(56),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                     child: SegmentedButton<GaugesDisplayMode>(
@@ -184,23 +184,27 @@ class _GaugesGridState extends State<_GaugesGrid> {
                     delay: const Duration(milliseconds: 400),
                     onDragStarted: () => setState(() => _draggingIndex = index),
                     onDragEnd: (_) {
-                      if (mounted) setState(() {
-                        _draggingIndex = null;
-                        _hoverIndex = null;
-                      });
+                      if (mounted) {
+                        setState(() {
+                          _draggingIndex = null;
+                          _hoverIndex = null;
+                        });
+                      }
                     },
-                    onDraggableCanceled: (_, __) {
-                      if (mounted) setState(() {
-                        _draggingIndex = null;
-                        _hoverIndex = null;
-                      });
+                    onDraggableCanceled: (velocity, offset) {
+                      if (mounted) {
+                        setState(() {
+                          _draggingIndex = null;
+                          _hoverIndex = null;
+                        });
+                      }
                     },
                     feedback: SizedBox(
                       width: 160,
                       height: 160,
                       child: Material(
                         elevation: 12,
-                        shadowColor: Colors.black.withOpacity(0.4),
+                        shadowColor: Colors.black.withValues(alpha: 0.4),
                         borderRadius: BorderRadius.circular(12),
                         child: _GaugeTile(tile: tile, isMetric: isMetric),
                       ),
@@ -346,8 +350,8 @@ class _GaugeListRow extends StatelessWidget {
         borderRadius: BorderRadius.zero,
         side: BorderSide(
           color: isDark
-              ? Colors.white.withOpacity(0.1)
-              : Colors.black.withOpacity(0.08),
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.black.withValues(alpha: 0.08),
           width: 0.5,
         ),
       ),

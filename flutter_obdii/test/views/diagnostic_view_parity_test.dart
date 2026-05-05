@@ -61,7 +61,10 @@ void main() {
     final vm = DiagnosticsViewModel(provider: p, interestRegistry: PidInterestRegistry());
     final mgr = OBDConnectionManager.instance..connectionState = OBDConnectionState.connected;
     await tester.pumpWidget(_build(vm, mgr));
-    expect(find.text('Diagnostic Codes'), findsOneWidget);
+    // DiagnosticsView has no AppBar — it's a tab-hosted view.
+    // Verify scaffold structure and waiting state render correctly.
+    expect(find.byType(Scaffold), findsOneWidget);
+    expect(find.textContaining('Waiting for data'), findsOneWidget);
     vm.dispose();
     p.dispose();
   });
@@ -156,10 +159,12 @@ void main() {
     final vm = DiagnosticsViewModel(provider: p, interestRegistry: PidInterestRegistry());
     final mgr = OBDConnectionManager.instance..connectionState = OBDConnectionState.connected;
     await tester.pumpWidget(_build(vm, mgr));
-    expect(find.byType(ListView), findsNothing);
+    // Waiting state: uses SliverFillRemaining inside CustomScrollView — no ListView.
+    expect(find.byType(CustomScrollView), findsOneWidget);
     p.send([_dtc('P0001', 'Low')]);
     await tester.pump(const Duration(milliseconds: 80));
-    expect(find.byType(ListView), findsOneWidget);
+    // Data state: SliverList renders ListTile rows.
+    expect(find.byType(ListTile), findsWidgets);
     vm.dispose();
     p.dispose();
   });

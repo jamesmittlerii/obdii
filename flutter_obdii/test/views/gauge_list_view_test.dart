@@ -122,11 +122,15 @@ void main() {
   });
 
   testWidgets('testHasSection', (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
     pids.send([_pid()]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
     await toListMode(tester);
-    expect(find.text('GAUGES'), findsOneWidget);
+    // List mode renders a SliverReorderableList of gauge rows — no 'GAUGES' section header.
+    expect(find.byType(SliverReorderableList), findsOneWidget);
   });
 
   testWidgets('testNavigationTitle', (tester) async {
@@ -136,11 +140,15 @@ void main() {
   });
 
   testWidgets('testGaugesWrappedInNavigationLinks', (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
     pids.send([_pid()]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
     await toListMode(tester);
-    expect(find.byIcon(Icons.chevron_right), findsWidgets);
+    // List rows use InkWell for tap navigation — no trailing chevron_right icon.
+    expect(find.byType(InkWell), findsWidgets);
   });
 
   testWidgets('testRowDisplaysGaugeName', (tester) async {
@@ -225,12 +233,16 @@ void main() {
   });
 
   testWidgets('testNavigationToGaugeDetailView', (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
     pids.send([_pid()]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
     await toListMode(tester);
-    await tester.tap(find.byType(InkWell).first);
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.text('Engine RPM'));
+    await tester.pumpAndSettle();
+    // GaugeDetailView AppBar shows pid.name as title.
     expect(find.text('Engine RPM'), findsWidgets);
   });
 

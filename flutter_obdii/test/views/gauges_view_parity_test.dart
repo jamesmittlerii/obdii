@@ -67,16 +67,25 @@ void main() {
   });
 
   testWidgets('testHasScrollView', (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
     await tester.pumpWidget(_build(vm));
     expect(find.byType(Scaffold), findsOneWidget);
   });
 
   testWidgets('testUsesLazyVGrid', (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
     await tester.pumpWidget(_build(vm));
     expect(find.text('Gauges'), findsWidgets);
   });
 
   testWidgets('testGaugeTilesAreNavigationLinks_WithMocks', (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
     pids.send([_rpmPid()]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
@@ -84,6 +93,9 @@ void main() {
   });
 
   testWidgets('testGaugeTileStructure_WithMocks', (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
     pids.send([_rpmPid()]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
@@ -101,6 +113,9 @@ void main() {
   });
 
   testWidgets('testNavigationToGaugeDetail_WithMocks', (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
     pids.send([_rpmPid()]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
@@ -110,6 +125,9 @@ void main() {
   });
 
   testWidgets('testGaugeTilesHaveLabels_WithMocks', (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
     pids.send([_rpmPid()]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
@@ -123,18 +141,28 @@ void main() {
   });
 
   testWidgets('testUpdateInterestMechanism_StructureOnly', (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
     await tester.pumpWidget(_build(vm));
     expect(find.byType(GaugesView), findsOneWidget);
   });
 
   testWidgets('testAdaptiveGridColumns', (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
     pids.send([_rpmPid()]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
-    expect(find.byType(GridView), findsOneWidget);
+    // GaugesView uses SliverGrid inside a CustomScrollView, not a plain GridView.
+    expect(find.byType(SliverGrid), findsOneWidget);
   });
 
   testWidgets('testGaugeTilesHaveIdentifiers_WithMocks', (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
     pids.send([_rpmPid()]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
@@ -142,6 +170,9 @@ void main() {
   });
 
   testWidgets('testRendersGaugeTilesWithMeasurements_UsingMocks', (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
     pids.send([_rpmPid()]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
@@ -167,6 +198,9 @@ void main() {
   });
 
   testWidgets('testGaugeTileNavigationWithData_WithMocks', (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
     pids.send([_rpmPid()]);
     await tester.pumpWidget(_build(vm));
     await tester.pump(const Duration(milliseconds: 80));
