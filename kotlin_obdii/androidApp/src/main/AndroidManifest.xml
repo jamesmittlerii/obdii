@@ -34,7 +34,7 @@
         android:maxSdkVersion="30" />
 
     <application
-        android:label="Kotlin OBDII"
+        android:label="Rheosoft OBDII"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:allowBackup="true"
@@ -51,7 +51,8 @@
 
         <service
             android:name="com.rheosoft.obdii.android.car.ObdCarAppService"
-            android:exported="true">
+            android:exported="true"
+            tools:ignore="ExportedService">
             <intent-filter>
                 <action android:name="androidx.car.app.CarAppService" />
                 <category android:name="androidx.car.app.category.IOT" />

@@ -31,9 +31,14 @@ fun FuelStatusScreen(view: FuelStatusScreenModel, modifier: Modifier) {
         else -> LazyColumn(modifier = modifier.fillMaxSize().padding(16.dp)) {
             items(uiState.banks) { bank ->
                 PremiumCard(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-                        Text(bank.first, modifier = Modifier.fillMaxWidth(0.7f))
-                        Text(bank.second, color = Color.Gray)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    ) {
+                        Text(bank.first, modifier = Modifier.weight(1f))
+                        Text(bank.second, color = Color.Gray, textAlign = androidx.compose.ui.text.style.TextAlign.End)
                     }
                 }
             }

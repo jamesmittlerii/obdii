@@ -140,8 +140,11 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text("Type")
-                    Box {
-                        TextButton(onClick = { typeMenuExpanded = true }) {
+                    Box(contentAlignment = Alignment.CenterEnd) {
+                        TextButton(
+                            onClick = { typeMenuExpanded = true },
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+                        ) {
                             Text(
                                 when (selectedType) {
                                     ConnectionType.demo -> "Demo"

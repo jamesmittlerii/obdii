@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 val AppBackground = Color(0xFFF3F5FA)
 private val PremiumCardColor = Color(0xFFF6F7FB)
@@ -86,10 +87,13 @@ fun SegmentedPicker(
 @Composable
 fun SectionLabel(label: String) {
     Text(
-        label, // Removed .uppercase()
-        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
-        color = Color.Gray,
-        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+        text = label.uppercase(),
+        style = MaterialTheme.typography.labelLarge.copy(
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.2.sp
+        ),
+        color = Color(0xFF2196F3),
+        modifier = Modifier.padding(top = 24.dp, bottom = 8.dp, start = 4.dp),
     )
 }
 

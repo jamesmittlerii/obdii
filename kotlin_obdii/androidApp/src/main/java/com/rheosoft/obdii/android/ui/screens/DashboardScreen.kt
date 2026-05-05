@@ -2,6 +2,7 @@ package com.rheosoft.obdii.android.ui.screens
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -77,16 +79,29 @@ fun DashboardScreen(
                     PidColor.BLUE_GREY -> Color.Gray
                 }
                 PremiumCard(modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp).clickable { onGaugeTap(tile.pid) }) {
-                    Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Column(modifier = Modifier.fillMaxWidth(0.7f)) {
-                            Text(tile.pid.name)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = tile.pid.name,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
                             Text(tile.pid.displayRange(isMetric), color = Color.Gray)
                         }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.End
+                        ) {
                             Text(
-                                tile.stats?.let { tile.pid.formattedValue(it.latest.value, isMetric, includeUnits = true) }
+                                text = tile.stats?.let { tile.pid.formattedValue(it.latest.value, isMetric, includeUnits = true) }
                                     ?: "— ${tile.pid.unitLabel(isMetric)}",
                                 color = valueColor,
+                                textAlign = TextAlign.End,
+                                style = MaterialTheme.typography.bodyLarge
                             )
                             Spacer(Modifier.width(4.dp))
                             Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = Color.Gray)
