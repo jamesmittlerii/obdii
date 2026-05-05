@@ -73,9 +73,12 @@ class _MainScaffoldState extends State<MainScaffold> {
             stops: const [0.0, 0.4],
           ),
         ),
-        child: IndexedStack(
-          index: _selectedIndex,
-          children: pages,
+        child: SafeArea(
+          bottom: false,
+          child: IndexedStack(
+            index: _selectedIndex,
+            children: pages,
+          ),
         ),
       ),
       bottomNavigationBar: NavigationBar(
