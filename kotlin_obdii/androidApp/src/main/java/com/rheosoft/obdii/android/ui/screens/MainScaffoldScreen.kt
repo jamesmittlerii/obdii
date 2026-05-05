@@ -162,6 +162,7 @@ fun KotlinObdiiApp(permissionsReady: Boolean = true) {
                 view = dashboardView,
                 isMetric = settingsVm.units == MeasurementUnit.Metric,
                 modifier = Modifier.padding(pad),
+                scope = scope,
                 onGaugeTap = { pid -> selectedGaugeDetail.value = GaugeDetailScreenModel(GaugeDetailViewModel(pid)) },
             )
             2 -> FuelStatusScreen(fuelView, Modifier.padding(pad))

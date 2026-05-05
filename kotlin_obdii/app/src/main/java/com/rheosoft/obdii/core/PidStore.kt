@@ -7,6 +7,8 @@ import com.rheosoft.obdii.models.ObdiiPid
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 interface PidListProviding {
     val pids: List<ObdiiPid>
@@ -21,6 +23,7 @@ interface PidStore : PidListProviding {
 }
 
 class InMemoryPidStore(initial: List<ObdiiPid>) : PidStore {
+    private val mutex = Mutex()
     override var pids: List<ObdiiPid> = initial
         private set
 
@@ -31,26 +34,25 @@ class InMemoryPidStore(initial: List<ObdiiPid>) : PidStore {
 
     override suspend fun load() {}
 
-    override suspend fun toggle(pid: ObdiiPid) {
+    override suspend fun toggle(pid: ObdiiPid) = mutex.withLock {
         val key = pid.stableKey()
         val idx = pids.indexOfFirst { it.stableKey() == key }
-        if (idx == -1) return
+        if (idx == -1) return@withLock
         val mutable = pids.toMutableList()
         mutable[idx] = mutable[idx].copyWith(enabled = pid.enabled)
         pids = mutable
         flow.value = pids
     }
 
-    override suspend fun moveEnabled(fromIndex: Int, toIndex: Int) {
+    override suspend fun moveEnabled(fromIndex: Int, toIndex: Int) = mutex.withLock {
         val enabledIdx = pids.withIndex()
             .filter { it.value.kind == ObdPidKind.gauge && it.value.enabled }
             .map { it.index }
-        if (enabledIdx.isEmpty()) return
-        if (fromIndex !in enabledIdx.indices || toIndex !in enabledIdx.indices || fromIndex == toIndex) return
+        if (enabledIdx.isEmpty()) return@withLock
+        if (fromIndex !in enabledIdx.indices || toIndex !in enabledIdx.indices || fromIndex == toIndex) return@withLock
         val subset = enabledIdx.map { pids[it] }.toMutableList()
         val item = subset.removeAt(fromIndex)
-        val target = if (toIndex > fromIndex) toIndex - 1 else toIndex
-        subset.add(target, item)
+        subset.add(toIndex, item)
         val mutable = pids.toMutableList()
         enabledIdx.forEachIndexed { i, pIndex -> mutable[pIndex] = subset[i] }
         pids = mutable
@@ -66,6 +68,7 @@ object DefaultPidStore : PidStore {
     var store: KeyValueStore = InMemoryKeyValueStore()
     var seededPidsProvider: () -> List<ObdiiPid> = { emptyList() }
 
+    private val mutex = Mutex()
     private val gson = Gson()
     private var loaded = false
     private var mutablePids: List<ObdiiPid> = emptyList()
@@ -77,8 +80,8 @@ object DefaultPidStore : PidStore {
     override val enabledGauges: List<ObdiiPid>
         get() = mutablePids.filter { it.kind == ObdPidKind.gauge && it.enabled }
 
-    override suspend fun load() {
-        if (loaded) return
+    override suspend fun load() = mutex.withLock {
+        if (loaded) return@withLock
         loaded = true
         var all = seededPidsProvider()
         store.getString(K_ENABLED)?.let { json ->
@@ -99,10 +102,10 @@ object DefaultPidStore : PidStore {
         flow.value = mutablePids
     }
 
-    override suspend fun toggle(pid: ObdiiPid) {
+    override suspend fun toggle(pid: ObdiiPid) = mutex.withLock {
         val key = pid.stableKey()
         val idx = mutablePids.indexOfFirst { it.stableKey() == key }
-        if (idx == -1) return
+        if (idx == -1) return@withLock
         val mutable = mutablePids.toMutableList()
         mutable[idx] = mutable[idx].copyWith(enabled = pid.enabled)
         mutablePids = reordered(mutable)
@@ -111,12 +114,12 @@ object DefaultPidStore : PidStore {
         flow.value = mutablePids
     }
 
-    override suspend fun moveEnabled(fromIndex: Int, toIndex: Int) {
+    override suspend fun moveEnabled(fromIndex: Int, toIndex: Int) = mutex.withLock {
         val enabledIndices = mutablePids.withIndex()
             .filter { it.value.kind == ObdPidKind.gauge && it.value.enabled }
             .map { it.index }
-        if (enabledIndices.isEmpty()) return
-        if (fromIndex !in enabledIndices.indices || toIndex !in enabledIndices.indices || fromIndex == toIndex) return
+        if (enabledIndices.isEmpty()) return@withLock
+        if (fromIndex !in enabledIndices.indices || toIndex !in enabledIndices.indices || fromIndex == toIndex) return@withLock
         val subset = enabledIndices.map { mutablePids[it] }.toMutableList()
         val item = subset.removeAt(fromIndex)
         subset.add(toIndex, item)
@@ -187,4 +190,4 @@ object DefaultPidStore : PidStore {
     }
 }
 
-private fun ObdiiPid.stableKey(): String = if (id.isNotBlank()) id else pidCommand
+private fun ObdiiPid.stableKey(): String = id.ifBlank { pidCommand }

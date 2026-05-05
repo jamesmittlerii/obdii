@@ -8,6 +8,7 @@ import com.rheosoft.obdii.core.PidListProviding
 import com.rheosoft.obdii.core.PidStatsProviding
 import com.rheosoft.obdii.core.UnitsProviding
 import com.rheosoft.obdii.core.DefaultPidStore
+import com.rheosoft.obdii.core.PidStore
 import com.rheosoft.obdii.core.OBDConnectionManager
 import com.rheosoft.obdii.models.ObdPidKind
 import com.rheosoft.obdii.models.ObdiiPid
@@ -56,6 +57,11 @@ class GaugesViewModel(
 
     fun setDisplayMode(mode: GaugesDisplayMode) {
         unitsProvider.gaugesDisplayMode = mode
+    }
+
+    suspend fun moveEnabled(from: Int, to: Int) {
+        val store = pidProvider as? PidStore ?: return
+        store.moveEnabled(from, to)
     }
 
     private fun rebuildTiles() {
