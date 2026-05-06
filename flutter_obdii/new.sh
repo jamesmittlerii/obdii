@@ -1,1 +1,0 @@
-./gradlew :androidApp:bundleRelease
