@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 
+import '../widgets/check_engine_icon.dart';
 import 'dashboard_view.dart';
 import 'diagnostics_view.dart';
 import 'fuel_status_view.dart';
@@ -33,24 +34,25 @@ class _MainScaffoldCupertinoState extends State<MainScaffoldCupertino> {
     return CupertinoTabScaffold(
       controller: _tabController,
       tabBar: CupertinoTabBar(
-        items: const [
-          BottomNavigationBarItem(
+        items: [
+          const BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.settings),
             label: 'Settings',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.speedometer),
             label: 'Gauges',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.drop),
             label: 'Fuel',
           ),
           BottomNavigationBarItem(
-            icon: Icon(CupertinoIcons.shield),
+            icon: CheckEngineIcon(color: CupertinoDynamicColor.resolve(CupertinoColors.inactiveGray, context)),
+            activeIcon: CheckEngineIcon(color: CupertinoTheme.of(context).primaryColor),
             label: 'MIL',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.wrench),
             label: 'DTCs',
           ),

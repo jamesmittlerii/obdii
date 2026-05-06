@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'dashboard_view.dart';
+import '../widgets/check_engine_icon.dart';
 import 'diagnostics_view.dart';
 import 'fuel_status_view.dart';
 import 'mil_status_view.dart';
@@ -86,28 +87,28 @@ class _MainScaffoldState extends State<MainScaffold> {
         backgroundColor: Theme.of(context).navigationBarTheme.backgroundColor?.withValues(alpha: 0.85) ?? Colors.transparent,
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onDestinationSelected,
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings),
             label: 'Settings',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.speed_outlined),
             selectedIcon: Icon(Icons.speed),
             label: 'Gauges',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.local_gas_station_outlined),
             selectedIcon: Icon(Icons.local_gas_station),
             label: 'Fuel',
           ),
           NavigationDestination(
-            icon: Icon(Icons.engineering_outlined),
-            selectedIcon: Icon(Icons.engineering),
+            icon: CheckEngineIcon(color: Theme.of(context).navigationBarTheme.iconTheme?.resolve({})?.color ?? Theme.of(context).unselectedWidgetColor),
+            selectedIcon: CheckEngineIcon(color: Theme.of(context).navigationBarTheme.iconTheme?.resolve({WidgetState.selected})?.color ?? Theme.of(context).colorScheme.primary),
             label: 'MIL',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.build_outlined),
             selectedIcon: Icon(Icons.build),
             label: 'DTCs',
