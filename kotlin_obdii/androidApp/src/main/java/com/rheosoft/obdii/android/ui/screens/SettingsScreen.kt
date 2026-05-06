@@ -92,7 +92,7 @@ fun SettingsScreen(
                     Icon(Icons.Outlined.ChevronRight, contentDescription = null)
                 }
             }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(8.dp))
             SectionLabel("Units")
             PremiumCard(modifier = Modifier.fillMaxWidth()) {
                 Box(modifier = Modifier.padding(10.dp)) {
@@ -107,7 +107,7 @@ fun SettingsScreen(
                     )
                 }
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(6.dp))
             SectionLabel("Connection")
             val connectionRowMinHeight = 52.dp
             PremiumCard(modifier = Modifier.fillMaxWidth()) {
@@ -244,7 +244,7 @@ fun SettingsScreen(
                 }
             }
             if (selectedType == ConnectionType.wifi) {
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(6.dp))
                 SectionLabel("Connection details")
                 PremiumCard(modifier = Modifier.fillMaxWidth()) {
                     Row(
@@ -280,7 +280,7 @@ fun SettingsScreen(
                     }
                 }
             }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(8.dp))
             SectionLabel("Diagnostics")
             PremiumCard(modifier = Modifier.fillMaxWidth()) {
                 Row(
@@ -306,7 +306,7 @@ fun SettingsScreen(
                     Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = Color.Gray)
                 }
             }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(8.dp))
             SectionLabel("About")
             PremiumCard(modifier = Modifier.fillMaxWidth()) {
                 Text(uiState.appVersion.ifEmpty { "Loading version…" }, modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp))

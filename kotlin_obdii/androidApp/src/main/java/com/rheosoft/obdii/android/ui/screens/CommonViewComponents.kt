@@ -93,7 +93,7 @@ fun SectionLabel(label: String) {
             letterSpacing = 1.2.sp
         ),
         color = Color(0xFF2196F3),
-        modifier = Modifier.padding(top = 24.dp, bottom = 8.dp, start = 4.dp),
+        modifier = Modifier.padding(top = 12.dp, bottom = 8.dp, start = 4.dp),
     )
 }
 

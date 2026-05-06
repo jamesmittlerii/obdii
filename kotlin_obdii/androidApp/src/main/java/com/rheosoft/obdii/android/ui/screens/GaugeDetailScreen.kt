@@ -61,7 +61,7 @@ fun GaugeDetailScreen(detail: GaugeDetailScreenModel, isMetric: Boolean, onClose
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(6.dp))
                 SectionLabel("Statistics")
                 PremiumCard(modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.fillMaxWidth()) {
@@ -77,7 +77,7 @@ fun GaugeDetailScreen(detail: GaugeDetailScreenModel, isMetric: Boolean, onClose
                         }
                     }
                 }
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(6.dp))
                 SectionLabel("Maximum range")
                 PremiumCard(modifier = Modifier.fillMaxWidth()) {
                     Text(

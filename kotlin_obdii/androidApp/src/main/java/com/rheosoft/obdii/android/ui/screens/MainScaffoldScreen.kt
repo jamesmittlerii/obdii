@@ -5,7 +5,6 @@ import androidx.core.content.edit
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Build
-import androidx.compose.material.icons.outlined.Engineering
 import androidx.compose.material.icons.outlined.LocalGasStation
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Speed
@@ -27,7 +26,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.rheosoft.obdii.android.R
 import com.rheosoft.obdii.bootstrap.AppBootstrap
 import com.rheosoft.obdii.core.ConfigData
 import com.rheosoft.obdii.core.DefaultPidStore
@@ -130,16 +131,23 @@ fun KotlinObdiiApp(permissionsReady: Boolean = true) {
                         selected = selected == idx,
                         onClick = { selected = idx },
                         icon = {
-                            Icon(
-                                imageVector = when (idx) {
-                                    0 -> Icons.Outlined.Settings
-                                    1 -> Icons.Outlined.Speed
-                                    2 -> Icons.Outlined.LocalGasStation
-                                    3 -> Icons.Outlined.Engineering
-                                    else -> Icons.Outlined.Build
-                                },
-                                contentDescription = label,
-                            )
+                            if (idx == 3) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_check_engine),
+                                    contentDescription = label,
+                                    modifier = Modifier.padding(top = 2.dp) // Optical alignment
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = when (idx) {
+                                        0 -> Icons.Outlined.Settings
+                                        1 -> Icons.Outlined.Speed
+                                        2 -> Icons.Outlined.LocalGasStation
+                                        else -> Icons.Outlined.Build
+                                    },
+                                    contentDescription = label,
+                                )
+                            }
                         },
                         label = { Text(label) },
                     )

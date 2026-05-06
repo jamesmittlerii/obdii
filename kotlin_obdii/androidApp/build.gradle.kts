@@ -1,6 +1,15 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
+}
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = project.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -8,7 +17,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.rheosoft.obdii.android"
+        applicationId = "com.rheosoft.obdiik"
         minSdk = 29
         targetSdk = 36
         versionCode = 1
@@ -16,9 +25,23 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (keystorePropertiesFile.exists()) {
+            create("release") {
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storePassword = keystoreProperties.getProperty("storePassword")
+                storeFile = project.file(keystoreProperties.getProperty("storeFile"))
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
@@ -64,5 +87,5 @@ tasks.register<Exec>("runDebug") {
     group = "application"
     description = "Installs and launches the debug app."
     dependsOn("installDebug")
-    commandLine("adb", "shell", "am", "start", "-n", "com.rheosoft.obdii.android/.MainActivity")
+    commandLine("adb", "shell", "am", "start", "-n", "com.rheosoft.obdiik/com.rheosoft.obdii.android.MainActivity")
 }
