@@ -1,0 +1,163 @@
+name: Kotlin Google Play Deployment
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "kotlin_obdii/**"
+      - ".github/workflows/caller_kotlin.yml"
+
+concurrency:
+  group: ${{ github.repository }}-kotlin-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Versioning & Dependencies
+    runs-on: ubuntu-latest
+    outputs:
+      commit_sha: ${{ steps.capture_sha.outputs.commit_sha }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Sync to latest branch head
+        if: github.event_name == 'push'
+        run: |
+          git fetch origin "${{ github.ref_name }}"
+          git checkout "${{ github.ref_name }}"
+          git reset --hard "origin/${{ github.ref_name }}"
+
+      - name: Bump Kotlin version
+        if: github.event_name == 'push'
+        working-directory: kotlin_obdii
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys
+          path = pathlib.Path("androidApp/build.gradle.kts")
+          text = path.read_text(encoding="utf-8")
+          
+          m_code = re.search(r"^\s*versionCode\s*=\s*(\d+)\s*$", text, re.MULTILINE)
+          if not m_code:
+              sys.exit(1)
+          new_code = int(m_code.group(1)) + 1
+          text = re.sub(r"(^\s*versionCode\s*=\s*)\d+(\s*$)", r"\g<1>" + str(new_code) + r"\g<2>", text, count=1, flags=re.MULTILINE)
+          
+          m_name = re.search(r"^\s*versionName\s*=\s*\"(\d+)\.(\d+)\.(\d+)\"\s*$", text, re.MULTILINE)
+          if m_name:
+              major, minor, patch = map(int, m_name.groups())
+              new_name = f"{major}.{minor}.{patch + 1}"
+              text = re.sub(r"(^\s*versionName\s*=\s*\")\d+\.\d+\.\d+(\"\s*$)", r"\g<1>" + new_name + r"\g<2>", text, count=1, flags=re.MULTILINE)
+          
+          path.write_text(text, encoding="utf-8")
+          PY
+
+      - name: Commit version bump
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add kotlin_obdii/androidApp/build.gradle.kts
+          git commit -m "ci: bump kotlin version [skip ci]" || echo "No changes"
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: Capture SHA
+        id: capture_sha
+        run: echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  google_play_kotlin:
+    name: Google Play Kotlin
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: prepare
+    runs-on: ubuntu-latest
+    env:
+      PLAY_TRACK: alpha
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.prepare.outputs.commit_sha }}
+          submodules: recursive
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Setup Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Preflight Play Store secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          missing=""
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_PASSWORD ANDROID_KEY_ALIAS GOOGLE_PLAY_SERVICE_ACCOUNT_JSON; do
+            eval "val=\${$name}"
+            if [ -z "$val" ]; then
+              missing="$missing $name"
+            fi
+          done
+          if [ -n "$missing" ]; then
+            echo "Missing required GitHub secrets:$missing" >&2
+            exit 1
+          fi
+          echo "All required Google Play secrets are set."
+
+      - name: Decode Android upload keystore
+        working-directory: kotlin_obdii/androidApp
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > upload-keystore.jks
+
+      - name: Write key.properties
+        working-directory: kotlin_obdii/androidApp
+        env:
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          python3 <<'PY'
+          import os
+          path = "key.properties"
+          with open(path, "w", encoding="utf-8") as f:
+              f.write(f"storePassword={os.environ['STORE_PASSWORD']}\n")
+              f.write(f"keyPassword={os.environ['KEY_PASSWORD']}\n")
+              f.write(f"keyAlias={os.environ['KEY_ALIAS']}\n")
+              f.write("storeFile=upload-keystore.jks\n")
+          PY
+
+      - name: Make gradlew executable
+        working-directory: kotlin_obdii
+        run: chmod +x gradlew
+
+      - name: Build Kotlin release app bundle
+        working-directory: kotlin_obdii
+        run: ./gradlew bundleRelease
+
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.rheosoft.obdiik
+          releaseFiles: kotlin_obdii/androidApp/build/outputs/bundle/release/*.aab
+          tracks: ${{ env.PLAY_TRACK }}
+          status: draft
