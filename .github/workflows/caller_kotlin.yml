@@ -81,7 +81,7 @@ jobs:
     needs: prepare
     runs-on: ubuntu-latest
     env:
-      PLAY_TRACK: alpha
+      PLAY_TRACK: internal
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -169,4 +169,4 @@ jobs:
           packageName: com.rheosoft.obdiik
           releaseFiles: kotlin_obdii/androidApp/build/outputs/bundle/release/*.aab
           tracks: ${{ env.PLAY_TRACK }}
-          status: draft
+          status: completed
