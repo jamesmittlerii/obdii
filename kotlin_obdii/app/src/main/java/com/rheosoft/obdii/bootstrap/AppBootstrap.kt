@@ -21,6 +21,10 @@ interface ConnectionBootstrapper {
 object AppBootstrap {
     private var isInitialized = false
 
+    internal fun resetForTesting() {
+        isInitialized = false
+    }
+
     suspend fun initialize(
         config: AppConfigBootstrapper = object : AppConfigBootstrapper {
             override val autoConnectToOBD: Boolean

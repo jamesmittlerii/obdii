@@ -1,6 +1,7 @@
 package com.rheosoft.obdii.bootstrap
 
 import kotlinx.coroutines.test.runTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -34,6 +35,11 @@ private class FakeConnection : ConnectionBootstrapper {
 }
 
 class AppBootstrapTest {
+    @BeforeTest
+    fun resetBootstrap() {
+        AppBootstrap.resetForTesting()
+    }
+
     @Test
     fun `initialize loads config store and manager`() = runTest {
         val config = FakeConfig(autoConnect = false)
@@ -56,6 +62,9 @@ class AppBootstrapTest {
 
         AppBootstrap.initialize(config, pidStore, connection)
 
+        assertEquals(1, config.loadCount)
+        assertEquals(1, pidStore.loadCount)
+        assertEquals(1, connection.initializeCount)
         assertEquals(0, connection.connectCount)
     }
 }

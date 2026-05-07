@@ -11,6 +11,7 @@ Native Kotlin/Android implementation of `flutter_obdii` with strict 1:1 parity g
 ## Port Tracking
 
 Use `docs/port-matrix.md` as the source of truth for file-level migration status.
+Use `docs/code-coverage-todos.md` to track Kotlin coverage improvement work.
 
 ## Structure
 
