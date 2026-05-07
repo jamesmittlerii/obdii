@@ -101,6 +101,7 @@ final class GaugesViewModel: BaseViewModel {
   private let unitsProvider: UnitsProviding
   private let interestRegistry: PIDInterestManaging
   private let detailViewModelFactory: (OBDPID) -> GaugeDetailViewModel
+  private let reorderEnabledGauges: (IndexSet, Int) -> Void
   private let interestToken: UUID
   private var isVisible = false
   private var currentUnits: MeasurementUnit = .metric
@@ -112,13 +113,17 @@ final class GaugesViewModel: BaseViewModel {
     statsProvider: PIDStatsProviding,
     unitsProvider: UnitsProviding,
     interestRegistry: PIDInterestManaging,
-    detailViewModelFactory: ((OBDPID) -> GaugeDetailViewModel)? = nil
+    detailViewModelFactory: ((OBDPID) -> GaugeDetailViewModel)? = nil,
+    reorderEnabledGauges: ((IndexSet, Int) -> Void)? = nil
   ) {
     self.pidProvider = pidProvider
     self.statsProvider = statsProvider
     self.unitsProvider = unitsProvider
     self.interestRegistry = interestRegistry
     self.detailViewModelFactory = detailViewModelFactory ?? { GaugeDetailViewModel(pid: $0) }
+    self.reorderEnabledGauges = reorderEnabledGauges ?? { source, destination in
+      PIDStore.shared.moveEnabled(fromOffsets: source, toOffset: destination)
+    }
     self.interestToken = interestRegistry.makeToken()
     super.init()
     bind()
@@ -141,6 +146,26 @@ final class GaugesViewModel: BaseViewModel {
   func onDisappear() {
     isVisible = false
     interestRegistry.clear(token: interestToken)
+  }
+
+  @MainActor
+  func reorder(fromOffsets source: IndexSet, toOffset destination: Int) {
+    // Delegate ordering changes to the store so persistence stays consistent
+    reorderEnabledGauges(source, destination)
+  }
+
+  @MainActor
+  func reorderTile(withID sourceID: UUID, to targetID: UUID) {
+    guard
+      let sourceIndex = displayTiles.firstIndex(where: { $0.id == sourceID }),
+      let targetIndex = displayTiles.firstIndex(where: { $0.id == targetID }),
+      sourceIndex != targetIndex
+    else {
+      return
+    }
+
+    let destination = sourceIndex < targetIndex ? targetIndex + 1 : targetIndex
+    reorder(fromOffsets: IndexSet(integer: sourceIndex), toOffset: destination)
   }
 
   private func bind() {
@@ -181,7 +206,8 @@ final class GaugesViewModel: BaseViewModel {
       }
 
     tiles = rebuiltTiles
-    displayTiles = rebuiltTiles.map(makeDisplayTile)
+
+    displayTiles = tiles.map(makeDisplayTile)
 
     if isVisible {
       updateInterest()

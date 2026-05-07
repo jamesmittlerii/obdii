@@ -13,12 +13,21 @@ import SwiftOBD2
  */
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 @MainActor
 struct GaugesView: View {
 
   // Stable observable view model instance
   @State private var viewModel: GaugesViewModel
+  @State private var selectedDetailViewModel: GaugeDetailViewModel?
+  @State private var isShowingDetail = false
+  @State private var draggedTileID: UUID?
+
+  // Adaptive layout: 2–4 columns depending on device width
+  private let columns = [
+    GridItem(.adaptive(minimum: 160, maximum: 240), spacing: 16, alignment: .top)
+  ]
 
   @MainActor
   init() {
@@ -31,25 +40,38 @@ struct GaugesView: View {
     _viewModel = State(initialValue: viewModel)
   }
 
-  // Adaptive layout: 2–4 columns depending on device width
-  private let columns = [
-    GridItem(.adaptive(minimum: 160, maximum: 240), spacing: 16, alignment: .top)
-  ]
 
   var body: some View {
     ScrollView {
       LazyVGrid(columns: columns, spacing: 16) {
         ForEach(viewModel.displayTiles) { tile in
-          NavigationLink {
-            GaugeDetailView(viewModel: tile.detailViewModel)
-          } label: {
-            GaugeTile(tile: tile)
+          GaugeTile(tile: tile, isBeingDragged: draggedTileID == tile.id)
+          .contentShape(RoundedRectangle(cornerRadius: 12))
+          .onTapGesture {
+            selectedDetailViewModel = tile.detailViewModel
+            isShowingDetail = true
           }
-          .buttonStyle(.plain)
+          .onDrag {
+            draggedTileID = tile.id
+            return NSItemProvider(object: tile.id.uuidString as NSString)
+          }
+          .onDrop(
+            of: [UTType.plainText],
+            delegate: GaugeTileDropDelegate(
+              tile: tile,
+              viewModel: viewModel,
+              draggedTileID: $draggedTileID
+            )
+          )
           .accessibilityIdentifier(tile.tileAccessibilityIdentifier)
         }
       }
       .padding()
+    }
+    .navigationDestination(isPresented: $isShowingDetail) {
+      if let selectedDetailViewModel {
+        GaugeDetailView(viewModel: selectedDetailViewModel)
+      }
     }
     .onAppear {
       viewModel.onAppear()
@@ -60,13 +82,9 @@ struct GaugesView: View {
   }
 }
 
-struct TileIdentity: Equatable {
-  let id: UUID
-  let name: String
-}
-
 private struct GaugeTile: View {
   let tile: GaugesViewModel.DisplayTile
+  let isBeingDragged: Bool
 
   var body: some View {
     VStack(spacing: 8) {
@@ -85,7 +103,33 @@ private struct GaugeTile: View {
       RoundedRectangle(cornerRadius: 12)
         .fill(Color(UIColor.secondarySystemBackground))
     )
+    .opacity(isBeingDragged ? 0.7 : 1)
   }
+}
+
+private struct GaugeTileDropDelegate: DropDelegate {
+  let tile: GaugesViewModel.DisplayTile
+  let viewModel: GaugesViewModel
+  @Binding var draggedTileID: UUID?
+
+  func dropEntered(info: DropInfo) {
+    guard let draggedTileID, draggedTileID != tile.id else { return }
+
+    withAnimation {
+      viewModel.reorderTile(withID: draggedTileID, to: tile.id)
+    }
+  }
+
+  func dropUpdated(info: DropInfo) -> DropProposal? {
+    DropProposal(operation: .move)
+  }
+
+  func performDrop(info: DropInfo) -> Bool {
+    draggedTileID = nil
+    return true
+  }
+
+  func dropExited(info: DropInfo) {}
 }
 
 #Preview {
