@@ -2,6 +2,7 @@ package com.rheosoft.obdii.viewmodels
 
 import com.rheosoft.obdii.core.ConfigData
 import com.rheosoft.obdii.core.PIDStats
+import com.rheosoft.obdii.core.PidInterestRegistry
 import com.rheosoft.obdii.core.PidStatsProviding
 import com.rheosoft.obdii.core.UnitsProviding
 import com.rheosoft.obdii.models.ObdiiPid
@@ -20,10 +21,14 @@ class GaugeDetailViewModel(
     val pid: ObdiiPid,
     private val statsProvider: PidStatsProviding,
     private val unitsProvider: UnitsProviding,
+    private val interestRegistry: PidInterestRegistry = PidInterestRegistry.instance,
 ) : BaseViewModel() {
     constructor(pid: ObdiiPid) : this(pid, com.rheosoft.obdii.core.OBDConnectionManager, ConfigData)
 
     private val scope = CoroutineScope(Dispatchers.Default + Job())
+    private val interestToken = interestRegistry.makeToken()
+    private var isVisible = false
+
     var stats: PIDStats? = statsProvider.statsFor(pid.pidCommand)
         private set
     private val _uiStateStream = MutableStateFlow(GaugeDetailUiState(stats))
@@ -46,6 +51,16 @@ class GaugeDetailViewModel(
                 _uiStateStream.value = GaugeDetailUiState(stats)
                 notifyChanged()
             }
+        }
+    }
+
+    fun setVisible(visible: Boolean) {
+        if (isVisible == visible) return
+        isVisible = visible
+        if (visible) {
+            interestRegistry.replace(setOf(pid.pidCommand), interestToken)
+        } else {
+            interestRegistry.replace(emptySet(), interestToken)
         }
     }
 

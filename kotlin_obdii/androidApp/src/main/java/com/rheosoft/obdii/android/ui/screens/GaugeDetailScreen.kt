@@ -20,6 +20,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -32,6 +33,10 @@ import com.rheosoft.obdii.screenmodels.GaugeDetailScreenModel
 @OptIn(ExperimentalMaterial3Api::class)
 fun GaugeDetailScreen(detail: GaugeDetailScreenModel, isMetric: Boolean, onClose: () -> Unit) {
     val uiState by detail.viewModel.uiStateStream.collectAsState()
+    DisposableEffect(detail.viewModel) {
+        detail.viewModel.setVisible(true)
+        onDispose { detail.viewModel.setVisible(false) }
+    }
     Scaffold(
         topBar = {
             TopAppBar(

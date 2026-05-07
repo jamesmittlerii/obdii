@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.rheosoft.obdii.android.bootstrap.AndroidAppInitializer
 import com.rheosoft.obdii.core.ConnectionType
 import com.rheosoft.obdii.core.MeasurementUnit
 import com.rheosoft.obdii.core.OBDConnectionState
@@ -71,11 +72,7 @@ fun SettingsScreen(
     val connectButtonLabel = view.connectButtonLabel
 
     LaunchedEffect(Unit) {
-        runCatching {
-            val p = context.packageManager.getPackageInfo(context.packageName, 0)
-            val appName = context.applicationInfo.loadLabel(context.packageManager).toString()
-            vm.setAppVersion("$appName v${p.versionName} build:${p.longVersionCode}")
-        }
+        vm.setAppVersion(AndroidAppInitializer.getAppVersion(context))
     }
     LazyColumn(modifier = modifier.fillMaxSize().padding(16.dp)) {
         item {

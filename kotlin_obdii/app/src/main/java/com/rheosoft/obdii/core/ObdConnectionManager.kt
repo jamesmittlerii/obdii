@@ -36,6 +36,8 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
     private val _fuelStatusStream = MutableStateFlow<List<StatusCodeMetadata?>?>(null)
     private val _milStatusStream = MutableStateFlow<Status?>(null)
 
+    private var isInitialized = false
+
     private var _connectionState = OBDConnectionState.disconnected
         set(value) {
             if (field == value) return
@@ -95,9 +97,10 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
         get() = _milStatusStream.asStateFlow()
 
     fun initialize() {
+        if (isInitialized) return
+        isInitialized = true
         syncTransportConfig()
         syncInterestedPids()
-        bindServiceMirrors()
     }
 
     fun setBleAdapter(adapter: BlePlatformAdapter) {

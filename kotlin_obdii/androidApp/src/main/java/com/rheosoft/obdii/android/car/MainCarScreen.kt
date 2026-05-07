@@ -5,8 +5,9 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
 import androidx.core.graphics.drawable.IconCompat
+import com.rheosoft.obdii.android.bootstrap.AndroidAppInitializer
 import com.rheosoft.obdii.viewmodels.*
-import com.rheosoft.obdii.screenmodels.RingGaugeModel
+import com.rheosoft.obdii.screenmodels.*
 import com.rheosoft.obdii.core.ConfigData
 import com.rheosoft.obdii.core.MeasurementUnit
 import com.rheosoft.obdii.models.UnitConversion
@@ -35,6 +36,7 @@ class MainCarScreen(carContext: CarContext) : Screen(carContext) {
     init {
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
+                settingsVm.setAppVersion(AndroidAppInitializer.getAppVersion(carContext))
                 gaugesVm.onChanged = { throttledInvalidate() }
                 diagnosticsVm.onChanged = { invalidate() }
                 fuelVm.onChanged = { invalidate() }
@@ -149,8 +151,7 @@ class MainCarScreen(carContext: CarContext) : Screen(carContext) {
                     .setText(gaugeModel.valueLine)
                     .setImage(gaugeIcon, GridItem.IMAGE_TYPE_LARGE)
                     .setOnClickListener { 
-                        // Visual feedback on tap
-                        invalidate() 
+                        screenManager.push(GaugeDetailCarScreen(carContext, tile.pid))
                     }
                     .build())
             }
@@ -186,6 +187,9 @@ class MainCarScreen(carContext: CarContext) : Screen(carContext) {
                 listBuilder.addItem(Row.Builder()
                     .setTitle(dtc.code)
                     .addText(dtc.description.ifEmpty { dtc.title })
+                    .setOnClickListener {
+                        screenManager.push(DtcDetailCarScreen(carContext, DiagnosticsScreenModel(diagnosticsVm).detailFor(dtc)))
+                    }
                     .build())
             }
         }
@@ -253,6 +257,10 @@ class MainCarScreen(carContext: CarContext) : Screen(carContext) {
             .addItem(Row.Builder()
                 .setTitle("Connection")
                 .addText("${settingsVm.connectionType}")
+                .build())
+            .addItem(Row.Builder()
+                .setTitle("About")
+                .addText(settingsVm.uiStateStream.value.appVersion.ifEmpty { AndroidAppInitializer.getAppVersion(carContext) })
                 .build())
 
         return ListTemplate.Builder()

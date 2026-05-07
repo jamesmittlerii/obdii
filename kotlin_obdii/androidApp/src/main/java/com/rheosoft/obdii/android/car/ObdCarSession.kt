@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.car.app.Screen
 import androidx.car.app.Session
 import androidx.lifecycle.lifecycleScope
+import com.rheosoft.obdii.android.bootstrap.AndroidAppInitializer
 import com.rheosoft.obdii.android.ui.screens.loadPidsFromJson
 import com.rheosoft.obdii.android.ui.screens.defaultGaugeSeedPids
 import com.rheosoft.obdii.core.DefaultPidStore
@@ -16,6 +17,8 @@ import kotlinx.coroutines.launch
 class ObdCarSession : Session() {
     override fun onCreateScreen(intent: Intent): Screen {
         Log.d("ObdCarSession", "onCreateScreen")
+        AndroidAppInitializer.initialize(carContext)
+
         // 1. Core Data Initialization (Sync)
         // This ensures PID storage is available before ViewModels are created.
         if (DefaultPidStore.pids.isEmpty()) {
@@ -28,8 +31,8 @@ class ObdCarSession : Session() {
             try {
                 AppBootstrap.initialize()
                 
-                // Auto-connect if enabled
-                if (ConfigData.autoConnectToOBD) {
+                // Auto-connect if enabled and permissions are ready
+                if (ConfigData.autoConnectToOBD && AndroidAppInitializer.hasBluetoothPermissions(carContext)) {
                     runCatching { OBDConnectionManager.connect() }
                 }
             } catch (e: Exception) {

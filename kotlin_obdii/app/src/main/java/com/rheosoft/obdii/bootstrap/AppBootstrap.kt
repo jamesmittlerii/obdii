@@ -19,6 +19,8 @@ interface ConnectionBootstrapper {
 }
 
 object AppBootstrap {
+    private var isInitialized = false
+
     suspend fun initialize(
         config: AppConfigBootstrapper = object : AppConfigBootstrapper {
             override val autoConnectToOBD: Boolean
@@ -33,6 +35,9 @@ object AppBootstrap {
             override suspend fun connect() = OBDConnectionManager.connect()
         },
     ) {
+        if (isInitialized) return
+        isInitialized = true
+
         config.load()
         pidStore.load()
         connection.initialize()

@@ -12,77 +12,43 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.rheosoft.obdii.android.ble.AndroidBlePlatformAdapter
-import com.rheosoft.obdii.android.storage.AndroidPreferencesKeyValueStore
+import com.rheosoft.obdii.android.bootstrap.AndroidAppInitializer
 import com.rheosoft.obdii.android.ui.screens.KotlinObdiiApp
-import com.rheosoft.obdii.core.ConfigData
-import com.rheosoft.obdii.core.DefaultPidStore
 import com.rheosoft.obdii.core.OBDConnectionManager
-import com.rheosoft.obdii.core.ObdLogger
 
 class MainActivity : ComponentActivity() {
     private var permissionsReady by mutableStateOf(false)
 
-    private val runtimePermissions: Array<String>
-        get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            arrayOf(
-                Manifest.permission.BLUETOOTH_SCAN,
-                Manifest.permission.BLUETOOTH_CONNECT,
-            )
-        } else {
-            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Initialize logging to use Android Log instead of System.out
-        ObdLogger.platformLogDelegate = { message, tag, level ->
-            // Detect intermediate states that aren't explicit enums in the library
-            if (message.contains("Initializing vehicle connection")) {
-                OBDConnectionManager.setSettingUpVehicle()
-            }
+        AndroidAppInitializer.initialize(this)
 
-            val emoji = ObdLogger.getEmoji(level)
-            val fullMessage = "[$emoji] $message"
-            when (level.lowercase()) {
-                "error" -> Log.e(tag, fullMessage)
-                "warning" -> Log.w(tag, fullMessage)
-                "info" -> Log.i(tag, fullMessage)
-                else -> Log.d(tag, fullMessage)
-            }
-        }
-        ObdLogger.mutesConsole = true // Stop System.out to avoid double logging
-
-        val persistentStore = AndroidPreferencesKeyValueStore.from(this)
-        ConfigData.store = persistentStore
-        ConfigData.load()
-        DefaultPidStore.store = persistentStore
-
-        val bleAdapter = if (com.rheosoft.obdii.viewmodels.SettingsViewModel.USE_NORDIC_BLE) {
-            com.rheosoft.obdii.android.ble.NordicBlePlatformAdapter(this)
-        } else {
-            AndroidBlePlatformAdapter(this)
-        }
-        OBDConnectionManager.setBleAdapter(bleAdapter)
-        permissionsReady = hasBluetoothPermissions()
+        permissionsReady = AndroidAppInitializer.hasBluetoothPermissions(this)
         requestBluetoothPermissionsIfNeeded()
         setContent { KotlinObdiiApp(permissionsReady = permissionsReady) }
     }
 
     private fun requestBluetoothPermissionsIfNeeded() {
-        val missing = missingBluetoothPermissions()
-        if (missing.isNotEmpty()) {
-            ActivityCompat.requestPermissions(this, missing.toTypedArray(), 1001)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val missing = mutableListOf<String>()
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+                missing.add(Manifest.permission.BLUETOOTH_SCAN)
+            }
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                missing.add(Manifest.permission.BLUETOOTH_CONNECT)
+            }
+            if (missing.isNotEmpty()) {
+                ActivityCompat.requestPermissions(this, missing.toTypedArray(), 1001)
+            }
+        } else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1001)
+            }
         }
     }
 
-    private fun hasBluetoothPermissions(): Boolean = missingBluetoothPermissions().isEmpty()
-
-    private fun missingBluetoothPermissions(): List<String> =
-        runtimePermissions.filter { perm ->
-            ContextCompat.checkSelfPermission(this, perm) != PackageManager.PERMISSION_GRANTED
-        }
+    private fun hasBluetoothPermissions(): Boolean = AndroidAppInitializer.hasBluetoothPermissions(this)
 
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onRequestPermissionsResult(
