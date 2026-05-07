@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.getValue
@@ -14,7 +13,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.rheosoft.obdii.android.bootstrap.AndroidAppInitializer
 import com.rheosoft.obdii.android.ui.screens.KotlinObdiiApp
-import com.rheosoft.obdii.core.OBDConnectionManager
 
 class MainActivity : ComponentActivity() {
     private var permissionsReady by mutableStateOf(false)

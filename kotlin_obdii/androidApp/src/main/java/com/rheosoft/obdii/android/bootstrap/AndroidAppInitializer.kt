@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
 import androidx.core.content.ContextCompat
+import androidx.core.content.pm.PackageInfoCompat
 import com.rheosoft.obdii.android.ble.AndroidBlePlatformAdapter
 import com.rheosoft.obdii.android.ble.NordicBlePlatformAdapter
 import com.rheosoft.obdii.android.storage.AndroidPreferencesKeyValueStore
@@ -57,7 +58,7 @@ object AndroidAppInitializer {
         return try {
             val p = context.packageManager.getPackageInfo(context.packageName, 0)
             val appName = context.applicationInfo.loadLabel(context.packageManager).toString()
-            "$appName v${p.versionName} build:${if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) p.longVersionCode else p.versionCode}"
+            "$appName v${p.versionName} build:${PackageInfoCompat.getLongVersionCode(p)}"
         } catch (e: Exception) {
             "Unknown version"
         }
