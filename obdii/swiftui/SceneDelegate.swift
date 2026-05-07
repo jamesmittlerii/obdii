@@ -47,6 +47,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     #endif
     window.rootViewController = ViewController()
     self.window = window
+    // Honor auto-connect on app start for phone UI
+    if ConfigData.shared.autoConnectToOBD {
+      Task { await OBDConnectionManager.shared.connect() }
+    }
     window.makeKeyAndVisible()
   }
 }
@@ -78,3 +82,4 @@ final class UnsupportedDeviceViewController: UIViewController {
     ])
   }
 }
+

@@ -1,4 +1,5 @@
 import SwiftOBD2
+import Combine
 /**
  * __Final Project__
  * Jim Mittler
@@ -17,6 +18,8 @@ import SwiftUI
 struct GaugeListView: View {
 
   @State private var viewModel: GaugesViewModel
+  @State private var pids: [OBDPID] = []
+  @State private var cancellables = Set<AnyCancellable>()
 
   // Default initializer preserves existing behavior
   @MainActor
@@ -32,18 +35,35 @@ struct GaugeListView: View {
 
   var body: some View {
     List {
-      Section(header: Text("Gauges")) {
-        ForEach(viewModel.displayTiles) { tile in
+      let enabled = pids.filter { $0.kind == .gauge && $0.enabled }
+      ForEach(enabled, id: \.id) { pid in
+        if let tile = viewModel.displayTiles.first(where: { $0.id == pid.id }) {
           NavigationLink {
             GaugeDetailView(viewModel: tile.detailViewModel)
           } label: {
             tileRow(tile)
           }
+        } else {
+          HStack {
+            Text("…")
+            Spacer()
+          }
         }
+      }
+      .onMove { source, destination in
+        PIDStore.shared.moveEnabled(fromOffsets: source, toOffset: destination)
       }
     }
     .navigationTitle("Live Gauges")
-    .onAppear { viewModel.onAppear() }
+    .onAppear {
+      viewModel.onAppear()
+      PIDStore.shared.pidsPublisher
+        .receive(on: RunLoop.main)
+        .sink { newPids in
+          self.pids = newPids
+        }
+        .store(in: &cancellables)
+    }
     .onDisappear { viewModel.onDisappear() }
   }
 

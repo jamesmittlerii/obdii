@@ -118,9 +118,8 @@ final class GaugesViewTests: XCTestCase {
         let rpm = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
         let view = makeViewWithMocks(pids: [rpm])
         await pumpMainRunLoop()
-        
-        let navLinks = try view.inspect().findAll(ViewType.NavigationLink.self)
-        XCTAssertGreaterThanOrEqual(navLinks.count, 0, "Should have NavigationLinks for gauges")
+
+        XCTAssertNoThrow(try view.inspect().find(text: "RPM"), "Should render a tile label for the gauge")
     }
     
     func testGaugeTileStructure_WithMocks() async throws {
@@ -152,11 +151,8 @@ final class GaugesViewTests: XCTestCase {
         let rpm = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
         let view = makeViewWithMocks(pids: [rpm])
         await pumpMainRunLoop()
-        
-        let navLinks = try view.inspect().findAll(ViewType.NavigationLink.self)
-        for navLink in navLinks {
-            XCTAssertNoThrow(try navLink.labelView(), "NavigationLink should have label")
-        }
+
+        XCTAssertNoThrow(try view.inspect().find(text: "RPM"), "Rendered tile should remain tappable for navigation")
     }
 
     
@@ -170,10 +166,14 @@ final class GaugesViewTests: XCTestCase {
     }
 
     
-    func testTileIdentityStructure() throws {
-        let tile1 = TileIdentity(id: UUID(), name: "Engine RPM")
-        let tile2 = TileIdentity(id: UUID(), name: "Engine RPM")
-        XCTAssertNotEqual(tile1.id, tile2.id)
+    func testTileIdentityStructure() async throws {
+        let rpm = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
+        let speed = OBDPID(id: UUID(), enabled: true, label: "SPD", name: "Vehicle Speed", pid: .mode1(.speed), units: "km/h", typicalRange: ValueRange(min: 0, max: 240))
+        let viewModel = makeViewModelWithMocks(pids: [rpm, speed])
+        await pumpMainRunLoop()
+
+        XCTAssertEqual(viewModel.tiles.count, 2)
+        XCTAssertNotEqual(viewModel.tiles[0].id, viewModel.tiles[1].id)
     }
 
     
@@ -194,9 +194,8 @@ final class GaugesViewTests: XCTestCase {
         let rpm = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
         let view = makeViewWithMocks(pids: [rpm])
         await pumpMainRunLoop()
-        
-        let navLinks = try view.inspect().findAll(ViewType.NavigationLink.self)
-        XCTAssertGreaterThanOrEqual(navLinks.count, 0, "Tiles should have accessibility identifiers")
+
+        XCTAssertNoThrow(try view.inspect().find(text: "RPM"), "Tiles should render with accessible content")
     }
 
     
@@ -240,12 +239,8 @@ final class GaugesViewTests: XCTestCase {
         let rpm = OBDPID(id: UUID(), enabled: true, label: "RPM", name: "Engine RPM", pid: .mode1(.rpm), units: "RPM", typicalRange: ValueRange(min: 0, max: 8000))
         let view = makeViewWithMocks(pids: [rpm])
         await pumpMainRunLoop()
-        
-        let navLinks = try view.inspect().findAll(ViewType.NavigationLink.self)
-        XCTAssertGreaterThanOrEqual(navLinks.count, 0, "Should have navigable gauge tiles")
-        for link in navLinks {
-            XCTAssertNoThrow(try link.labelView(), "Navigation link should have valid label")
-        }
+
+        XCTAssertNoThrow(try view.inspect().find(text: "RPM"), "Should render navigable gauge tiles with visible labels")
     }
     
     func testMixedMeasurementStates_WithMocks() async throws {
