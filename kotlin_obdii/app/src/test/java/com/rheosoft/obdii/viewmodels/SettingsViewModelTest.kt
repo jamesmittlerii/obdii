@@ -20,17 +20,20 @@ private class MockSettingsConfig : SettingsConfigProviding {
     override var wifiHost: String = "192.168.0.10"
     override var wifiPort: Int = 35000
     override var autoConnectToOBD: Boolean = false
-    override var connectionType: ConnectionType = ConnectionType.bluetooth
+    
+    private val _connFlow = MutableStateFlow(ConnectionType.bluetooth)
+    override var connectionType: ConnectionType
+        get() = _connFlow.value
+        set(value) { _connFlow.value = value }
+    override val connectionTypeStream: StateFlow<ConnectionType> = _connFlow
+
     override var gaugesDisplayMode: GaugesDisplayMode = GaugesDisplayMode.gauges
+    private val _modeFlow = MutableStateFlow(GaugesDisplayMode.gauges)
+    override val gaugesDisplayModeStream: StateFlow<GaugesDisplayMode> = _modeFlow
     
     private val _unitsFlow = MutableStateFlow(MeasurementUnit.Metric)
-    private val _connFlow = MutableStateFlow(ConnectionType.bluetooth)
-    private val _modeFlow = MutableStateFlow(GaugesDisplayMode.gauges)
-    
     override val units: MeasurementUnit get() = _unitsFlow.value
     override val unitsStream: StateFlow<MeasurementUnit> = _unitsFlow
-    override val connectionTypeStream: StateFlow<ConnectionType> = _connFlow
-    override val gaugesDisplayModeStream: StateFlow<GaugesDisplayMode> = _modeFlow
 
     override fun setUnits(units: MeasurementUnit) { _unitsFlow.value = units }
     fun pushUnits(u: MeasurementUnit) { _unitsFlow.value = u }

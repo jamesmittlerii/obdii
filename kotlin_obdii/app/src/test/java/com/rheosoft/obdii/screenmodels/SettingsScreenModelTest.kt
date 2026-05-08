@@ -24,10 +24,18 @@ private class MockSettingsConfig : SettingsConfigProviding {
     override val units: MeasurementUnit
         get() = unitsFlowMutable.value
     override val unitsStream: StateFlow<MeasurementUnit> = unitsFlowMutable
-    override val connectionTypeStream: StateFlow<ConnectionType> = MutableStateFlow(connectionType)
+    
+    private val connectionTypeFlowMutable = MutableStateFlow(ConnectionType.bluetooth)
+    override val connectionTypeStream: StateFlow<ConnectionType> = connectionTypeFlowMutable
+    
     override val gaugesDisplayModeStream: StateFlow<GaugesDisplayMode> = MutableStateFlow(GaugesDisplayMode.gauges)
     override fun setUnits(units: MeasurementUnit) {
         unitsFlowMutable.value = units
+    }
+
+    fun setConnectionType(type: ConnectionType) {
+        connectionType = type
+        connectionTypeFlowMutable.value = type
     }
 }
 
@@ -59,12 +67,12 @@ class SettingsViewTest {
 
     @Test
     fun `shows wifi details only in wifi mode`() {
-        val wifiConfig = MockSettingsConfig().apply { connectionType = ConnectionType.wifi }
+        val wifiConfig = MockSettingsConfig().apply { setConnectionType(ConnectionType.wifi) }
         val wifiView = SettingsScreenModel(SettingsViewModel(wifiConfig, MockConn(OBDConnectionState.disconnected)))
         assertTrue(wifiView.showsWifiDetails)
         assertTrue(wifiView.sectionHeaders.contains("Connection details"))
 
-        val btConfig = MockSettingsConfig().apply { connectionType = ConnectionType.bluetooth }
+        val btConfig = MockSettingsConfig().apply { setConnectionType(ConnectionType.bluetooth) }
         val btView = SettingsScreenModel(SettingsViewModel(btConfig, MockConn(OBDConnectionState.disconnected)))
         assertFalse(btView.showsWifiDetails)
     }
