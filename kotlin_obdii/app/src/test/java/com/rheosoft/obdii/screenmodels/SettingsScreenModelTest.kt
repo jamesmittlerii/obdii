@@ -83,6 +83,46 @@ class SettingsViewTest {
     }
 
     @Test
+    fun `connect button label treats failed as connect and in progress states as connecting`() {
+        val failed = SettingsScreenModel(
+            SettingsViewModel(MockSettingsConfig(), MockConn(OBDConnectionState.failed)),
+        )
+        val connecting = SettingsScreenModel(
+            SettingsViewModel(MockSettingsConfig(), MockConn(OBDConnectionState.connecting)),
+        )
+        val adapter = SettingsScreenModel(
+            SettingsViewModel(MockSettingsConfig(), MockConn(OBDConnectionState.connectedToAdapter)),
+        )
+        val setup = SettingsScreenModel(
+            SettingsViewModel(MockSettingsConfig(), MockConn(OBDConnectionState.settingUpVehicle)),
+        )
+
+        assertEquals("Connect", failed.connectButtonLabel)
+        assertEquals("Connecting...", connecting.connectButtonLabel)
+        assertEquals("Connecting...", adapter.connectButtonLabel)
+        assertEquals("Connecting...", setup.connectButtonLabel)
+    }
+
+    @Test
+    fun `status labels reflect every connection state`() {
+        val expectations = mapOf(
+            OBDConnectionState.disconnected to "Disconnected",
+            OBDConnectionState.connecting to "Connecting...",
+            OBDConnectionState.connectedToAdapter to "Connected to Adapter...",
+            OBDConnectionState.settingUpVehicle to "Setting up vehicle...",
+            OBDConnectionState.connected to "Connected",
+            OBDConnectionState.failed to "Failed",
+        )
+
+        expectations.forEach { (state, label) ->
+            val view = SettingsScreenModel(
+                SettingsViewModel(MockSettingsConfig(), MockConn(state)),
+            )
+            assertEquals(label, view.statusLabel)
+        }
+    }
+
+    @Test
     fun `units and diagnostics labels are preserved`() {
         val view = SettingsScreenModel(
             SettingsViewModel(MockSettingsConfig(), MockConn(OBDConnectionState.disconnected)),

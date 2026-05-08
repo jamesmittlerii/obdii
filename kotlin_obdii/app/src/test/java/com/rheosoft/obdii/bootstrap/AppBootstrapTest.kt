@@ -67,4 +67,19 @@ class AppBootstrapTest {
         assertEquals(1, connection.initializeCount)
         assertEquals(0, connection.connectCount)
     }
+
+    @Test
+    fun `initialize is idempotent after first call`() = runTest {
+        val config = FakeConfig(autoConnect = false)
+        val pidStore = FakePidStore()
+        val connection = FakeConnection()
+
+        AppBootstrap.initialize(config, pidStore, connection)
+        AppBootstrap.initialize(config, pidStore, connection)
+
+        assertEquals(1, config.loadCount)
+        assertEquals(1, pidStore.loadCount)
+        assertEquals(1, connection.initializeCount)
+        assertEquals(0, connection.connectCount)
+    }
 }

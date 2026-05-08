@@ -79,4 +79,109 @@ class ObdiiPidTest {
         assertEquals("100 km/h", speedPid.formattedValue(100.0, isMetric = true))
         assertEquals("62 mph", speedPid.formattedValue(100.0, isMetric = false))
     }
+
+    @Test
+    fun `copyWith keeps current enabled value when omitted`() {
+        val pid = ObdiiPid(
+            id = "copy",
+            enabled = true,
+            label = "Copy",
+            name = "Copy",
+            pidCommand = "010C",
+        )
+
+        assertTrue(pid.copyWith().enabled)
+        assertFalse(pid.copyWith(enabled = false).enabled)
+    }
+
+    @Test
+    fun `null units use empty labels and unconverted values`() {
+        val pid = ObdiiPid(
+            id = "no_units",
+            label = "No Units",
+            name = "No Units",
+            pidCommand = "010C",
+        )
+
+        assertEquals("", pid.unitLabel(isMetric = true))
+        assertEquals(42.4, pid.convertedValue(42.4, isMetric = false))
+        assertEquals("", pid.displayRange(isMetric = true))
+        assertEquals("42", pid.formattedValue(42.4, isMetric = true))
+        assertEquals(null, pid.typicalRangeFor(isMetric = true))
+        assertEquals(null, pid.warningRangeFor(isMetric = true))
+        assertEquals(null, pid.dangerRangeFor(isMetric = true))
+    }
+
+    @Test
+    fun `less common unit conversions map to imperial labels and values`() {
+        val pressure = UnitConversion.fromMetricLabel("kPa", isMetric = false)!!
+        assertEquals("psi", pressure.displayLabel)
+        assertEquals(14.5038, pressure.convert(100.0), 0.0001)
+
+        val distance = UnitConversion.fromMetricLabel("km", isMetric = false)!!
+        assertEquals("mi", distance.displayLabel)
+        assertEquals(6.21371, distance.convert(10.0), 0.0001)
+
+        val massAirFlow = UnitConversion.fromMetricLabel("g/s", isMetric = false)!!
+        assertEquals("lb/min", massAirFlow.displayLabel)
+        assertEquals(1.32277, massAirFlow.convert(10.0), 0.0001)
+
+        val fuelRate = UnitConversion.fromMetricLabel("L/h", isMetric = false)!!
+        assertEquals("gal/h", fuelRate.displayLabel)
+        assertEquals(2.64172, fuelRate.convert(10.0), 0.0001)
+    }
+
+    @Test
+    fun `passthrough unit conversions preserve supported labels`() {
+        listOf("RPM", "%", "V", "λ", "NA", "Pa", "mA", "° BTDC", "s", "count").forEach { label ->
+            val conversion = UnitConversion.fromMetricLabel(label, isMetric = false)
+            assertEquals(label, conversion?.displayLabel)
+            assertEquals(12.34, conversion?.convert?.invoke(12.34))
+        }
+        assertEquals(null, UnitConversion.fromMetricLabel("mystery", isMetric = true))
+    }
+
+    @Test
+    fun `formatting uses expected fractional digits by unit`() {
+        val voltage = ObdiiPid(
+            id = "voltage",
+            label = "Voltage",
+            name = "Voltage",
+            pidCommand = "0142",
+            units = "V",
+        )
+        val lambda = voltage.copy(id = "lambda", units = "λ")
+        val fuelRate = voltage.copy(id = "fuel", units = "L/h")
+
+        assertEquals("12.35 V", voltage.formattedValue(12.345, isMetric = true))
+        assertEquals("1.23 λ", lambda.formattedValue(1.234, isMetric = true))
+        assertEquals("3.5 L/h", fuelRate.formattedValue(3.45, isMetric = true))
+    }
+
+    @Test
+    fun `range conversion preserves null ranges and converts present ranges`() {
+        val pid = ObdiiPid(
+            id = "pressure",
+            label = "Pressure",
+            name = "Pressure",
+            pidCommand = "010A",
+            units = "kPa",
+            typicalRange = ValueRange(0.0, 100.0),
+        )
+
+        assertEquals(ValueRange(0.0, 100.0), pid.typicalRangeFor(isMetric = true))
+        assertEquals(14.5038, pid.typicalRangeFor(isMetric = false)!!.max, 0.0001)
+        assertEquals(null, pid.warningRangeFor(isMetric = false))
+        assertEquals(null, pid.dangerRangeFor(isMetric = false))
+    }
+
+    @Test
+    fun `generated ids are stable prefix and incrementing`() {
+        val first = ObdiiPid.generateId()
+        val second = ObdiiPid.generateId()
+
+        assertTrue(first.startsWith("pid_"))
+        assertTrue(second.startsWith("pid_"))
+        assertTrue(second.removePrefix("pid_").toInt() > first.removePrefix("pid_").toInt())
+    }
 }
