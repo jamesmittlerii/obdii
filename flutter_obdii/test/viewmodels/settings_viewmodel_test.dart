@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:flutter_obdii/core/config_data.dart';
+import 'package:flutter_obdii/core/constants.dart';
 import 'package:flutter_obdii/core/logger.dart';
 import 'package:flutter_obdii/core/obd_connection_manager.dart';
 import 'package:flutter_obdii/viewmodels/settings_viewmodel.dart';
@@ -19,7 +20,7 @@ import 'package:flutter_obdii/viewmodels/settings_viewmodel.dart';
 
 class MockSettingsConfig implements SettingsConfigProviding {
   @override
-  String wifiHost = '192.168.0.10';
+  String wifiHost = defaultWifiHost;
   @override
   int wifiPort = 35000;
   @override
@@ -118,7 +119,7 @@ void main() {
 
   test('testInitializationSeedsFromConfigAndConnection', () {
     expect(viewModel, isNotNull);
-    expect(viewModel.wifiHost, '192.168.0.10');
+    expect(viewModel.wifiHost, defaultWifiHost);
     expect(viewModel.wifiPort, 35000);
     expect(viewModel.autoConnectToOBD, false);
     expect(viewModel.connectionType, ConnectionType.bluetooth);

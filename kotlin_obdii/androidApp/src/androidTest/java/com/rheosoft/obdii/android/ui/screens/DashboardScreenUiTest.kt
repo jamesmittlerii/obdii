@@ -80,10 +80,12 @@ class DashboardScreenUiTest {
         )
         val screenModel = DashboardScreenModel(vm)
         composeRule.setContent {
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
             DashboardScreen(
                 view = screenModel,
                 isMetric = unitsProvider.units == MeasurementUnit.Metric,
                 modifier = Modifier,
+                scope = scope,
                 onGaugeTap = {}
             )
         }

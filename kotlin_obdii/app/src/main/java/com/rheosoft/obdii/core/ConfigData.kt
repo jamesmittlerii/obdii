@@ -75,7 +75,7 @@ object ConfigData : SettingsConfigProviding, UnitsProviding {
 
     var store: KeyValueStore = InMemoryKeyValueStore()
 
-    override var wifiHost: String = "192.168.0.10"
+    override var wifiHost: String = DEFAULT_WIFI_HOST
         set(value) {
             if (field == value) return
             field = value
@@ -124,7 +124,7 @@ object ConfigData : SettingsConfigProviding, UnitsProviding {
     override val gaugesDisplayModeStream: StateFlow<GaugesDisplayMode> = _gaugesModeFlow.asStateFlow()
 
     fun load() {
-        wifiHost = store.getString(K_WIFI_HOST) ?: "192.168.0.10"
+        wifiHost = store.getString(K_WIFI_HOST) ?: DEFAULT_WIFI_HOST
         wifiPort = store.getInt(K_WIFI_PORT) ?: 35000
         autoConnectToOBD = store.getBoolean(K_AUTO_CONNECT) ?: true
         connectionType = ConnectionType.fromRaw(store.getString(K_CONNECTION_TYPE) ?: "bluetooth")
@@ -145,7 +145,7 @@ object ConfigData : SettingsConfigProviding, UnitsProviding {
     }
 
     fun resetForTests() {
-        wifiHost = "192.168.0.10"
+        wifiHost = DEFAULT_WIFI_HOST
         wifiPort = 35000
         autoConnectToOBD = true
         connectionType = ConnectionType.bluetooth

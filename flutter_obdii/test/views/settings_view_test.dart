@@ -6,13 +6,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:flutter_obdii/core/config_data.dart';
+import 'package:flutter_obdii/core/constants.dart';
 import 'package:flutter_obdii/core/obd_connection_manager.dart';
 import 'package:flutter_obdii/viewmodels/settings_viewmodel.dart';
 import 'package:flutter_obdii/views/settings_view.dart';
 
 class _MockSettingsConfig implements SettingsConfigProviding {
   @override
-  String wifiHost = '192.168.0.10';
+  String wifiHost = defaultWifiHost;
   @override
   int wifiPort = 35000;
   @override

@@ -6,13 +6,14 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import com.rheosoft.obdii.core.*
 import com.rheosoft.obdii.screenmodels.SettingsScreenModel
 import com.rheosoft.obdii.viewmodels.SettingsViewModel
+import com.rheosoft.obdii.core.DEFAULT_WIFI_HOST
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.junit.Rule
 import org.junit.Test
 
 private class MockSettingsConfig : SettingsConfigProviding {
-    override var wifiHost: String = "192.168.0.10"
+    override var wifiHost: String = DEFAULT_WIFI_HOST
     override var wifiPort: Int = 35000
     override var autoConnectToOBD: Boolean = true
     

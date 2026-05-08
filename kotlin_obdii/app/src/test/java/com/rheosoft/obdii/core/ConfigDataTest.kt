@@ -15,7 +15,7 @@ class ConfigDataTest {
 
     @Test
     fun `defaults are correct`() {
-        assertEquals("192.168.0.10", ConfigData.wifiHost)
+        assertEquals(DEFAULT_WIFI_HOST, ConfigData.wifiHost)
         assertEquals(35000, ConfigData.wifiPort)
         assertTrue(ConfigData.autoConnectToOBD)
         assertEquals(ConnectionType.bluetooth, ConfigData.connectionType)

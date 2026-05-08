@@ -16,6 +16,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../core/config_data.dart';
+import '../core/constants.dart';
 import '../core/obd_connection_manager.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import 'pid_toggle_list_view.dart';
@@ -198,7 +199,7 @@ class _SettingsViewState extends State<SettingsView> {
                           child: TextField(
                             textAlign: TextAlign.right,
                             decoration: InputDecoration(
-                              hintText: 'e.g. 192.168.0.10',
+                              hintText: 'e.g. $defaultWifiHost',
                               hintStyle: TextStyle(color: Colors.grey.shade600),
                               border: InputBorder.none,
                             ),

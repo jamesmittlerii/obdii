@@ -6,6 +6,7 @@ import com.rheosoft.obdii.core.MeasurementUnit
 import com.rheosoft.obdii.core.OBDConnectionControlling
 import com.rheosoft.obdii.core.OBDConnectionState
 import com.rheosoft.obdii.core.SettingsConfigProviding
+import com.rheosoft.obdii.core.DEFAULT_WIFI_HOST
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +18,7 @@ import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
 private class MockSettingsConfig : SettingsConfigProviding {
-    override var wifiHost: String = "192.168.0.10"
+    override var wifiHost: String = DEFAULT_WIFI_HOST
     override var wifiPort: Int = 35000
     override var autoConnectToOBD: Boolean = false
     
@@ -84,7 +85,7 @@ class SettingsViewModelTest {
     @Test
     fun `testInitializationSeedsFromConfigAndConnection`() {
         assertNotNull(viewModel)
-        assertEquals("192.168.0.10", viewModel.wifiHost)
+        assertEquals(DEFAULT_WIFI_HOST, viewModel.wifiHost)
         assertEquals(35000, viewModel.wifiPort)
         assertFalse(viewModel.autoConnectToOBD)
         assertEquals(ConnectionType.bluetooth, viewModel.connectionType)

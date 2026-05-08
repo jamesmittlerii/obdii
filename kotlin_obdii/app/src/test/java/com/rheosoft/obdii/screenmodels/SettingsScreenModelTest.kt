@@ -6,6 +6,7 @@ import com.rheosoft.obdii.core.MeasurementUnit
 import com.rheosoft.obdii.core.OBDConnectionControlling
 import com.rheosoft.obdii.core.OBDConnectionState
 import com.rheosoft.obdii.core.SettingsConfigProviding
+import com.rheosoft.obdii.core.DEFAULT_WIFI_HOST
 import com.rheosoft.obdii.viewmodels.SettingsViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +16,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 private class MockSettingsConfig : SettingsConfigProviding {
-    override var wifiHost: String = "192.168.0.10"
+    override var wifiHost: String = DEFAULT_WIFI_HOST
     override var wifiPort: Int = 35000
     override var autoConnectToOBD: Boolean = true
 

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_obdii/core/carplay_bridge.dart';
 import 'package:flutter_obdii/core/config_data.dart';
+import 'package:flutter_obdii/core/constants.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +29,7 @@ void main() {
       units: MeasurementUnit.imperial,
       connectionType: ConnectionType.wifi,
       autoConnectToOBD: true,
-      wifiHost: '192.168.0.10',
+      wifiHost: defaultWifiHost,
       wifiPort: 35000,
     );
 
@@ -47,7 +48,7 @@ void main() {
       units: MeasurementUnit.imperial,
       connectionType: ConnectionType.wifi,
       autoConnectToOBD: true,
-      wifiHost: '192.168.0.10',
+      wifiHost: defaultWifiHost,
       wifiPort: 35000,
     );
 
@@ -58,7 +59,7 @@ void main() {
         'units': 'imperial',
         'connectionType': 'wifi',
         'autoConnectToOBD': true,
-        'wifiHost': '192.168.0.10',
+        'wifiHost': defaultWifiHost,
         'wifiPort': 35000,
       }),
     );
