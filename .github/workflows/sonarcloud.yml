@@ -10,6 +10,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+concurrency:
+  group: ${{ github.repository }}-release-${{ github.ref }}
+  cancel-in-progress: false
+  
 jobs:
   scan:
     name: Test Coverage & Scan
