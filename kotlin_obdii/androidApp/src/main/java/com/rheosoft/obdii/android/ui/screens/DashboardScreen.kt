@@ -34,6 +34,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
@@ -75,6 +77,48 @@ private data class GaugeGridItemActions(
     val onDrag: (Offset) -> Unit,
     val onDragEnd: () -> Unit,
 )
+
+private class GaugeGridDragController {
+    private var draggingKey by mutableStateOf<String?>(null)
+    private var draggingIndex by mutableStateOf<Int?>(null)
+    private var draggingOffset by mutableStateOf(Offset.Zero)
+
+    fun stateFor(tile: GaugeTile): GaugeGridItemDragState =
+        GaugeGridItemDragState(
+            isDragging = draggingKey == tile.pid.stableKey(),
+            offset = draggingOffset,
+        )
+
+    fun start(tile: GaugeTile, enabled: List<GaugeTile>) {
+        val currentIndex = enabled.indexOfFirst { it.pid.stableKey() == tile.pid.stableKey() }
+        if (currentIndex == -1) return
+
+        draggingKey = tile.pid.stableKey()
+        draggingIndex = currentIndex
+        draggingOffset = Offset.Zero
+    }
+
+    fun drag(
+        dragAmount: Offset,
+        enabled: List<GaugeTile>,
+        metrics: GridDragMetrics,
+        onMove: (from: Int, to: Int) -> Unit,
+    ) {
+        draggingOffset += dragAmount
+        val from = draggingIndex ?: return
+        val target = gridDragMove(from, draggingOffset, metrics, enabled.lastIndex) ?: return
+
+        draggingIndex = target
+        draggingOffset -= gridOffsetConsumed(from, target, metrics)
+        onMove(from, target)
+    }
+
+    fun end() {
+        draggingKey = null
+        draggingIndex = null
+        draggingOffset = Offset.Zero
+    }
+}
 
 @Composable
 fun DashboardScreen(
@@ -223,67 +267,63 @@ private fun DashboardGridMode(
     scope: CoroutineScope,
     onGaugeTap: (ObdiiPid) -> Unit
 ) {
-    var draggingGridKey by remember { mutableStateOf<String?>(null) }
-    var draggingGridIndex by remember { mutableStateOf<Int?>(null) }
-    var draggingGridOffset by remember { mutableStateOf(Offset.Zero) }
+    val dragController = remember { GaugeGridDragController() }
 
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val gridWidth = this.maxWidth
-        val columns = (gridWidth / 160.dp).toInt().coerceAtLeast(1)
-        val itemWidthPx = with(LocalDensity.current) { (gridWidth / columns).toPx() }
-        val itemHeightPx = itemWidthPx * 1.1f // Approximate height based on aspect ratio and label
+        val metrics = gridDragMetrics(maxWidth, LocalDensity.current)
 
         LazyVerticalGrid(
-            columns = GridCells.Fixed(columns),
+            columns = GridCells.Fixed(metrics.columns),
             modifier = Modifier.fillMaxWidth().height(520.dp)
         ) {
             itemsIndexed(
                 items = enabled,
                 key = { _, tile -> tile.pid.stableKey() },
             ) { _, tile ->
-                val isDragging = draggingGridKey == tile.pid.stableKey()
                 GaugeGridItem(
                     tile = tile,
                     isMetric = isMetric,
-                    dragState = GaugeGridItemDragState(isDragging, draggingGridOffset),
-                    actions = GaugeGridItemActions(
+                    dragState = dragController.stateFor(tile),
+                    actions = gridItemActions(
+                        tile = tile,
+                        enabled = enabled,
+                        metrics = metrics,
+                        dragController = dragController,
+                        view = view,
+                        scope = scope,
                         onGaugeTap = onGaugeTap,
-                        onDragStart = {
-                            val currentIndex = enabled.indexOfFirst { it.pid.stableKey() == tile.pid.stableKey() }
-                            if (currentIndex != -1) {
-                                draggingGridKey = tile.pid.stableKey()
-                                draggingGridIndex = currentIndex
-                                draggingGridOffset = Offset.Zero
-                            }
-                        },
-                        onDrag = { dragAmount ->
-                            draggingGridOffset += dragAmount
-                            val from = draggingGridIndex
-                            if (from != null) {
-                                val move = gridDragMove(
-                                    from = from,
-                                    offset = draggingGridOffset,
-                                    metrics = GridDragMetrics(columns, itemWidthPx, itemHeightPx),
-                                    lastIndex = enabled.lastIndex,
-                                )
-                                if (move != null) {
-                                    draggingGridIndex = move
-                                    draggingGridOffset -= gridOffsetConsumed(from, move, columns, itemWidthPx, itemHeightPx)
-                                    scope.launch { view.viewModel.moveEnabled(from, move) }
-                                }
-                            }
-                        },
-                        onDragEnd = {
-                            draggingGridKey = null
-                            draggingGridIndex = null
-                            draggingGridOffset = Offset.Zero
-                        },
                     ),
                 )
             }
         }
     }
 }
+
+private fun gridDragMetrics(gridWidth: Dp, density: Density): GridDragMetrics {
+    val columns = (gridWidth / 160.dp).toInt().coerceAtLeast(1)
+    val itemWidthPx = with(density) { (gridWidth / columns).toPx() }
+    val itemHeightPx = itemWidthPx * 1.1f // Approximate height based on aspect ratio and label
+    return GridDragMetrics(columns, itemWidthPx, itemHeightPx)
+}
+
+private fun gridItemActions(
+    tile: GaugeTile,
+    enabled: List<GaugeTile>,
+    metrics: GridDragMetrics,
+    dragController: GaugeGridDragController,
+    view: DashboardScreenModel,
+    scope: CoroutineScope,
+    onGaugeTap: (ObdiiPid) -> Unit,
+): GaugeGridItemActions = GaugeGridItemActions(
+    onGaugeTap = onGaugeTap,
+    onDragStart = { dragController.start(tile, enabled) },
+    onDrag = { dragAmount ->
+        dragController.drag(dragAmount, enabled, metrics) { from, to ->
+            scope.launch { view.viewModel.moveEnabled(from, to) }
+        }
+    },
+    onDragEnd = dragController::end,
+)
 
 @Composable
 private fun GaugeGridItem(
@@ -339,12 +379,10 @@ private fun gridDragMove(
 private fun gridOffsetConsumed(
     from: Int,
     target: Int,
-    columns: Int,
-    itemWidthPx: Float,
-    itemHeightPx: Float,
+    metrics: GridDragMetrics,
 ): Offset = Offset(
-    (target % columns - from % columns) * itemWidthPx,
-    (target / columns - from / columns) * itemHeightPx,
+    (target % metrics.columns - from % metrics.columns) * metrics.itemWidthPx,
+    (target / metrics.columns - from / metrics.columns) * metrics.itemHeightPx,
 )
 
 private fun Offset.toIntOffset(): IntOffset =

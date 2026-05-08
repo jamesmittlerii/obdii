@@ -55,7 +55,7 @@ class AppTheme {
   }
 
   static ListTileThemeData _buildListTileTheme() {
-    return ListTileThemeData(
+    return const ListTileThemeData(
       iconColor: _primaryAccent,
     );
   }

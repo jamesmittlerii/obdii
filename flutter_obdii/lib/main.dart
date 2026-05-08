@@ -53,7 +53,7 @@ class ObdApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Color(0xFF00C2FF),
+            seedColor: const Color(0xFF00C2FF),
             brightness: Brightness.light,
           ),
           useMaterial3: true,
@@ -61,7 +61,7 @@ class ObdApp extends StatelessWidget {
         ),
         darkTheme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Color(0xFF00C2FF),
+            seedColor: const Color(0xFF00C2FF),
             brightness: Brightness.dark,
           ),
           useMaterial3: true,
