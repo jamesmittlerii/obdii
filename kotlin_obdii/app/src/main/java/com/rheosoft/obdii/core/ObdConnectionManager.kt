@@ -113,6 +113,7 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
             obdWarning("Connection attempt ignored, already connected or connecting.", LogCategory.Service)
             return
         }
+        syncTransportConfig()
         _connectionState = OBDConnectionState.connecting
         obdInfo("Starting connection with timeout: 30s", LogCategory.Connection)
 
@@ -162,6 +163,7 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
         interestedPids = emptySet()
         supportedMode1Pids = emptySet()
         lastStreamingPids = emptySet()
+        recreateService()
     }
 
     private fun bindInterestRegistry() {
