@@ -14,7 +14,7 @@ on:
       - ".github/workflows/caller_kotlin.yml"
 
 concurrency:
-  group: ${{ github.repository }}-kotlin-release-${{ github.ref }}
+  group: ${{ github.repository }}-release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
