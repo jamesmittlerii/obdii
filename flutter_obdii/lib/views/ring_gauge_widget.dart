@@ -45,9 +45,11 @@ class RingGaugeWidget extends StatelessWidget {
       valueLine = pid.formattedValue(v, isMetric, includeUnits: false);
     }
 
-    final normalized = currentValue != null
-        ? ((currentValue - minV) / (maxV == minV ? 1 : maxV - minV)).clamp(0.0, 1.0)
-        : 0.0;
+    double normalized = 0.0;
+    if (currentValue != null) {
+      final range = maxV == minV ? 1.0 : maxV - minV;
+      normalized = ((currentValue - minV) / range).clamp(0.0, 1.0);
+    }
 
     return LayoutBuilder(
       builder: (context, constraints) {

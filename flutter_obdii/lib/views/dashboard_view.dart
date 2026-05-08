@@ -149,88 +149,91 @@ class _GaugesGridState extends State<_GaugesGrid> {
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
-            final tile = tiles[index];
-            final isDragging = _draggingIndex == index;
-            final isTargeted = _hoverIndex == index &&
-                _draggingIndex != null &&
-                _draggingIndex != index;
-
-            return DragTarget<int>(
-              onWillAcceptWithDetails: (d) => d.data != index,
-              onAcceptWithDetails: (d) {
-                final from = d.data;
-                final to = index;
-                setState(() { _draggingIndex = null; _hoverIndex = null; });
-                // Defer the reorder until after the drag gesture fully unwinds.
-                // Calling moveEnabled synchronously triggers notifyListeners(),
-                // which rebuilds the Consumer mid-drag and confuses the gesture
-                // recognizer, preventing subsequent drags.
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) widget.vm.moveEnabled(from, to);
-                });
-              },
-              onMove: (_) {
-                if (_hoverIndex != index) setState(() => _hoverIndex = index);
-              },
-              onLeave: (_) {
-                if (_hoverIndex == index) setState(() => _hoverIndex = null);
-              },
-              builder: (context, candidate, _) {
-                return AnimatedScale(
-                  scale: isTargeted ? 1.05 : 1.0,
-                  duration: const Duration(milliseconds: 150),
-                  child: LongPressDraggable<int>(
-                    data: index,
-                    delay: const Duration(milliseconds: 400),
-                    onDragStarted: () => setState(() => _draggingIndex = index),
-                    onDragEnd: (_) {
-                      if (mounted) {
-                        setState(() {
-                          _draggingIndex = null;
-                          _hoverIndex = null;
-                        });
-                      }
-                    },
-                    onDraggableCanceled: (velocity, offset) {
-                      if (mounted) {
-                        setState(() {
-                          _draggingIndex = null;
-                          _hoverIndex = null;
-                        });
-                      }
-                    },
-                    feedback: SizedBox(
-                      width: 160,
-                      height: 160,
-                      child: Material(
-                        elevation: 12,
-                        shadowColor: Colors.black.withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(12),
-                        child: _GaugeTile(tile: tile, isMetric: isMetric),
-                      ),
-                    ),
-                    childWhenDragging: Opacity(
-                      opacity: 0.25,
-                      child: _GaugeTile(tile: tile, isMetric: isMetric),
-                    ),
-                    child: _GaugeTile(
-                      tile: tile,
-                      isMetric: isMetric,
-                      onTap: isDragging
-                          ? null
-                          : () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => GaugeDetailView(pid: tile.pid),
-                              ),
-                            ),
-                    ),
-                  ),
-                );
-              },
-            );
+            return _buildDragTarget(context, index, tiles[index], isMetric);
           },
           childCount: tiles.length,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDragTarget(BuildContext context, int index, GaugeTile tile, bool isMetric) {
+    final isDragging = _draggingIndex == index;
+    final isTargeted = _hoverIndex == index &&
+        _draggingIndex != null &&
+        _draggingIndex != index;
+
+    return DragTarget<int>(
+      onWillAcceptWithDetails: (d) => d.data != index,
+      onAcceptWithDetails: (d) {
+        final from = d.data;
+        final to = index;
+        setState(() { _draggingIndex = null; _hoverIndex = null; });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) widget.vm.moveEnabled(from, to);
+        });
+      },
+      onMove: (_) {
+        if (_hoverIndex != index) setState(() => _hoverIndex = index);
+      },
+      onLeave: (_) {
+        if (_hoverIndex == index) setState(() => _hoverIndex = null);
+      },
+      builder: (context, candidate, _) {
+        return _buildDraggable(context, index, tile, isMetric, isDragging, isTargeted);
+      },
+    );
+  }
+
+  Widget _buildDraggable(BuildContext context, int index, GaugeTile tile, bool isMetric, bool isDragging, bool isTargeted) {
+    return AnimatedScale(
+      scale: isTargeted ? 1.05 : 1.0,
+      duration: const Duration(milliseconds: 150),
+      child: LongPressDraggable<int>(
+        data: index,
+        delay: const Duration(milliseconds: 400),
+        onDragStarted: () => setState(() => _draggingIndex = index),
+        onDragEnd: (_) {
+          if (mounted) {
+            setState(() {
+              _draggingIndex = null;
+              _hoverIndex = null;
+            });
+          }
+        },
+        onDraggableCanceled: (velocity, offset) {
+          if (mounted) {
+            setState(() {
+              _draggingIndex = null;
+              _hoverIndex = null;
+            });
+          }
+        },
+        feedback: SizedBox(
+          width: 160,
+          height: 160,
+          child: Material(
+            elevation: 12,
+            shadowColor: Colors.black.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(12),
+            child: _GaugeTile(tile: tile, isMetric: isMetric),
+          ),
+        ),
+        childWhenDragging: Opacity(
+          opacity: 0.25,
+          child: _GaugeTile(tile: tile, isMetric: isMetric),
+        ),
+        child: _GaugeTile(
+          tile: tile,
+          isMetric: isMetric,
+          onTap: isDragging
+              ? null
+              : () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => GaugeDetailView(pid: tile.pid),
+                  ),
+                ),
         ),
       ),
     );

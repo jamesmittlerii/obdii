@@ -48,15 +48,15 @@ class _FuelStatusViewState extends State<FuelStatusView> {
           if (vm.status == null) {
             return ListView(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-              children: [
+              children: const [
                 Card(
                   child: ListTile(
-                    leading: const SizedBox(
+                    leading: SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
-                    title: const Text(
+                    title: Text(
                       'Waiting for data…',
                       style: TextStyle(color: Colors.grey),
                     ),

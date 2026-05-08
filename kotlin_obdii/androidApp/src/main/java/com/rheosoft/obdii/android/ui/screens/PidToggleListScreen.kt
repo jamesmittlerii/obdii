@@ -128,66 +128,39 @@ fun PidToggleListScreen(
             ) { enabledIndex, pid ->
                 val pidKey = pid.stableKey()
                 val isDragging = draggingKey == pidKey && draggingEnabledIndex == enabledIndex
-                PremiumCard(
-                    modifier = Modifier
-                        .offset { IntOffset(0, if (isDragging) draggingOffsetY.roundToInt() else 0) }
-                        .zIndex(if (isDragging) 1f else 0f)
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .pointerInput(pidKey) {
-                                detectDragGestures(
-                                    onDragStart = {
-                                        val currentEnabled = pidsSnapshot
-                                            .filter { it.enabled && it.kind == ObdPidKind.gauge }
-                                        val currentIndex =
-                                            currentEnabled.indexOfFirst { it.stableKey() == pidKey }
-                                        if (currentIndex < 0) return@detectDragGestures
-                                        draggingKey = pidKey
-                                        draggingEnabledIndex = currentIndex
-                                        draggingOffsetY = 0f
-                                    },
-                                    onDrag = { change, dragAmount ->
-                                        change.consume()
-                                        draggingOffsetY += dragAmount.y
-                                        val from = draggingEnabledIndex ?: return@detectDragGestures
-                                        val shift = (draggingOffsetY / rowHeightPx).toInt()
-                                        val target = (from + shift).coerceIn(0, enabled.lastIndex)
-                                        if (target != from) {
-                                            draggingEnabledIndex = target
-                                            draggingOffsetY -= (target - from) * rowHeightPx
-                                            scope.launch { vm.moveEnabled(from, target) }
-                                        }
-                                    },
-                                    onDragEnd = {
-                                        draggingOffsetY = 0f
-                                        draggingEnabledIndex = null
-                                        draggingKey = null
-                                    },
-                                    onDragCancel = {
-                                        draggingOffsetY = 0f
-                                        draggingEnabledIndex = null
-                                        draggingKey = null
-                                    },
-                                )
-                            }
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(pid.name)
-                            Text(pid.displayRange(isMetric), color = Color.Gray)
+                EnabledPidListItem(
+                    pid = pid,
+                    pidKey = pidKey,
+                    isMetric = isMetric,
+                    isDragging = isDragging,
+                    draggingOffsetY = draggingOffsetY,
+                    onToggle = { on -> scope.launch { vm.toggleById(pidKey, on) } },
+                    onDragStart = {
+                        val currentEnabled = pidsSnapshot.filter { it.enabled && it.kind == ObdPidKind.gauge }
+                        val currentIndex = currentEnabled.indexOfFirst { it.stableKey() == pidKey }
+                        if (currentIndex >= 0) {
+                            draggingKey = pidKey
+                            draggingEnabledIndex = currentIndex
+                            draggingOffsetY = 0f
                         }
-                        Switch(
-                            checked = pid.enabled,
-                            onCheckedChange = { on -> scope.launch { vm.toggleById(pidKey, on) } },
-                        )
+                    },
+                    onDrag = { dragAmountY ->
+                        draggingOffsetY += dragAmountY
+                        val from = draggingEnabledIndex ?: return@EnabledPidListItem
+                        val shift = (draggingOffsetY / rowHeightPx).toInt()
+                        val target = (from + shift).coerceIn(0, enabled.lastIndex)
+                        if (target != from) {
+                            draggingEnabledIndex = target
+                            draggingOffsetY -= (target - from) * rowHeightPx
+                            scope.launch { vm.moveEnabled(from, target) }
+                        }
+                    },
+                    onDragEnd = {
+                        draggingOffsetY = 0f
+                        draggingEnabledIndex = null
+                        draggingKey = null
                     }
-                }
+                )
             }
             if (disabled.isNotEmpty()) item { SectionLabel("Disabled") }
             items(
@@ -195,30 +168,92 @@ fun PidToggleListScreen(
                 key = { pid -> pid.stableKey() },
             ) { pid ->
                 val pidKey = pid.stableKey()
-                PremiumCard(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(pid.name)
-                            Text(pid.displayRange(isMetric), color = Color.Gray)
-                        }
-                        Switch(
-                            checked = pid.enabled,
-                            onCheckedChange = { on -> scope.launch { vm.toggleById(pidKey, on) } },
-                        )
-                    }
-                }
+                DisabledPidListItem(
+                    pid = pid,
+                    isMetric = isMetric,
+                    onToggle = { on -> scope.launch { vm.toggleById(pidKey, on) } }
+                )
             }
         }
     }
 }
 
-private fun com.rheosoft.obdii.models.ObdiiPid.stableKey(): String =
+@Composable
+private fun EnabledPidListItem(
+    pid: ObdiiPid,
+    pidKey: String,
+    isMetric: Boolean,
+    isDragging: Boolean,
+    draggingOffsetY: Float,
+    onToggle: (Boolean) -> Unit,
+    onDragStart: () -> Unit,
+    onDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit
+) {
+    PremiumCard(
+        modifier = Modifier
+            .offset { IntOffset(0, if (isDragging) draggingOffsetY.roundToInt() else 0) }
+            .zIndex(if (isDragging) 1f else 0f)
+            .fillMaxWidth()
+            .padding(bottom = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .pointerInput(pidKey) {
+                    detectDragGestures(
+                        onDragStart = { onDragStart() },
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+                            onDrag(dragAmount.y)
+                        },
+                        onDragEnd = onDragEnd,
+                        onDragCancel = onDragEnd,
+                    )
+                }
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(pid.name)
+                Text(pid.displayRange(isMetric), color = Color.Gray)
+            }
+            Switch(
+                checked = pid.enabled,
+                onCheckedChange = onToggle,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DisabledPidListItem(
+    pid: ObdiiPid,
+    isMetric: Boolean,
+    onToggle: (Boolean) -> Unit
+) {
+    PremiumCard(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(pid.name)
+                Text(pid.displayRange(isMetric), color = Color.Gray)
+            }
+            Switch(
+                checked = pid.enabled,
+                onCheckedChange = onToggle,
+            )
+        }
+    }
+}
+
+private fun ObdiiPid.stableKey(): String =
     if (id.isNotBlank()) id else pidCommand
 
 private fun ObdiiPid.matchesQuery(query: String): Boolean =

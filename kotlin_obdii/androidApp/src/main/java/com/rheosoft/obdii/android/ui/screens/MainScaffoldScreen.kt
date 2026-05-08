@@ -120,40 +120,7 @@ fun KotlinObdiiApp(permissionsReady: Boolean = true) {
     ObservePidChanges(gaugePickerVm)
 
     Scaffold(
-        bottomBar = {
-            NavigationBar(
-                containerColor = Color(0xFFF1F3F8),
-                tonalElevation = 8.dp,
-                windowInsets = NavigationBarDefaults.windowInsets,
-            ) {
-                MainScaffoldScreenModel.destinations.forEachIndexed { idx, label ->
-                    NavigationBarItem(
-                        selected = selected == idx,
-                        onClick = { selected = idx },
-                        icon = {
-                            if (idx == 3) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_check_engine),
-                                    contentDescription = label,
-                                    modifier = Modifier.padding(top = 2.dp) // Optical alignment
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = when (idx) {
-                                        0 -> Icons.Outlined.Settings
-                                        1 -> Icons.Outlined.Speed
-                                        2 -> Icons.Outlined.LocalGasStation
-                                        else -> Icons.Outlined.Build
-                                    },
-                                    contentDescription = label,
-                                )
-                            }
-                        },
-                        label = { Text(label) },
-                    )
-                }
-            }
-        },
+        bottomBar = { ObdiiBottomNavigation(selected) { selected = it } },
         containerColor = AppBackground,
     ) { pad ->
         if (!ready) {
@@ -200,5 +167,41 @@ fun KotlinObdiiApp(permissionsReady: Boolean = true) {
     }
     selectedDtcDetail.value?.let { detail ->
         DtcDetailScreen(detail = detail, onClose = { selectedDtcDetail.value = null })
+    }
+}
+
+@Composable
+private fun ObdiiBottomNavigation(selected: Int, onSelectedChange: (Int) -> Unit) {
+    NavigationBar(
+        containerColor = Color(0xFFF1F3F8),
+        tonalElevation = 8.dp,
+        windowInsets = NavigationBarDefaults.windowInsets,
+    ) {
+        MainScaffoldScreenModel.destinations.forEachIndexed { idx, label ->
+            NavigationBarItem(
+                selected = selected == idx,
+                onClick = { onSelectedChange(idx) },
+                icon = {
+                    if (idx == 3) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_check_engine),
+                            contentDescription = label,
+                            modifier = Modifier.padding(top = 2.dp) // Optical alignment
+                        )
+                    } else {
+                        Icon(
+                            imageVector = when (idx) {
+                                0 -> Icons.Outlined.Settings
+                                1 -> Icons.Outlined.Speed
+                                2 -> Icons.Outlined.LocalGasStation
+                                else -> Icons.Outlined.Build
+                            },
+                            contentDescription = label,
+                        )
+                    }
+                },
+                label = { Text(label) },
+            )
+        }
     }
 }

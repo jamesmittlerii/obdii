@@ -466,36 +466,7 @@ class OBDConnectionManager extends ChangeNotifier
     bool changed = false;
 
     for (final entry in batch.entries) {
-      final cmdStr = entry.key.properties.command;
-      final decode = entry.value;
-
-      // Fuel status (mode1 0103)
-      if (cmdStr == '0103' && decode.codeResult != null) {
-        fuelStatus = decode.codeResult;
-        changed = true;
-        continue;
-      }
-
-      // MIL status (mode1 0101)
-      if (cmdStr == '0101' && decode.statusResult != null) {
-        milStatus = decode.statusResult;
-        changed = true;
-        continue;
-      }
-
-      // DTCs (mode3)
-      if (cmdStr == '03' && decode.troubleCodes != null) {
-        troubleCodes = decode.troubleCodes;
-        changed = true;
-        continue;
-      }
-
-      // Generic gauge
-      if (decode.measurementResult != null) {
-        final existing = pidStats[cmdStr];
-        pidStats[cmdStr] = existing != null
-            ? existing.copyWith(decode.measurementResult!)
-            : PIDStats(pid: cmdStr, latest: decode.measurementResult!);
+      if (_processDecodeResult(entry.key.properties.command, entry.value)) {
         changed = true;
       }
     }
@@ -505,6 +476,30 @@ class OBDConnectionManager extends ChangeNotifier
       notifyListeners();
     }
   }
+
+  bool _processDecodeResult(String cmdStr, obd2lib.DecodeResult decode) {
+    if (cmdStr == '0103' && decode.codeResult != null) {
+      fuelStatus = decode.codeResult;
+      return true;
+    }
+    if (cmdStr == '0101' && decode.statusResult != null) {
+      milStatus = decode.statusResult;
+      return true;
+    }
+    if (cmdStr == '03' && decode.troubleCodes != null) {
+      troubleCodes = decode.troubleCodes;
+      return true;
+    }
+    if (decode.measurementResult != null) {
+      final existing = pidStats[cmdStr];
+      pidStats[cmdStr] = existing != null
+          ? existing.copyWith(decode.measurementResult!)
+          : PIDStats(pid: cmdStr, latest: decode.measurementResult!);
+      return true;
+    }
+    return false;
+  }
+
 
   // ── Stats helpers ─────────────────────────────────
 

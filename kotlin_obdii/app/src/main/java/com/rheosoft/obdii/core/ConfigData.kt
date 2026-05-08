@@ -4,15 +4,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/*
-enum class MeasurementUnit(val displayName: String) {
-    metric("Metric"),
-    imperial("Imperial");
-
-    val next: MeasurementUnit
-        get() = if (this == metric) imperial else metric
-}
-*/
 enum class ConnectionType(val rawValue: String) {
     bluetooth("bluetooth"),
     wifi("wifi"),

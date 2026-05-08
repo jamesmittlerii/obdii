@@ -23,6 +23,8 @@ import com.rheosoft.obdii.core.protocols.CommunicationError
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CancellableContinuation
+import android.bluetooth.le.BluetoothLeScanner
 import no.nordicsemi.android.ble.BleManager
 import no.nordicsemi.android.ble.ktx.suspend
 import java.util.UUID
@@ -98,6 +100,8 @@ private class NordicGattManager(context: Context) : BleManager(context) {
     fun publicSetNotificationCallback(char: BluetoothGattCharacteristic) = setNotificationCallback(char)
 }
 
+private const val ERR_NOT_CONNECTED = "Not connected"
+
 class NordicBlePlatformAdapter(private val context: Context) : BlePlatformAdapter {
     private val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
     private val adapter: BluetoothAdapter? = bluetoothManager.adapter
@@ -112,50 +116,58 @@ class NordicBlePlatformAdapter(private val context: Context) : BlePlatformAdapte
         suspendCancellableCoroutine { continuation ->
             val found = LinkedHashMap<String, BlePeripheral>()
             val mainHandler = Handler(Looper.getMainLooper())
-            var completed = false
-
-            val callback = object : ScanCallback() {
-                override fun onScanResult(callbackType: Int, result: ScanResult) {
-                    val device = result.device ?: return
-                    val id = device.address ?: return
-                    devices[id] = device
-                    val peripheral = BlePeripheral(id = id, name = device.name, rssi = result.rssi)
-                    found[id] = peripheral
-                    
-                    if (!completed && isLikelyObdDevice(device.name)) {
-                        stop(this)
-                        if (continuation.isActive) continuation.resume(found.values.toList())
-                    }
-                }
-
-                override fun onScanFailed(errorCode: Int) {
-                    stop(this)
-                    if (continuation.isActive) continuation.resumeWithException(CommunicationError("Scan failed: $errorCode"))
-                }
-
-                private fun stop(cb: ScanCallback) {
-                    completed = true
-                    mainHandler.removeCallbacksAndMessages(null)
-                    runCatching { scanner.stopScan(cb) }
-                }
-            }
+            val callback = NordicScanCallback(found, continuation, mainHandler, scanner)
 
             val timeout = Runnable {
-                if (!completed) {
-                    completed = true
-                    runCatching { scanner.stopScan(callback) }
+                if (!callback.completed) {
+                    callback.stop()
                     if (continuation.isActive) continuation.resume(found.values.toList())
                 }
             }
 
             continuation.invokeOnCancellation {
-                completed = true
+                callback.stop()
                 mainHandler.removeCallbacks(timeout)
-                runCatching { scanner.stopScan(callback) }
             }
 
             scanner.startScan(null, ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build(), callback)
             mainHandler.postDelayed(timeout, timeoutMs)
+        }
+    }
+
+    private inner class NordicScanCallback(
+        private val found: LinkedHashMap<String, BlePeripheral>,
+        private val continuation: CancellableContinuation<List<BlePeripheral>>,
+        private val mainHandler: Handler,
+        private val scanner: BluetoothLeScanner
+    ) : ScanCallback() {
+        var completed = false
+
+        @SuppressLint("MissingPermission")
+        override fun onScanResult(callbackType: Int, result: ScanResult) {
+            val device = result.device ?: return
+            val id = device.address ?: return
+            devices[id] = device
+            val peripheral = BlePeripheral(id = id, name = device.name, rssi = result.rssi)
+            found[id] = peripheral
+            
+            if (!completed && isLikelyObdDevice(device.name)) {
+                stop()
+                if (continuation.isActive) continuation.resume(found.values.toList())
+            }
+        }
+
+        override fun onScanFailed(errorCode: Int) {
+            stop()
+            if (continuation.isActive) continuation.resumeWithException(CommunicationError("Scan failed: $errorCode"))
+        }
+
+        @SuppressLint("MissingPermission")
+        fun stop() {
+            if (completed) return
+            completed = true
+            mainHandler.removeCallbacksAndMessages(null)
+            runCatching { scanner.stopScan(this) }
         }
     }
 
@@ -179,17 +191,17 @@ class NordicBlePlatformAdapter(private val context: Context) : BlePlatformAdapte
     }
 
     override suspend fun discoverServices(peripheralId: String): List<BleService> {
-        val manager = managers[peripheralId] ?: throw CommunicationError("Not connected")
+        val manager = managers[peripheralId] ?: throw CommunicationError(ERR_NOT_CONNECTED)
         return manager.getDiscoveredServicesList()
     }
 
     override suspend fun discoverCharacteristics(peripheralId: String, serviceUuid: String): List<BleCharacteristic> {
-        val manager = managers[peripheralId] ?: throw CommunicationError("Not connected")
+        val manager = managers[peripheralId] ?: throw CommunicationError(ERR_NOT_CONNECTED)
         return manager.getCharacteristicsForService(serviceUuid)
     }
 
     override suspend fun enableNotifications(peripheralId: String, characteristicUuid: String) {
-        val manager = managers[peripheralId] ?: throw CommunicationError("Not connected")
+        val manager = managers[peripheralId] ?: throw CommunicationError(ERR_NOT_CONNECTED)
         val char = manager.getGattCharacteristic(characteristicUuid) ?: throw CommunicationError("Char not found")
         
         manager.publicSetNotificationCallback(char).with { _, data ->
@@ -199,7 +211,7 @@ class NordicBlePlatformAdapter(private val context: Context) : BlePlatformAdapte
     }
 
     override suspend fun write(peripheralId: String, characteristicUuid: String, payload: ByteArray) {
-        val manager = managers[peripheralId] ?: throw CommunicationError("Not connected")
+        val manager = managers[peripheralId] ?: throw CommunicationError(ERR_NOT_CONNECTED)
         val char = manager.getGattCharacteristic(characteristicUuid) ?: throw CommunicationError("Char not found")
         
         manager.publicWriteCharacteristic(char, payload, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT).suspend()

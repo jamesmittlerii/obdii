@@ -90,192 +90,39 @@ fun SettingsScreen(
                 }
             }
             Spacer(Modifier.height(8.dp))
-            SectionLabel("Units")
-            PremiumCard(modifier = Modifier.fillMaxWidth()) {
-                Box(modifier = Modifier.padding(10.dp)) {
-                    SegmentedPicker(
-                        options = listOf("Metric", "Imperial"),
-                        selectedIndex = if (selectedUnits == MeasurementUnit.Metric) 0 else 1,
-                        onOptionSelected = { index ->
-                            val next = if (index == 0) MeasurementUnit.Metric else MeasurementUnit.Imperial
-                            selectedUnits = next
-                            vm.onUnitsChanged(next)
-                        },
-                    )
-                }
+            UnitsSection(selectedUnits) { next ->
+                selectedUnits = next
+                vm.onUnitsChanged(next)
             }
             Spacer(Modifier.height(6.dp))
-            SectionLabel("Connection")
-            val connectionRowMinHeight = 52.dp
-            PremiumCard(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = connectionRowMinHeight)
-                        .padding(horizontal = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text("Status")
-                    val statusColor = when (statusLabel) {
-                        "Connected" -> Color(0xFF2E7D32)
-                        "Connecting..." -> Color(0xFFEF6C00)
-                        "Connected to Adapter..." -> Color(0xFF1976D2)
-                        "Setting up vehicle..." -> Color(0xFFEF6C00)
-                        "Failed" -> Color(0xFFC62828)
-                        else -> Color.Gray
-                    }
-                    Text(statusLabel, color = statusColor)
-                }
-                HorizontalDivider()
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = connectionRowMinHeight)
-                        .padding(horizontal = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text("Type")
-                    Box(contentAlignment = Alignment.CenterEnd) {
-                        TextButton(
-                            onClick = { typeMenuExpanded = true },
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
-                        ) {
-                            Text(
-                                when (selectedType) {
-                                    ConnectionType.demo -> "Demo"
-                                    ConnectionType.wifi -> "WiFi"
-                                    ConnectionType.bluetooth -> "Bluetooth LE"
-                                },
-                            )
-                            Icon(
-                                Icons.Outlined.ExpandMore,
-                                contentDescription = "Connection type menu",
-                                modifier = Modifier.padding(start = 4.dp),
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = typeMenuExpanded,
-                            onDismissRequest = { typeMenuExpanded = false },
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Demo") },
-                                onClick = {
-                                    selectedType = ConnectionType.demo
-                                    vm.onConnectionTypeChanged(ConnectionType.demo)
-                                    typeMenuExpanded = false
-                                },
-                            )
-                            DropdownMenuItem(
-                                text = { Text("WiFi") },
-                                onClick = {
-                                    selectedType = ConnectionType.wifi
-                                    vm.onConnectionTypeChanged(ConnectionType.wifi)
-                                    typeMenuExpanded = false
-                                },
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Bluetooth LE") },
-                                onClick = {
-                                    selectedType = ConnectionType.bluetooth
-                                    vm.onConnectionTypeChanged(ConnectionType.bluetooth)
-                                    typeMenuExpanded = false
-                                },
-                            )
-                        }
-                    }
-                }
-                HorizontalDivider()
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = connectionRowMinHeight)
-                        .padding(horizontal = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text("Automatically Connect")
-                    Switch(
-                        checked = autoConnect,
-                        onCheckedChange = {
-                            autoConnect = it
-                            vm.onAutoConnectChanged(it)
-                        },
-                    )
-                }
-                HorizontalDivider()
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = connectionRowMinHeight)
-                        .padding(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    TextButton(
-                        contentPadding = ButtonDefaults.TextButtonWithIconContentPadding,
-                        onClick = {
-                            vm.handleConnectionButtonTap()
-                        },
-                        enabled = !vm.isConnectButtonDisabled,
-                    ) {
-                        val isConnecting = vm.connectionState == OBDConnectionState.connecting ||
-                            vm.connectionState == OBDConnectionState.connectedToAdapter ||
-                            vm.connectionState == OBDConnectionState.settingUpVehicle
-
-                        if (isConnecting) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(connectButtonLabel)
-                                Spacer(Modifier.width(8.dp))
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(14.dp),
-                                    strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                        } else {
-                            Text(connectButtonLabel)
-                        }
-                    }
-                }
-            }
+            ConnectionSection(
+                statusLabel = statusLabel,
+                selectedType = selectedType,
+                typeMenuExpanded = typeMenuExpanded,
+                onTypeMenuExpandedChange = { typeMenuExpanded = it },
+                onTypeSelected = { type ->
+                    selectedType = type
+                    vm.onConnectionTypeChanged(type)
+                    typeMenuExpanded = false
+                },
+                autoConnect = autoConnect,
+                onAutoConnectChange = { 
+                    autoConnect = it
+                    vm.onAutoConnectChanged(it)
+                },
+                connectButtonLabel = connectButtonLabel,
+                isConnectButtonDisabled = vm.isConnectButtonDisabled,
+                connectionState = vm.connectionState,
+                onConnectTapped = { vm.handleConnectionButtonTap() }
+            )
             if (selectedType == ConnectionType.wifi) {
                 Spacer(Modifier.height(6.dp))
-                SectionLabel("Connection details")
-                PremiumCard(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text("Host")
-                        OutlinedTextField(
-                            value = uiState.wifiHost,
-                            onValueChange = vm::onWifiHostChanged,
-                            singleLine = true,
-                            modifier = Modifier.width(200.dp),
-                        )
-                    }
-                    HorizontalDivider()
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text("Port")
-                        OutlinedTextField(
-                            value = uiState.wifiPort.toString(),
-                            onValueChange = { it.toIntOrNull()?.let(vm::onWifiPortChanged) },
-                            singleLine = true,
-                            modifier = Modifier.width(200.dp),
-                        )
-                    }
-                }
+                ConnectionDetailsSection(
+                    wifiHost = uiState.wifiHost,
+                    onWifiHostChanged = vm::onWifiHostChanged,
+                    wifiPort = uiState.wifiPort,
+                    onWifiPortChanged = vm::onWifiPortChanged
+                )
             }
             Spacer(Modifier.height(8.dp))
             SectionLabel("Diagnostics")
@@ -308,6 +155,199 @@ fun SettingsScreen(
             PremiumCard(modifier = Modifier.fillMaxWidth()) {
                 Text(uiState.appVersion.ifEmpty { "Loading version…" }, modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp))
             }
+        }
+    }
+}
+
+@Composable
+private fun UnitsSection(selectedUnits: MeasurementUnit, onUnitsSelected: (MeasurementUnit) -> Unit) {
+    SectionLabel("Units")
+    PremiumCard(modifier = Modifier.fillMaxWidth()) {
+        Box(modifier = Modifier.padding(10.dp)) {
+            SegmentedPicker(
+                options = listOf("Metric", "Imperial"),
+                selectedIndex = if (selectedUnits == MeasurementUnit.Metric) 0 else 1,
+                onOptionSelected = { index ->
+                    onUnitsSelected(if (index == 0) MeasurementUnit.Metric else MeasurementUnit.Imperial)
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ConnectionSection(
+    statusLabel: String,
+    selectedType: ConnectionType,
+    typeMenuExpanded: Boolean,
+    onTypeMenuExpandedChange: (Boolean) -> Unit,
+    onTypeSelected: (ConnectionType) -> Unit,
+    autoConnect: Boolean,
+    onAutoConnectChange: (Boolean) -> Unit,
+    connectButtonLabel: String,
+    isConnectButtonDisabled: Boolean,
+    connectionState: OBDConnectionState,
+    onConnectTapped: () -> Unit
+) {
+    SectionLabel("Connection")
+    val connectionRowMinHeight = 52.dp
+    PremiumCard(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = connectionRowMinHeight)
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("Status")
+            val statusColor = when (statusLabel) {
+                "Connected" -> Color(0xFF2E7D32)
+                "Connecting..." -> Color(0xFFEF6C00)
+                "Connected to Adapter..." -> Color(0xFF1976D2)
+                "Setting up vehicle..." -> Color(0xFFEF6C00)
+                "Failed" -> Color(0xFFC62828)
+                else -> Color.Gray
+            }
+            Text(statusLabel, color = statusColor)
+        }
+        HorizontalDivider()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = connectionRowMinHeight)
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("Type")
+            Box(contentAlignment = Alignment.CenterEnd) {
+                TextButton(
+                    onClick = { onTypeMenuExpandedChange(true) },
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+                ) {
+                    Text(
+                        when (selectedType) {
+                            ConnectionType.demo -> "Demo"
+                            ConnectionType.wifi -> "WiFi"
+                            ConnectionType.bluetooth -> "Bluetooth LE"
+                        },
+                    )
+                    Icon(
+                        Icons.Outlined.ExpandMore,
+                        contentDescription = "Connection type menu",
+                        modifier = Modifier.padding(start = 4.dp),
+                    )
+                }
+                DropdownMenu(
+                    expanded = typeMenuExpanded,
+                    onDismissRequest = { onTypeMenuExpandedChange(false) },
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Demo") },
+                        onClick = { onTypeSelected(ConnectionType.demo) },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("WiFi") },
+                        onClick = { onTypeSelected(ConnectionType.wifi) },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Bluetooth LE") },
+                        onClick = { onTypeSelected(ConnectionType.bluetooth) },
+                    )
+                }
+            }
+        }
+        HorizontalDivider()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = connectionRowMinHeight)
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("Automatically Connect")
+            Switch(
+                checked = autoConnect,
+                onCheckedChange = onAutoConnectChange,
+            )
+        }
+        HorizontalDivider()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = connectionRowMinHeight)
+                .padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextButton(
+                contentPadding = ButtonDefaults.TextButtonWithIconContentPadding,
+                onClick = onConnectTapped,
+                enabled = !isConnectButtonDisabled,
+            ) {
+                val isConnecting = connectionState == OBDConnectionState.connecting ||
+                    connectionState == OBDConnectionState.connectedToAdapter ||
+                    connectionState == OBDConnectionState.settingUpVehicle
+
+                if (isConnecting) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(connectButtonLabel)
+                        Spacer(Modifier.width(8.dp))
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(14.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                } else {
+                    Text(connectButtonLabel)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConnectionDetailsSection(
+    wifiHost: String,
+    onWifiHostChanged: (String) -> Unit,
+    wifiPort: Int,
+    onWifiPortChanged: (Int) -> Unit
+) {
+    SectionLabel("Connection details")
+    PremiumCard(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("Host")
+            OutlinedTextField(
+                value = wifiHost,
+                onValueChange = onWifiHostChanged,
+                singleLine = true,
+                modifier = Modifier.width(200.dp),
+            )
+        }
+        HorizontalDivider()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("Port")
+            OutlinedTextField(
+                value = wifiPort.toString(),
+                onValueChange = { it.toIntOrNull()?.let(onWifiPortChanged) },
+                singleLine = true,
+                modifier = Modifier.width(200.dp),
+            )
         }
     }
 }

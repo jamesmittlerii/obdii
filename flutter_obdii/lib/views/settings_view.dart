@@ -33,6 +33,8 @@ class _SettingsViewState extends State<SettingsView> {
   String? _shareStatus;
   bool _shareStatusIsError = false;
 
+  static const _connectingLabel = 'Connecting…';
+
   @override
   void initState() {
     super.initState();
@@ -50,257 +52,29 @@ class _SettingsViewState extends State<SettingsView> {
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     // ── 1. Gauges nav link ────────────────────────
-              Card(
-                child: ListTile(
-                  title: const Text('Gauges'),
-                  trailing: Icon(
-                    Icons.chevron_right,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const PidToggleListView()),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
+                    _buildGaugesSection(context),
+                    const SizedBox(height: 16),
 
-              // ── 2. Units ──────────────────────────────────
-              _sectionHeader(context, 'Units'),
-              Card(
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  child: SegmentedButton<MeasurementUnit>(
-                    segments: const [
-                      ButtonSegment(
-                        value: MeasurementUnit.metric,
-                        label: Text('Metric'),
-                      ),
-                      ButtonSegment(
-                        value: MeasurementUnit.imperial,
-                        label: Text('Imperial'),
-                      ),
+                    // ── 2. Units ──────────────────────────────────
+                    _buildUnitsSection(context, vm),
+                    const SizedBox(height: 16),
+
+                    // ── 3. Connection ────────────────────────────
+                    _buildConnectionSection(context, vm),
+                    
+                    // ── 4. Connection Details (WiFi only) ─────────
+                    if (vm.connectionType == ConnectionType.wifi) ...[
+                      const SizedBox(height: 16),
+                      _buildConnectionDetailsSection(context, vm),
                     ],
-                    selected: {vm.units},
-                    onSelectionChanged: (s) => vm.onUnitsChanged(s.first),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-              // ── 3. Connection ────────────────────────────
-              _sectionHeader(context, 'Connection'),
-              Card(
-                child: Column(
-                  children: [
-                    // Status row
-                    ListTile(
-                      title: const Text('Status'),
-                      trailing: _statusText(vm.connectionState),
-                    ),
-                    const Divider(height: 1),
+                    // ── 5. Diagnostics ────────────────────────────
+                    _buildDiagnosticsSection(context),
+                    const SizedBox(height: 16),
 
-                    // Type picker
-                    ListTile(
-                      title: const Text('Type'),
-                      trailing: DropdownButtonHideUnderline(
-                        child: DropdownButton<ConnectionType>(
-                          value: vm.connectionType,
-                          isDense: true,
-                          focusColor: Colors.transparent,
-                          icon: Icon(
-                            Icons.arrow_drop_down,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          items: ConnectionType.values
-                              .map((t) => DropdownMenuItem(
-                                    value: t,
-                                    child: Text(t.displayName),
-                                  ))
-                              .toList(),
-                          onChanged: (v) {
-                            if (v != null) vm.onConnectionTypeChanged(v);
-                          },
-                        ),
-                      ),
-                    ),
-                    const Divider(height: 1),
-
-                    // Automatically Connect toggle
-                    SwitchListTile(
-                      title: const Text('Automatically Connect'),
-                      value: vm.autoConnectToOBD,
-                      onChanged: vm.onAutoConnectChanged,
-                    ),
-                    const Divider(height: 1),
-
-                    // Connect / Disconnect button (centered text, blue)
-                    Builder(
-                      builder: (context) {
-                        final state = vm.connectionState;
-                        final label = switch (state) {
-                          OBDConnectionState.disconnected => 'Connect',
-                          OBDConnectionState.connecting => 'Connecting…',
-                          OBDConnectionState.connectedToAdapter =>
-                            'Connecting…',
-                          OBDConnectionState.settingUpVehicle => 'Connecting…',
-                          OBDConnectionState.connected => 'Disconnect',
-                          OBDConnectionState.failed => 'Connect',
-                        };
-                        return TextButton(
-                          style: TextButton.styleFrom(
-                            minimumSize: const Size.fromHeight(56),
-                          ),
-                          onPressed: vm.isConnectButtonDisabled
-                              ? null
-                              : vm.handleConnectionButtonTap,
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 300),
-                            child: state == OBDConnectionState.connecting ||
-                                    state ==
-                                        OBDConnectionState.connectedToAdapter ||
-                                    state == OBDConnectionState.settingUpVehicle
-                                ? Row(
-                                    key: const ValueKey('loading'),
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(label),
-                                      const SizedBox(width: 8),
-                                      const SizedBox(
-                                        width: 14,
-                                        height: 14,
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2),
-                                      ),
-                                    ],
-                                  )
-                                : Text(label, key: const ValueKey('ready')),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              // ── 4. Connection Details (WiFi only) ─────────
-              if (vm.connectionType == ConnectionType.wifi) ...[
-                const SizedBox(height: 16),
-                _sectionHeader(context, 'Connection Details'),
-                Card(
-                  child: Column(
-                    children: [
-                      ListTile(
-                        title: const Text('Host'),
-                        trailing: SizedBox(
-                          width: 180,
-                          child: TextField(
-                            textAlign: TextAlign.right,
-                            decoration: InputDecoration(
-                              hintText: 'e.g. $defaultWifiHost',
-                              hintStyle: TextStyle(color: Colors.grey.shade600),
-                              border: InputBorder.none,
-                            ),
-                            keyboardType: TextInputType.url,
-                            autocorrect: false,
-                            controller: TextEditingController.fromValue(
-                              TextEditingValue(
-                                text: vm.wifiHost,
-                                selection: TextSelection.collapsed(
-                                    offset: vm.wifiHost.length),
-                              ),
-                            ),
-                            onChanged: vm.onWifiHostChanged,
-                          ),
-                        ),
-                      ),
-                      const Divider(height: 1),
-                      ListTile(
-                        title: const Text('Port'),
-                        trailing: SizedBox(
-                          width: 100,
-                          child: TextField(
-                            textAlign: TextAlign.right,
-                            decoration: InputDecoration(
-                              hintText: 'e.g. 35000',
-                              hintStyle: TextStyle(color: Colors.grey.shade600),
-                              border: InputBorder.none,
-                            ),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly
-                            ],
-                            controller: TextEditingController.fromValue(
-                              TextEditingValue(
-                                text: vm.wifiPort.toString(),
-                                selection: TextSelection.collapsed(
-                                    offset: vm.wifiPort.toString().length),
-                              ),
-                            ),
-                            onChanged: (v) {
-                              final port = int.tryParse(v);
-                              if (port != null) vm.onWifiPortChanged(port);
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-
-              // ── 5. Diagnostics ────────────────────────────
-              _sectionHeader(context, 'Diagnostics'),
-              Card(
-                child: ListTile(
-                  title: _isGeneratingLogs
-                      ? const Row(
-                          children: [
-                            SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2)),
-                            SizedBox(width: 10),
-                            Text('Preparing Logs…'),
-                          ],
-                        )
-                      : const Text('Share Logs'),
-                  trailing: _isGeneratingLogs
-                      ? null
-                      : Icon(
-                          Icons.ios_share,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 20,
-                        ),
-                  enabled: !_isGeneratingLogs,
-                  onTap: _shareLogs,
-                ),
-              ),
-              if (_shareStatus != null)
-                Padding(
-                  padding: const EdgeInsets.only(left: 16, top: 4),
-                  child: Text(
-                    _shareStatus!,
-                    style: TextStyle(
-                      color: _shareStatusIsError ? Colors.red : Colors.grey,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 16),
-
-              // ── 6. About ──────────────────────────────────
-              _sectionHeader(context, 'About'),
-              Card(
-                child: ListTile(
-                  title: Text(vm.appVersion.isNotEmpty
-                      ? vm.appVersion
-                      : 'Loading version…'),
-                ),
-              ),
+                    // ── 6. About ──────────────────────────────────
+                    _buildAboutSection(context, vm),
                   ]),
                 ),
               ),
@@ -311,12 +85,272 @@ class _SettingsViewState extends State<SettingsView> {
     );
   }
 
+  Widget _buildGaugesSection(BuildContext context) {
+    return Card(
+      child: ListTile(
+        title: const Text('Gauges'),
+        trailing: Icon(
+          Icons.chevron_right,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => const PidToggleListView()),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUnitsSection(BuildContext context, SettingsViewModel vm) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader(context, 'Units'),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: SegmentedButton<MeasurementUnit>(
+              segments: const [
+                ButtonSegment(
+                  value: MeasurementUnit.metric,
+                  label: Text('Metric'),
+                ),
+                ButtonSegment(
+                  value: MeasurementUnit.imperial,
+                  label: Text('Imperial'),
+                ),
+              ],
+              selected: {vm.units},
+              onSelectionChanged: (s) => vm.onUnitsChanged(s.first),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConnectionSection(BuildContext context, SettingsViewModel vm) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader(context, 'Connection'),
+        Card(
+          child: Column(
+            children: [
+              ListTile(
+                title: const Text('Status'),
+                trailing: _statusText(vm.connectionState),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                title: const Text('Type'),
+                trailing: DropdownButtonHideUnderline(
+                  child: DropdownButton<ConnectionType>(
+                    value: vm.connectionType,
+                    isDense: true,
+                    focusColor: Colors.transparent,
+                    icon: Icon(
+                      Icons.arrow_drop_down,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    items: ConnectionType.values
+                        .map((t) => DropdownMenuItem(
+                              value: t,
+                              child: Text(t.displayName),
+                            ))
+                        .toList(),
+                    onChanged: (v) {
+                      if (v != null) vm.onConnectionTypeChanged(v);
+                    },
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              SwitchListTile(
+                title: const Text('Automatically Connect'),
+                value: vm.autoConnectToOBD,
+                onChanged: vm.onAutoConnectChanged,
+              ),
+              const Divider(height: 1),
+              Builder(
+                builder: (context) {
+                  final state = vm.connectionState;
+                  final label = switch (state) {
+                    OBDConnectionState.disconnected => 'Connect',
+                    OBDConnectionState.connecting => _connectingLabel,
+                    OBDConnectionState.connectedToAdapter => _connectingLabel,
+                    OBDConnectionState.settingUpVehicle => _connectingLabel,
+                    OBDConnectionState.connected => 'Disconnect',
+                    OBDConnectionState.failed => 'Connect',
+                  };
+                  return TextButton(
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size.fromHeight(56),
+                    ),
+                    onPressed: vm.isConnectButtonDisabled
+                        ? null
+                        : vm.handleConnectionButtonTap,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: state == OBDConnectionState.connecting ||
+                              state == OBDConnectionState.connectedToAdapter ||
+                              state == OBDConnectionState.settingUpVehicle
+                          ? Row(
+                              key: const ValueKey('loading'),
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(label),
+                                const SizedBox(width: 8),
+                                const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ],
+                            )
+                          : Text(label, key: const ValueKey('ready')),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConnectionDetailsSection(BuildContext context, SettingsViewModel vm) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader(context, 'Connection Details'),
+        Card(
+          child: Column(
+            children: [
+              ListTile(
+                title: const Text('Host'),
+                trailing: SizedBox(
+                  width: 180,
+                  child: TextField(
+                    textAlign: TextAlign.right,
+                    decoration: InputDecoration(
+                      hintText: 'e.g. $defaultWifiHost',
+                      hintStyle: TextStyle(color: Colors.grey.shade600),
+                      border: InputBorder.none,
+                    ),
+                    keyboardType: TextInputType.url,
+                    autocorrect: false,
+                    controller: TextEditingController.fromValue(
+                      TextEditingValue(
+                        text: vm.wifiHost,
+                        selection: TextSelection.collapsed(offset: vm.wifiHost.length),
+                      ),
+                    ),
+                    onChanged: vm.onWifiHostChanged,
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                title: const Text('Port'),
+                trailing: SizedBox(
+                  width: 100,
+                  child: TextField(
+                    textAlign: TextAlign.right,
+                    decoration: InputDecoration(
+                      hintText: 'e.g. 35000',
+                      hintStyle: TextStyle(color: Colors.grey.shade600),
+                      border: InputBorder.none,
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    controller: TextEditingController.fromValue(
+                      TextEditingValue(
+                        text: vm.wifiPort.toString(),
+                        selection: TextSelection.collapsed(offset: vm.wifiPort.toString().length),
+                      ),
+                    ),
+                    onChanged: (v) {
+                      final port = int.tryParse(v);
+                      if (port != null) vm.onWifiPortChanged(port);
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDiagnosticsSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader(context, 'Diagnostics'),
+        Card(
+          child: ListTile(
+            title: _isGeneratingLogs
+                ? const Row(
+                    children: [
+                      SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2)),
+                      SizedBox(width: 10),
+                      Text('Preparing Logs…'),
+                    ],
+                  )
+                : const Text('Share Logs'),
+            trailing: _isGeneratingLogs
+                ? null
+                : Icon(
+                    Icons.ios_share,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 20,
+                  ),
+            enabled: !_isGeneratingLogs,
+            onTap: _shareLogs,
+          ),
+        ),
+        if (_shareStatus != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 16, top: 4),
+            child: Text(
+              _shareStatus!,
+              style: TextStyle(
+                color: _shareStatusIsError ? Colors.red : Colors.grey,
+                fontSize: 12,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildAboutSection(BuildContext context, SettingsViewModel vm) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader(context, 'About'),
+        Card(
+          child: ListTile(
+            title: Text(vm.appVersion.isNotEmpty ? vm.appVersion : 'Loading version…'),
+          ),
+        ),
+      ],
+    );
+  }
+
   // ── Status trailing text ───────────────────────────────
 
   Widget _statusText(OBDConnectionState state) {
     final (label, color) = switch (state) {
       OBDConnectionState.disconnected => ('Disconnected', Colors.grey),
-      OBDConnectionState.connecting => ('Connecting…', Colors.orange),
+      OBDConnectionState.connecting => (_connectingLabel, Colors.orange),
       OBDConnectionState.connectedToAdapter =>
         ('Connected to Adapter...', Colors.blue),
       OBDConnectionState.settingUpVehicle =>
@@ -366,63 +400,71 @@ class _SettingsViewState extends State<SettingsView> {
       final (:fileName, :bytes) = await vm.prepareLogExport();
 
       if (Platform.isWindows) {
-        final location = await getSaveLocation(
-          suggestedName: fileName,
-          acceptedTypeGroups: const [
-            XTypeGroup(
-              label: 'JSON',
-              extensions: ['json'],
-            ),
-          ],
-        );
-        if (location == null) {
-          return;
-        }
-        final outFile = File(location.path);
-        await outFile.writeAsBytes(bytes);
-        exportedPath = outFile.path;
-        if (mounted) {
-          setState(() {
-            _shareStatus = 'Log file exported to:\n$exportedPath';
-            _shareStatusIsError = false;
-          });
-        }
-        return;
+        exportedPath = await _exportLogsToWindows(fileName, bytes);
+      } else {
+        exportedPath = await _shareLogsToMobile(fileName, bytes);
       }
-
-      // Write to temp file
-      final tempDir = Directory.systemTemp;
-      final file = File('${tempDir.path}/$fileName');
-      await file.writeAsBytes(bytes);
-      exportedPath = file.path;
-
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path, mimeType: 'application/json')],
-          subject: fileName,
-        ),
-      );
     } catch (e) {
-      if (mounted) {
-        final message = e.toString();
-        final lowered = message.toLowerCase();
-        final shareSheetUnavailable =
-            lowered.contains('couldn\'t show you all the ways you could share') ||
-                lowered.contains('could not show you all the ways you could share');
-        setState(() {
-          _shareStatusIsError = true;
-          if (shareSheetUnavailable && exportedPath != null) {
-            _shareStatus =
-                'Share sheet unavailable on this device. Log file exported to:\n$exportedPath';
-            _shareStatusIsError = false; // This is a success fallback
-          } else {
-            _shareStatus = message;
-          }
-        });
-      }
+      _handleShareError(e, exportedPath);
     } finally {
       if (mounted) setState(() => _isGeneratingLogs = false);
     }
+  }
+
+  Future<String?> _exportLogsToWindows(String fileName, List<int> bytes) async {
+    final location = await getSaveLocation(
+      suggestedName: fileName,
+      acceptedTypeGroups: const [
+        XTypeGroup(
+          label: 'JSON',
+          extensions: ['json'],
+        ),
+      ],
+    );
+    if (location == null) return null;
+    
+    final outFile = File(location.path);
+    await outFile.writeAsBytes(bytes);
+    if (mounted) {
+      setState(() {
+        _shareStatus = 'Log file exported to:\n${outFile.path}';
+        _shareStatusIsError = false;
+      });
+    }
+    return outFile.path;
+  }
+
+  Future<String> _shareLogsToMobile(String fileName, List<int> bytes) async {
+    final tempDir = Directory.systemTemp;
+    final file = File('${tempDir.path}/$fileName');
+    await file.writeAsBytes(bytes);
+
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path, mimeType: 'application/json')],
+        subject: fileName,
+      ),
+    );
+    return file.path;
+  }
+
+  void _handleShareError(Object e, String? exportedPath) {
+    if (!mounted) return;
+    final message = e.toString();
+    final lowered = message.toLowerCase();
+    final shareSheetUnavailable =
+        lowered.contains('couldn\'t show you all the ways you could share') ||
+            lowered.contains('could not show you all the ways you could share');
+    setState(() {
+      _shareStatusIsError = true;
+      if (shareSheetUnavailable && exportedPath != null) {
+        _shareStatus =
+            'Share sheet unavailable on this device. Log file exported to:\n$exportedPath';
+        _shareStatusIsError = false; // This is a success fallback
+      } else {
+        _shareStatus = message;
+      }
+    });
   }
 }
 

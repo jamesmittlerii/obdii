@@ -38,8 +38,8 @@ class ObdLogger {
   
   final List<LogEntry> _history = [];
   static const int _maxHistory = 1000;
-  static final String _minLevelFromEnv =
-      const String.fromEnvironment('LOG_LEVEL', defaultValue: 'debug');
+  static const String _minLevelFromEnv =
+      String.fromEnvironment('LOG_LEVEL', defaultValue: 'debug');
 
   /// If true, logs won't be printed to the console (useful for tests).
   late bool mutesConsole;

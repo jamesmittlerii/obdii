@@ -9,7 +9,7 @@ interface AppConfigBootstrapper {
     fun load()
 }
 
-interface PidStoreBootstrapper {
+fun interface PidStoreBootstrapper {
     suspend fun load()
 }
 

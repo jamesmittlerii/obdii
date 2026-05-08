@@ -66,12 +66,12 @@ class ObdApp extends StatelessWidget {
           ),
           useMaterial3: true,
         ),
-        localizationsDelegates: [
+        localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        supportedLocales: [Locale('en', 'US')],
+        supportedLocales: const [Locale('en', 'US')],
         themeMode: ThemeMode.system,
         home: const MainScaffold(),
       ),

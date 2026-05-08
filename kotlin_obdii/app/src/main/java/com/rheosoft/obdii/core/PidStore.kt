@@ -32,7 +32,9 @@ class InMemoryPidStore(initial: List<ObdiiPid>) : PidStore {
     override val enabledGauges: List<ObdiiPid>
         get() = pids.filter { it.kind == ObdPidKind.gauge && it.enabled }
 
-    override suspend fun load() {}
+    override suspend fun load() {
+        // In-memory store does not require async loading
+    }
 
     override suspend fun toggle(pid: ObdiiPid) = mutex.withLock {
         val key = pid.stableKey()

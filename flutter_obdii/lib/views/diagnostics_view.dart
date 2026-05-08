@@ -47,83 +47,90 @@ class _DiagnosticsViewState extends State<DiagnosticsView> {
         builder: (context, vm, _) {
           return CustomScrollView(
             slivers: [
-              if (vm.codes == null)
-                SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(
-                          width: 36,
-                          height: 36,
-                          child: CircularProgressIndicator(strokeWidth: 3),
-                        ),
-                        const SizedBox(height: 16),
-                        const Text('Waiting for data…',
-                            style: TextStyle(color: Colors.grey)),
-                        if (vm.connectionState != OBDConnectionState.connected)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(
-                              'Connect to a vehicle in Settings.',
-                              style: TextStyle(
-                                  color: Colors.grey.shade600, fontSize: 12),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                )
-              else if (vm.sections.isEmpty)
-                const SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.check_circle_outline,
-                            size: 64, color: Colors.green),
-                        SizedBox(height: 16),
-                        Text('No Trouble Codes Found',
-                            style: TextStyle(fontSize: 18)),
-                        SizedBox(height: 4),
-                        Text('All systems normal.',
-                            style: TextStyle(color: Colors.grey)),
-                      ],
-                    ),
-                  ),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-              final section = vm.sections[index];
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _SectionHeader(severity: section.severity),
-                  Card(
-                    child: Column(
-                      children: [
-                        for (int i = 0; i < section.items.length; i++) ...[
-                          if (i > 0) const Divider(height: 1),
-                          _DtcRow(dtc: section.items[i]),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              );
-                    },
-                      childCount: vm.sections.length,
-                    ),
-                  ),
-                ),
+              _buildSliverContent(vm),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildSliverContent(DiagnosticsViewModel vm) {
+    if (vm.codes == null) {
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(
+                width: 36,
+                height: 36,
+                child: CircularProgressIndicator(strokeWidth: 3),
+              ),
+              const SizedBox(height: 16),
+              const Text('Waiting for data…',
+                  style: TextStyle(color: Colors.grey)),
+              if (vm.connectionState != OBDConnectionState.connected)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Connect to a vehicle in Settings.',
+                    style: TextStyle(
+                        color: Colors.grey.shade600, fontSize: 12),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    if (vm.sections.isEmpty) {
+      return const SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.check_circle_outline,
+                  size: 64, color: Colors.green),
+              SizedBox(height: 16),
+              Text('No Trouble Codes Found',
+                  style: TextStyle(fontSize: 18)),
+              SizedBox(height: 4),
+              Text('All systems normal.',
+                  style: TextStyle(color: Colors.grey)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final section = vm.sections[index];
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _SectionHeader(severity: section.severity),
+                Card(
+                  child: Column(
+                    children: [
+                      for (int i = 0; i < section.items.length; i++) ...[
+                        if (i > 0) const Divider(height: 1),
+                        _DtcRow(dtc: section.items[i]),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            );
+          },
+          childCount: vm.sections.length,
+        ),
       ),
     );
   }

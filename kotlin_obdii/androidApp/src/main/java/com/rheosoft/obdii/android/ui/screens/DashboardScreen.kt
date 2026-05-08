@@ -70,15 +70,6 @@ fun DashboardScreen(
     val enabled = uiState.tiles
     val listMode = uiState.displayMode == GaugesDisplayMode.list
 
-    var draggingKey by remember { mutableStateOf<String?>(null) }
-    var draggingIndex by remember { mutableStateOf<Int?>(null) }
-    var draggingOffsetY by remember { mutableFloatStateOf(0f) }
-    val rowHeightPx = with(LocalDensity.current) { 76.dp.toPx() } // Estimated for list row
-
-    var draggingGridKey by remember { mutableStateOf<String?>(null) }
-    var draggingGridIndex by remember { mutableStateOf<Int?>(null) }
-    var draggingGridOffset by remember { mutableStateOf(Offset.Zero) }
-
     LazyColumn(modifier = modifier.fillMaxSize().padding(16.dp)) {
         item {
             SegmentedPicker(
@@ -100,181 +91,213 @@ fun DashboardScreen(
                 items = enabled,
                 key = { _, tile -> tile.pid.stableKey() },
             ) { index, tile ->
-                val gauge = RingGaugeModel(tile.pid, tile.stats?.latest?.value, isMetric)
-                val valueColor = when (gauge.progressColor) {
-                    PidColor.GREEN -> Color(0xFF4CAF50)
-                    PidColor.ORANGE -> Color(0xFFFF9800)
-                    PidColor.RED -> Color(0xFFE53935)
-                    PidColor.BLUE_GREY -> Color.Gray
+                DashboardListRow(tile, index, isMetric, enabled, view, scope, onGaugeTap)
+            }
+            return@LazyColumn
+        }
+        item {
+            DashboardGridMode(enabled, isMetric, view, scope, onGaugeTap)
+        }
+    }
+}
+
+@Composable
+private fun DashboardListRow(
+    tile: GaugeTile,
+    index: Int,
+    isMetric: Boolean,
+    enabled: List<GaugeTile>,
+    view: DashboardScreenModel,
+    scope: CoroutineScope,
+    onGaugeTap: (ObdiiPid) -> Unit
+) {
+    var draggingKey by remember { mutableStateOf<String?>(null) }
+    var draggingIndex by remember { mutableStateOf<Int?>(null) }
+    var draggingOffsetY by remember { mutableFloatStateOf(0f) }
+    val rowHeightPx = with(LocalDensity.current) { 76.dp.toPx() } // Estimated for list row
+
+    val gauge = RingGaugeModel(tile.pid, tile.stats?.latest?.value, isMetric)
+    val valueColor = when (gauge.progressColor) {
+        PidColor.GREEN -> Color(0xFF4CAF50)
+        PidColor.ORANGE -> Color(0xFFFF9800)
+        PidColor.RED -> Color(0xFFE53935)
+        PidColor.BLUE_GREY -> Color.Gray
+    }
+    val isDragging = (draggingKey == tile.pid.stableKey()) && (draggingIndex == index)
+    PremiumCard(
+        modifier = Modifier
+            .offset { IntOffset(0, if (isDragging) draggingOffsetY.roundToInt() else 0) }
+            .zIndex(if (isDragging) 1f else 0f)
+            .fillMaxWidth()
+            .padding(bottom = 6.dp)
+            .clickable { onGaugeTap(tile.pid) },
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .pointerInput(tile.pid.stableKey()) {
+                    detectDragGestures(
+                        onDragStart = {
+                            val currentIndex = enabled.indexOfFirst { it.pid.stableKey() == tile.pid.stableKey() }
+                            if (currentIndex != -1) {
+                                draggingKey = tile.pid.stableKey()
+                                draggingIndex = currentIndex
+                                draggingOffsetY = 0f
+                            }
+                        },
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+                            draggingOffsetY += dragAmount.y
+                            val from = draggingIndex ?: return@detectDragGestures
+                            val shift = (draggingOffsetY / rowHeightPx).toInt()
+                            val target = (from + shift).coerceIn(0, enabled.lastIndex)
+                            if (target != from) {
+                                draggingIndex = target
+                                draggingOffsetY -= (target - from) * rowHeightPx
+                                scope.launch { view.viewModel.moveEnabled(from, target) }
+                            }
+                        },
+                        onDragEnd = {
+                            draggingKey = null
+                            draggingIndex = null
+                            draggingOffsetY = 0f
+                        },
+                        onDragCancel = {
+                            draggingKey = null
+                            draggingIndex = null
+                            draggingOffsetY = 0f
+                        },
+                    )
                 }
-                val isDragging = (draggingKey == tile.pid.stableKey()) && (draggingIndex == index)
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = tile.pid.name,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(tile.pid.displayRange(isMetric), color = Color.Gray)
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End
+            ) {
+                Text(
+                    text = tile.stats?.let { tile.pid.formattedValue(it.latest.value, isMetric, includeUnits = true) }
+                        ?: "— ${tile.pid.unitLabel(isMetric)}",
+                    color = valueColor,
+                    textAlign = TextAlign.End,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Spacer(Modifier.width(4.dp))
+                Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = Color.Gray)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DashboardGridMode(
+    enabled: List<GaugeTile>,
+    isMetric: Boolean,
+    view: DashboardScreenModel,
+    scope: CoroutineScope,
+    onGaugeTap: (ObdiiPid) -> Unit
+) {
+    var draggingGridKey by remember { mutableStateOf<String?>(null) }
+    var draggingGridIndex by remember { mutableStateOf<Int?>(null) }
+    var draggingGridOffset by remember { mutableStateOf(Offset.Zero) }
+
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val gridWidth = this.maxWidth
+        val columns = (gridWidth / 160.dp).toInt().coerceAtLeast(1)
+        val itemWidthPx = with(LocalDensity.current) { (gridWidth / columns).toPx() }
+        val itemHeightPx = itemWidthPx * 1.1f // Approximate height based on aspect ratio and label
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(columns),
+            modifier = Modifier.fillMaxWidth().height(520.dp)
+        ) {
+            itemsIndexed(
+                items = enabled,
+                key = { _, tile -> tile.pid.stableKey() },
+            ) { _, tile ->
+                val isDragging = draggingGridKey == tile.pid.stableKey()
                 PremiumCard(
                     modifier = Modifier
-                        .offset { IntOffset(0, if (isDragging) draggingOffsetY.roundToInt() else 0) }
+                        .offset {
+                            if (isDragging) {
+                                IntOffset(
+                                    draggingGridOffset.x.roundToInt(),
+                                    draggingGridOffset.y.roundToInt()
+                                )
+                            } else {
+                                IntOffset.Zero
+                            }
+                        }
                         .zIndex(if (isDragging) 1f else 0f)
+                        .padding(6.dp)
                         .fillMaxWidth()
-                        .padding(bottom = 6.dp)
-                        .clickable { onGaugeTap(tile.pid) },
+                        .clickable { onGaugeTap(tile.pid) }
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .pointerInput(tile.pid.stableKey()) {
                                 detectDragGestures(
                                     onDragStart = {
-                                        val currentTiles = uiState.tiles
-                                        val currentIndex = currentTiles.indexOfFirst { it.pid.stableKey() == tile.pid.stableKey() }
+                                        val currentIndex = enabled.indexOfFirst { it.pid.stableKey() == tile.pid.stableKey() }
                                         if (currentIndex != -1) {
-                                            draggingKey = tile.pid.stableKey()
-                                            draggingIndex = currentIndex
-                                            draggingOffsetY = 0f
+                                            draggingGridKey = tile.pid.stableKey()
+                                            draggingGridIndex = currentIndex
+                                            draggingGridOffset = Offset.Zero
                                         }
                                     },
                                     onDrag = { change, dragAmount ->
                                         change.consume()
-                                        draggingOffsetY += dragAmount.y
-                                        val from = draggingIndex ?: return@detectDragGestures
-                                        val shift = (draggingOffsetY / rowHeightPx).toInt()
-                                        val target = (from + shift).coerceIn(0, enabled.lastIndex)
-                                        if (target != from) {
-                                            draggingIndex = target
-                                            draggingOffsetY -= (target - from) * rowHeightPx
-                                            scope.launch { view.viewModel.moveEnabled(from, target) }
+                                        draggingGridOffset += dragAmount
+                                        val from = draggingGridIndex ?: return@detectDragGestures
+                                        val colShift = (draggingGridOffset.x / itemWidthPx).roundToInt()
+                                        val rowShift = (draggingGridOffset.y / itemHeightPx).roundToInt()
+
+                                        if ((colShift != 0) || (rowShift != 0)) {
+                                            val target = (from + rowShift * columns + colShift)
+                                                .coerceIn(0, enabled.lastIndex)
+                                            if (target != from) {
+                                                draggingGridIndex = target
+                                                draggingGridOffset -= Offset(
+                                                    (target % columns - from % columns) * itemWidthPx,
+                                                    (target / columns - from / columns) * itemHeightPx
+                                                )
+                                                scope.launch { view.viewModel.moveEnabled(from, target) }
+                                            }
                                         }
                                     },
                                     onDragEnd = {
-                                        draggingKey = null
-                                        draggingIndex = null
-                                        draggingOffsetY = 0f
+                                        draggingGridKey = null
+                                        draggingGridIndex = null
+                                        draggingGridOffset = Offset.Zero
                                     },
                                     onDragCancel = {
-                                        draggingKey = null
-                                        draggingIndex = null
-                                        draggingOffsetY = 0f
-                                    },
+                                        draggingGridKey = null
+                                        draggingGridIndex = null
+                                        draggingGridOffset = Offset.Zero
+                                    }
                                 )
                             }
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = tile.pid.name,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Text(tile.pid.displayRange(isMetric), color = Color.Gray)
-                        }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            Text(
-                                text = tile.stats?.let { tile.pid.formattedValue(it.latest.value, isMetric, includeUnits = true) }
-                                    ?: "— ${tile.pid.unitLabel(isMetric)}",
-                                color = valueColor,
-                                textAlign = TextAlign.End,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = Color.Gray)
-                        }
-                    }
-                }
-            }
-            return@LazyColumn
-        }
-        item {
-            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                val gridWidth = this.maxWidth
-                val columns = (gridWidth / 160.dp).toInt().coerceAtLeast(1)
-                val itemWidthPx = with(LocalDensity.current) { (gridWidth / columns).toPx() }
-                val itemHeightPx = itemWidthPx * 1.1f // Approximate height based on aspect ratio and label
-
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(columns),
-                    modifier = Modifier.fillMaxWidth().height(520.dp)
-                ) {
-                    itemsIndexed(
-                        items = enabled,
-                        key = { _, tile -> tile.pid.stableKey() },
-                    ) { _, tile ->
-                        val isDragging = draggingGridKey == tile.pid.stableKey()
-                        PremiumCard(
-                            modifier = Modifier
-                                .offset {
-                                    if (isDragging) {
-                                        IntOffset(
-                                            draggingGridOffset.x.roundToInt(),
-                                            draggingGridOffset.y.roundToInt()
-                                        )
-                                    } else {
-                                        IntOffset.Zero
-                                    }
-                                }
-                                .zIndex(if (isDragging) 1f else 0f)
-                                .padding(6.dp)
-                                .fillMaxWidth()
-                                .clickable { onGaugeTap(tile.pid) }
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .pointerInput(tile.pid.stableKey()) {
-                                        detectDragGestures(
-                                            onDragStart = {
-                                                val currentTiles = uiState.tiles
-                                                val currentIndex = currentTiles.indexOfFirst { it.pid.stableKey() == tile.pid.stableKey() }
-                                                if (currentIndex != -1) {
-                                                    draggingGridKey = tile.pid.stableKey()
-                                                    draggingGridIndex = currentIndex
-                                                    draggingGridOffset = Offset.Zero
-                                                }
-                                            },
-                                            onDrag = { change, dragAmount ->
-                                                change.consume()
-                                                draggingGridOffset += dragAmount
-                                                val from = draggingGridIndex ?: return@detectDragGestures
-                                                val colShift = (draggingGridOffset.x / itemWidthPx).roundToInt()
-                                                val rowShift = (draggingGridOffset.y / itemHeightPx).roundToInt()
-
-                                                if ((colShift != 0) || (rowShift != 0)) {
-                                                    val target = (from + rowShift * columns + colShift)
-                                                        .coerceIn(0, enabled.lastIndex)
-                                                    if (target != from) {
-                                                        draggingGridIndex = target
-                                                        draggingGridOffset -= Offset(
-                                                            (target % columns - from % columns) * itemWidthPx,
-                                                            (target / columns - from / columns) * itemHeightPx
-                                                        )
-                                                        scope.launch { view.viewModel.moveEnabled(from, target) }
-                                                    }
-                                                }
-                                            },
-                                            onDragEnd = {
-                                                draggingGridKey = null
-                                                draggingGridIndex = null
-                                                draggingGridOffset = Offset.Zero
-                                            },
-                                            onDragCancel = {
-                                                draggingGridKey = null
-                                                draggingGridIndex = null
-                                                draggingGridOffset = Offset.Zero
-                                            }
-                                        )
-                                    }
-                                    .padding(10.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                            ) {
-                                RingGaugeMini(tile = tile, isMetric = isMetric, modifier = Modifier.fillMaxWidth())
-                                Text(tile.pid.label, fontWeight = FontWeight.SemiBold)
-                            }
-                        }
+                        RingGaugeMini(tile = tile, isMetric = isMetric, modifier = Modifier.fillMaxWidth())
+                        Text(tile.pid.label, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
         }
     }
 }
+
 
 @Composable
 private fun RingGaugeMini(tile: GaugeTile, isMetric: Boolean, modifier: Modifier = Modifier) {

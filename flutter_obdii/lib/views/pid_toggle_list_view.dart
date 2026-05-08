@@ -96,10 +96,8 @@ class _PidToggleListViewState extends State<PidToggleListView> {
   Widget _buildList(PidToggleListViewModel vm, bool isMetric) {
     final enabled = vm.filteredEnabled;
     final disabled = vm.filteredDisabled;
-    final noResults =
-        enabled.isEmpty && disabled.isEmpty && vm.searchText.isNotEmpty;
 
-    if (noResults) {
+    if (enabled.isEmpty && disabled.isEmpty && vm.searchText.isNotEmpty) {
       return Center(
         child: Text(
           'No results for "${vm.searchText}"',
@@ -108,87 +106,91 @@ class _PidToggleListViewState extends State<PidToggleListView> {
       );
     }
 
+    int itemCount = 0;
+    if (enabled.isNotEmpty) itemCount += enabled.length + 1;
+    if (disabled.isNotEmpty) itemCount += disabled.length + 1;
+
     return ReorderableListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
       proxyDecorator: (child, _, _) =>
           Material(type: MaterialType.transparency, child: child),
-      onReorder: (oldIndex, newIndex) {
-        // Index 0 is the Enabled header; enabled rows are [1..enabled.length].
-        // Flutter reports newIndex as insertion index in visual list.
-        final isFromEnabledRow = oldIndex > 0 && oldIndex <= enabled.length;
-        final isToEnabledRegion =
-            newIndex > 0 && newIndex <= enabled.length + 1;
-        if (!isFromEnabledRow || !isToEnabledRegion) return;
-
-        final from = oldIndex - 1;
-        var to = newIndex - 1;
-        if (to > from) to -= 1;
-        if (to < 0) to = 0;
-        if (to >= enabled.length) to = enabled.length - 1;
-        if (to == from) return;
-
-        vm.moveEnabled(from, to);
-      },
-      itemCount:
-          enabled.length +
-          (enabled.isNotEmpty ? 1 : 0) +
-          disabled.length +
-          (disabled.isNotEmpty ? 1 : 0),
+      onReorder: (oldIndex, newIndex) =>
+          _handleReorder(oldIndex, newIndex, vm, enabled.length),
+      itemCount: itemCount,
       buildDefaultDragHandles: false,
-      itemBuilder: (context, index) {
-        // Section header: Enabled
-        if (enabled.isNotEmpty && index == 0) {
-          return _sectionHeader(
-            context,
-            'Enabled',
-            key: const Key('header_enabled'),
-          );
-        }
-        // Enabled rows
-        if (enabled.isNotEmpty && index <= enabled.length) {
-          final pidIndex = index - 1;
-          final pid = enabled[pidIndex];
-          return _PidToggleRow(
-            key: Key('enabled_${pid.id}'),
-            pid: pid,
-            isMetric: isMetric,
-            isOn: pid.enabled,
-            reorderIndex: pidIndex,
-            onToggle: (v) {
-              final globalIdx = vm.pids.indexWhere((p) => p.id == pid.id);
-              if (globalIdx >= 0) vm.toggle(globalIdx, v);
-            },
-            canReorder: vm.searchText.isEmpty,
-          );
-        }
+      itemBuilder: (context, index) =>
+          _buildListItem(context, index, vm, isMetric),
+    );
+  }
 
-        // Offset past the enabled section
-        final disabledStart = enabled.isNotEmpty ? enabled.length + 1 : 0;
+  void _handleReorder(
+      int oldIndex, int newIndex, PidToggleListViewModel vm, int enabledLength) {
+    // Index 0 is the Enabled header; enabled rows are [1..enabled.length].
+    // Flutter reports newIndex as insertion index in visual list.
+    final isFromEnabledRow = oldIndex > 0 && oldIndex <= enabledLength;
+    final isToEnabledRegion = newIndex > 0 && newIndex <= enabledLength + 1;
+    if (!isFromEnabledRow || !isToEnabledRegion) return;
 
-        // Section header: Disabled
-        if (disabled.isNotEmpty && index == disabledStart) {
-          return _sectionHeader(
-            context,
-            'Disabled',
-            key: const Key('header_disabled'),
-          );
-        }
+    final from = oldIndex - 1;
+    var to = newIndex - 1;
+    if (to > from) to -= 1;
+    if (to < 0) to = 0;
+    if (to >= enabledLength) to = enabledLength - 1;
+    if (to == from) return;
 
-        // Disabled rows
-        final pid = disabled[index - disabledStart - 1];
-        return _PidToggleRow(
-          key: Key('disabled_${pid.id}'),
-          pid: pid,
-          isMetric: isMetric,
-          isOn: pid.enabled,
-          reorderIndex: null, // not reorderable
-          onToggle: (v) {
-            final globalIdx = vm.pids.indexWhere((p) => p.id == pid.id);
-            if (globalIdx >= 0) vm.toggle(globalIdx, v);
-          },
-          canReorder: false,
-        );
+    vm.moveEnabled(from, to);
+  }
+
+  Widget _buildListItem(
+      BuildContext context, int index, PidToggleListViewModel vm, bool isMetric) {
+    final enabled = vm.filteredEnabled;
+    final disabled = vm.filteredDisabled;
+
+    if (enabled.isNotEmpty && index <= enabled.length) {
+      return _buildEnabledSectionItem(context, index, enabled, vm, isMetric);
+    }
+
+    final disabledStart = enabled.isNotEmpty ? enabled.length + 1 : 0;
+    if (disabled.isNotEmpty && index >= disabledStart) {
+      return _buildDisabledSectionItem(context, index - disabledStart, disabled, vm, isMetric);
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildEnabledSectionItem(BuildContext context, int index, List<ObdiiPid> enabled, PidToggleListViewModel vm, bool isMetric) {
+    if (index == 0) {
+      return _sectionHeader(context, 'Enabled', key: const Key('header_enabled'));
+    }
+    final pidIndex = index - 1;
+    return _buildRow(enabled[pidIndex], pidIndex, vm, isMetric, prefix: 'enabled', isEnabledSection: true);
+  }
+
+  Widget _buildDisabledSectionItem(BuildContext context, int relativeIndex, List<ObdiiPid> disabled, PidToggleListViewModel vm, bool isMetric) {
+    if (relativeIndex == 0) {
+      return _sectionHeader(context, 'Disabled', key: const Key('header_disabled'));
+    }
+    final pidIndex = relativeIndex - 1;
+    if (pidIndex < disabled.length) {
+      return _buildRow(disabled[pidIndex], null, vm, isMetric, prefix: 'disabled', isEnabledSection: false);
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildRow(
+      ObdiiPid pid, int? reorderIndex, PidToggleListViewModel vm, bool isMetric,
+      {required String prefix, required bool isEnabledSection}) {
+    return _PidToggleRow(
+      key: Key('${prefix}_${pid.id}'),
+      pid: pid,
+      isMetric: isMetric,
+      isOn: pid.enabled,
+      reorderIndex: reorderIndex,
+      onToggle: (v) {
+        final globalIdx = vm.pids.indexWhere((p) => p.id == pid.id);
+        if (globalIdx >= 0) vm.toggle(globalIdx, v);
       },
+      canReorder: vm.searchText.isEmpty && isEnabledSection,
     );
   }
 

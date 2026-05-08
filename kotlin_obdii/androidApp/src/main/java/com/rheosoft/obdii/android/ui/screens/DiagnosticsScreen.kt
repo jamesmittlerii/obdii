@@ -71,58 +71,68 @@ fun DiagnosticsScreen(view: DiagnosticsScreenModel, modifier: Modifier, onDtcTap
             Text(state.title)
             Text(state.subtitle, color = Color.Gray)
         }
-        is DiagnosticsContentState.Sections -> LazyColumn(modifier = modifier.fillMaxSize().padding(16.dp)) {
-            items(state.sections) { section ->
-                SectionLabel(section.header)
-                section.rows.forEach { row ->
-                    PremiumCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp)
-                            .clickable {
-                                val raw = view.viewModel.sections
-                                    .asSequence()
-                                    .flatMap { it.items }
-                                    .firstOrNull { it.code == row.code }
-                                raw?.let { onDtcTap(view.detailFor(it)) }
-                            },
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
+        is DiagnosticsContentState.Sections -> DiagnosticsSections(state = state, view = view, onDtcTap = onDtcTap, modifier = modifier)
+    }
+}
+
+@Composable
+private fun DiagnosticsSections(
+    state: DiagnosticsContentState.Sections,
+    view: DiagnosticsScreenModel,
+    onDtcTap: (DtcDetailScreenModel) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(modifier = modifier.fillMaxSize().padding(16.dp)) {
+        items(state.sections) { section ->
+            SectionLabel(section.header)
+            section.rows.forEach { row ->
+                PremiumCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                        .clickable {
+                            val raw = view.viewModel.sections
+                                .asSequence()
+                                .flatMap { it.items }
+                                .firstOrNull { it.code == row.code }
+                            raw?.let { onDtcTap(view.detailFor(it)) }
+                        },
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(
-                                    modifier = Modifier.weight(1f),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = when (row.severityIcon) {
-                                            "cancel_outlined", "electric_bolt", "warning_amber_outlined" -> Icons.Outlined.WarningAmber
-                                            else -> Icons.Outlined.Info
-                                        },
-                                        contentDescription = null,
-                                        tint = when (row.severityIcon) {
-                                            "cancel_outlined" -> Color.Red
-                                            "electric_bolt" -> Color(0xFFFF9800)
-                                            "warning_amber_outlined" -> Color(0xFFFFC107)
-                                            else -> Color(0xFF2196F3)
-                                        },
-                                    )
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        text = row.title,
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                }
                                 Icon(
-                                    imageVector = Icons.Outlined.ChevronRight,
-                                    contentDescription = "Details",
-                                    tint = Color.Gray,
-                                    modifier = Modifier.padding(start = 8.dp)
+                                    imageVector = when (row.severityIcon) {
+                                        "cancel_outlined", "electric_bolt", "warning_amber_outlined" -> Icons.Outlined.WarningAmber
+                                        else -> Icons.Outlined.Info
+                                    },
+                                    contentDescription = null,
+                                    tint = when (row.severityIcon) {
+                                        "cancel_outlined" -> Color.Red
+                                        "electric_bolt" -> Color(0xFFFF9800)
+                                        "warning_amber_outlined" -> Color(0xFFFFC107)
+                                        else -> Color(0xFF2196F3)
+                                    },
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = row.title,
+                                    style = MaterialTheme.typography.bodyLarge
                                 )
                             }
+                            Icon(
+                                imageVector = Icons.Outlined.ChevronRight,
+                                contentDescription = "Details",
+                                tint = Color.Gray,
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
                         }
                     }
                 }
@@ -158,109 +168,114 @@ fun DtcDetailScreen(detail: DtcDetailScreenModel, onClose: () -> Unit) {
                     SectionLabel(header)
                     PremiumCard(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
                         Column(modifier = Modifier.fillMaxWidth()) {
-                            when (header) {
-                                "Overview" -> {
-                                    detail.overviewRows.forEachIndexed { index, (k, v) ->
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.Top
-                                        ) {
-                                            Text(
-                                                text = k,
-                                                color = Color.Gray.copy(alpha = 0.6f),
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                modifier = Modifier.padding(top = 2.dp)
-                                            )
-                                            val valueColor = if (k == "Severity") {
-                                                when (v) {
-                                                    "Critical" -> Color.Red
-                                                    "High" -> Color(0xFFFF9800)
-                                                    "Moderate" -> Color(0xFFFFC107)
-                                                    "Low" -> Color(0xFF2196F3)
-                                                    else -> MaterialTheme.colorScheme.onSurface
-                                                }
-                                            } else {
-                                                MaterialTheme.colorScheme.onSurface
-                                            }
-                                            Text(
-                                                text = v,
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                color = valueColor,
-                                                textAlign = androidx.compose.ui.text.style.TextAlign.End,
-                                                modifier = Modifier.weight(1f).padding(start = 16.dp)
-                                            )
-                                        }
-                                        if (index < detail.overviewRows.size - 1) {
-                                            HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.3f))
-                                        }
-                                    }
-                                }
-                                "Description" -> {
-                                    Text(
-                                        text = detail.description,
-                                        modifier = Modifier.padding(16.dp),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        lineHeight = 24.sp
-                                    )
-                                }
-                                "Potential causes" -> {
-                                    detail.causes.forEachIndexed { index, cause ->
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 16.dp, vertical = 1.dp),
-                                            verticalAlignment = Alignment.Top
-                                        ) {
-                                            Text(
-                                                text = "•",
-                                                modifier = Modifier.padding(end = 12.dp),
-                                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 22.sp),
-                                                color = Color(0xFF2196F3)
-                                            )
-                                            Text(
-                                                text = cause,
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                modifier = Modifier.weight(1f).padding(top = 3.dp)
-                                            )
-                                        }
-                                        if (index < detail.causes.size - 1) {
-                                            HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.3f))
-                                        }
-                                    }
-                                }
-                                "Possible remedies" -> {
-                                    detail.remedies.forEachIndexed { index, remedy ->
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 16.dp, vertical = 1.dp),
-                                            verticalAlignment = Alignment.Top
-                                        ) {
-                                            Text(
-                                                text = "•",
-                                                modifier = Modifier.padding(end = 12.dp),
-                                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 22.sp),
-                                                color = Color(0xFF2196F3)
-                                            )
-                                            Text(
-                                                text = remedy,
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                modifier = Modifier.weight(1f).padding(top = 3.dp)
-                                            )
-                                        }
-                                        if (index < detail.remedies.size - 1) {
-                                            HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.3f))
-                                        }
-                                    }
-                                }
-                            }
+                            DtcDetailSectionContent(header, detail)
                         }
                     }
                 }
                 Spacer(Modifier.height(32.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun DtcDetailSectionContent(header: String, detail: DtcDetailScreenModel) {
+    when (header) {
+        "Overview" -> {
+            detail.overviewRows.forEachIndexed { index, (k, v) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text(
+                        text = k,
+                        color = Color.Gray.copy(alpha = 0.6f),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                    val valueColor = if (k == "Severity") {
+                        when (v) {
+                            "Critical" -> Color.Red
+                            "High" -> Color(0xFFFF9800)
+                            "Moderate" -> Color(0xFFFFC107)
+                            "Low" -> Color(0xFF2196F3)
+                            else -> MaterialTheme.colorScheme.onSurface
+                        }
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+                    Text(
+                        text = v,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = valueColor,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                        modifier = Modifier.weight(1f).padding(start = 16.dp)
+                    )
+                }
+                if (index < detail.overviewRows.size - 1) {
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.3f))
+                }
+            }
+        }
+        "Description" -> {
+            Text(
+                text = detail.description,
+                modifier = Modifier.padding(16.dp),
+                style = MaterialTheme.typography.bodyLarge,
+                lineHeight = 24.sp
+            )
+        }
+        "Potential causes" -> {
+            detail.causes.forEachIndexed { index, cause ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 1.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text(
+                        text = "•",
+                        modifier = Modifier.padding(end = 12.dp),
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 22.sp),
+                        color = Color(0xFF2196F3)
+                    )
+                    Text(
+                        text = cause,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f).padding(top = 3.dp)
+                    )
+                }
+                if (index < detail.causes.size - 1) {
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.3f))
+                }
+            }
+        }
+        "Possible remedies" -> {
+            detail.remedies.forEachIndexed { index, remedy ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 1.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text(
+                        text = "•",
+                        modifier = Modifier.padding(end = 12.dp),
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 22.sp),
+                        color = Color(0xFF2196F3)
+                    )
+                    Text(
+                        text = remedy,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f).padding(top = 3.dp)
+                    )
+                }
+                if (index < detail.remedies.size - 1) {
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.3f))
+                }
             }
         }
     }
