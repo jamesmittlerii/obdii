@@ -37,6 +37,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.unit.sp
 import com.rheosoft.obdii.screenmodels.DiagnosticsContentState
 import com.rheosoft.obdii.screenmodels.DiagnosticsScreenModel
+import com.rheosoft.obdii.screenmodels.DtcRowModel
 import com.rheosoft.obdii.screenmodels.DtcDetailScreenModel
 
 @Composable
@@ -48,30 +49,40 @@ fun DiagnosticsScreen(view: DiagnosticsScreenModel, modifier: Modifier, onDtcTap
     val uiState = view.viewModel.uiStateStream.collectAsState().value
     ObserveChanges(view.viewModel)
     when (val state = view.contentState(uiState.connectionState)) {
-        is DiagnosticsContentState.Waiting -> Column(
-            modifier = modifier.fillMaxSize().padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            CircularProgressIndicator()
-            Spacer(Modifier.height(16.dp))
-            Text(state.waitingText, color = Color.Gray)
-            if (state.showConnectHint) {
-                Spacer(Modifier.height(8.dp))
-                Text(state.connectHint, color = Color.Gray)
-            }
-        }
-        is DiagnosticsContentState.Empty -> Column(
-            modifier = modifier.fillMaxSize().padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Icon(Icons.Outlined.CheckCircleOutline, contentDescription = null, tint = Color(0xFF2E7D32))
-            Spacer(Modifier.height(16.dp))
-            Text(state.title)
-            Text(state.subtitle, color = Color.Gray)
-        }
+        is DiagnosticsContentState.Waiting -> DiagnosticsWaiting(state, modifier)
+        is DiagnosticsContentState.Empty -> DiagnosticsEmpty(state, modifier)
         is DiagnosticsContentState.Sections -> DiagnosticsSections(state = state, view = view, onDtcTap = onDtcTap, modifier = modifier)
+    }
+}
+
+@Composable
+private fun DiagnosticsWaiting(state: DiagnosticsContentState.Waiting, modifier: Modifier) {
+    Column(
+        modifier = modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        CircularProgressIndicator()
+        Spacer(Modifier.height(16.dp))
+        Text(state.waitingText, color = Color.Gray)
+        if (state.showConnectHint) {
+            Spacer(Modifier.height(8.dp))
+            Text(state.connectHint, color = Color.Gray)
+        }
+    }
+}
+
+@Composable
+private fun DiagnosticsEmpty(state: DiagnosticsContentState.Empty, modifier: Modifier) {
+    Column(
+        modifier = modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Icon(Icons.Outlined.CheckCircleOutline, contentDescription = null, tint = Color(0xFF2E7D32))
+        Spacer(Modifier.height(16.dp))
+        Text(state.title)
+        Text(state.subtitle, color = Color.Gray)
     }
 }
 
@@ -86,60 +97,84 @@ private fun DiagnosticsSections(
         items(state.sections) { section ->
             SectionLabel(section.header)
             section.rows.forEach { row ->
-                PremiumCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp)
-                        .clickable {
-                            val raw = view.viewModel.sections
-                                .asSequence()
-                                .flatMap { it.items }
-                                .firstOrNull { it.code == row.code }
-                            raw?.let { onDtcTap(view.detailFor(it)) }
-                        },
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                modifier = Modifier.weight(1f),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = when (row.severityIcon) {
-                                        "cancel_outlined", "electric_bolt", "warning_amber_outlined" -> Icons.Outlined.WarningAmber
-                                        else -> Icons.Outlined.Info
-                                    },
-                                    contentDescription = null,
-                                    tint = when (row.severityIcon) {
-                                        "cancel_outlined" -> Color.Red
-                                        "electric_bolt" -> Color(0xFFFF9800)
-                                        "warning_amber_outlined" -> Color(0xFFFFC107)
-                                        else -> Color(0xFF2196F3)
-                                    },
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    text = row.title,
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.Outlined.ChevronRight,
-                                contentDescription = "Details",
-                                tint = Color.Gray,
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
-                        }
-                    }
-                }
+                DiagnosticsRow(
+                    row = row,
+                    onClick = {
+                        view.findDtc(row.code)?.let { onDtcTap(view.detailFor(it)) }
+                    },
+                )
             }
         }
     }
 }
+
+@Composable
+private fun DiagnosticsRow(
+    row: DtcRowModel,
+    onClick: () -> Unit,
+) {
+    PremiumCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp)
+            .clickable(onClick = onClick),
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                DiagnosticsRowTitle(row, modifier = Modifier.weight(1f))
+                Icon(
+                    imageVector = Icons.Outlined.ChevronRight,
+                    contentDescription = "Details",
+                    tint = Color.Gray,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DiagnosticsRowTitle(row: DtcRowModel, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = severityIcon(row.severityIcon),
+            contentDescription = null,
+            tint = severityColor(row.severityIcon),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = row.title,
+            style = MaterialTheme.typography.bodyLarge
+        )
+    }
+}
+
+private fun DiagnosticsScreenModel.findDtc(code: String) =
+    viewModel.sections
+        .asSequence()
+        .flatMap { it.items }
+        .firstOrNull { it.code == code }
+
+private fun severityIcon(severityIcon: String) =
+    when (severityIcon) {
+        "cancel_outlined", "electric_bolt", "warning_amber_outlined" -> Icons.Outlined.WarningAmber
+        else -> Icons.Outlined.Info
+    }
+
+private fun severityColor(severityIcon: String): Color =
+    when (severityIcon) {
+        "cancel_outlined" -> Color.Red
+        "electric_bolt" -> Color(0xFFFF9800)
+        "warning_amber_outlined" -> Color(0xFFFFC107)
+        else -> Color(0xFF2196F3)
+    }
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -181,45 +216,7 @@ fun DtcDetailScreen(detail: DtcDetailScreenModel, onClose: () -> Unit) {
 @Composable
 private fun DtcDetailSectionContent(header: String, detail: DtcDetailScreenModel) {
     when (header) {
-        "Overview" -> {
-            detail.overviewRows.forEachIndexed { index, (k, v) ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Text(
-                        text = k,
-                        color = Color.Gray.copy(alpha = 0.6f),
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
-                    val valueColor = if (k == "Severity") {
-                        when (v) {
-                            "Critical" -> Color.Red
-                            "High" -> Color(0xFFFF9800)
-                            "Moderate" -> Color(0xFFFFC107)
-                            "Low" -> Color(0xFF2196F3)
-                            else -> MaterialTheme.colorScheme.onSurface
-                        }
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    }
-                    Text(
-                        text = v,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = valueColor,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.End,
-                        modifier = Modifier.weight(1f).padding(start = 16.dp)
-                    )
-                }
-                if (index < detail.overviewRows.size - 1) {
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.3f))
-                }
-            }
-        }
+        "Overview" -> OverviewRows(detail.overviewRows)
         "Description" -> {
             Text(
                 text = detail.description,
@@ -228,55 +225,96 @@ private fun DtcDetailSectionContent(header: String, detail: DtcDetailScreenModel
                 lineHeight = 24.sp
             )
         }
-        "Potential causes" -> {
-            detail.causes.forEachIndexed { index, cause ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 1.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Text(
-                        text = "•",
-                        modifier = Modifier.padding(end = 12.dp),
-                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 22.sp),
-                        color = Color(0xFF2196F3)
-                    )
-                    Text(
-                        text = cause,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.weight(1f).padding(top = 3.dp)
-                    )
-                }
-                if (index < detail.causes.size - 1) {
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.3f))
-                }
-            }
-        }
-        "Possible remedies" -> {
-            detail.remedies.forEachIndexed { index, remedy ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 1.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Text(
-                        text = "•",
-                        modifier = Modifier.padding(end = 12.dp),
-                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 22.sp),
-                        color = Color(0xFF2196F3)
-                    )
-                    Text(
-                        text = remedy,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.weight(1f).padding(top = 3.dp)
-                    )
-                }
-                if (index < detail.remedies.size - 1) {
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.3f))
-                }
-            }
-        }
+        "Potential causes" -> BulletRows(detail.causes)
+        "Possible remedies" -> BulletRows(detail.remedies)
     }
+}
+
+@Composable
+private fun OverviewRows(rows: List<Pair<String, String>>) {
+    rows.forEachIndexed { index, (key, value) ->
+        OverviewRow(key, value)
+        if (index < rows.size - 1) DetailDivider()
+    }
+}
+
+@Composable
+private fun OverviewRow(key: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top
+    ) {
+        Text(
+            text = key,
+            color = Color.Gray.copy(alpha = 0.6f),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(top = 2.dp)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyLarge,
+            color = overviewValueColor(key, value),
+            textAlign = androidx.compose.ui.text.style.TextAlign.End,
+            modifier = Modifier.weight(1f).padding(start = 16.dp)
+        )
+    }
+}
+
+@Composable
+private fun BulletRows(values: List<String>) {
+    values.forEachIndexed { index, value ->
+        BulletRow(value)
+        if (index < values.size - 1) DetailDivider()
+    }
+}
+
+@Composable
+private fun BulletRow(value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 1.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Text(
+            text = "•",
+            modifier = Modifier.padding(end = 12.dp),
+            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 22.sp),
+            color = Color(0xFF2196F3)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f).padding(top = 3.dp)
+        )
+    }
+}
+
+@Composable
+private fun overviewValueColor(key: String, value: String): Color =
+    if (key == "Severity") {
+        severityLabelColor(value) ?: MaterialTheme.colorScheme.onSurface
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+private fun severityLabelColor(value: String): Color? =
+    when (value) {
+        "Critical" -> Color.Red
+        "High" -> Color(0xFFFF9800)
+        "Moderate" -> Color(0xFFFFC107)
+        "Low" -> Color(0xFF2196F3)
+        else -> null
+    }
+
+@Composable
+private fun DetailDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(horizontal = 12.dp),
+        thickness = 0.5.dp,
+        color = Color.LightGray.copy(alpha = 0.3f),
+    )
 }

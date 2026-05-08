@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ChevronLeft
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.DragIndicator
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -50,6 +49,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
+private data class PidDragState(
+    val draggingKey: String?,
+    val draggingEnabledIndex: Int?,
+    val draggingOffsetY: Float,
+)
+
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 fun PidToggleListScreen(
@@ -71,109 +76,162 @@ fun PidToggleListScreen(
     Scaffold(
         containerColor = AppBackground,
         topBar = {
-            TopAppBar(
-                title = {
-                    if (searching) {
-                        TextField(
-                            value = searchText,
-                            onValueChange = {
-                                searchText = it
-                                vm.searchText = it
-                            },
-                            singleLine = true,
-                            placeholder = { Text("Search PIDs…") },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    } else {
-                        Text(view.title)
-                    }
+            PidToggleTopBar(
+                title = view.title,
+                searching = searching,
+                searchText = searchText,
+                onSearchTextChange = {
+                    searchText = it
+                    vm.searchText = it
                 },
-                actions = {
-                    if (searching) {
-                        IconButton(onClick = {
-                            searching = false
-                            searchText = ""
-                            view.cancelSearch()
-                        }) {
-                            Icon(Icons.Outlined.Close, contentDescription = "Cancel search")
-                        }
-                    } else {
-                        IconButton(onClick = {
-                            searching = true
-                            view.startSearch()
-                        }) {
-                            Icon(Icons.Outlined.Search, contentDescription = "Search PIDs")
-                        }
-                    }
+                onStartSearch = {
+                    searching = true
+                    view.startSearch()
                 },
-                navigationIcon = {
-                    IconButton(onClick = onClose) {
-                        Icon(Icons.Outlined.ChevronLeft, contentDescription = "Back")
-                    }
+                onCancelSearch = {
+                    searching = false
+                    searchText = ""
+                    view.cancelSearch()
                 },
+                onClose = onClose,
             )
-        },
+        }
     ) { pad ->
         val query = searchText.trim().lowercase()
-        val enabledBase = pidsSnapshot.filter { it.enabled && it.kind == ObdPidKind.gauge }
-        val disabledBase = pidsSnapshot.filter { !it.enabled && it.kind == ObdPidKind.gauge }
-        val enabled = if (query.isEmpty()) enabledBase else enabledBase.filter { it.matchesQuery(query) }
-        val disabled = if (query.isEmpty()) disabledBase else disabledBase.filter { it.matchesQuery(query) }
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(pad).padding(16.dp)) {
-            if (!searching) item { Spacer(Modifier.height(2.dp)) }
-            if (enabled.isNotEmpty()) item { SectionLabel("Enabled") }
-            itemsIndexed(
-                items = enabled,
-                key = { _, pid -> pid.stableKey() },
-            ) { enabledIndex, pid ->
-                val pidKey = pid.stableKey()
-                val isDragging = draggingKey == pidKey && draggingEnabledIndex == enabledIndex
-                EnabledPidListItem(
-                    pid = pid,
-                    pidKey = pidKey,
-                    isMetric = isMetric,
-                    isDragging = isDragging,
-                    draggingOffsetY = draggingOffsetY,
-                    onToggle = { on -> scope.launch { vm.toggleById(pidKey, on) } },
-                    onDragStart = {
-                        val currentEnabled = pidsSnapshot.filter { it.enabled && it.kind == ObdPidKind.gauge }
-                        val currentIndex = currentEnabled.indexOfFirst { it.stableKey() == pidKey }
-                        if (currentIndex >= 0) {
-                            draggingKey = pidKey
-                            draggingEnabledIndex = currentIndex
-                            draggingOffsetY = 0f
-                        }
-                    },
-                    onDrag = { dragAmountY ->
-                        draggingOffsetY += dragAmountY
-                        val from = draggingEnabledIndex ?: return@EnabledPidListItem
-                        val shift = (draggingOffsetY / rowHeightPx).toInt()
-                        val target = (from + shift).coerceIn(0, enabled.lastIndex)
-                        if (target != from) {
-                            draggingEnabledIndex = target
-                            draggingOffsetY -= (target - from) * rowHeightPx
-                            scope.launch { vm.moveEnabled(from, target) }
-                        }
-                    },
-                    onDragEnd = {
-                        draggingOffsetY = 0f
-                        draggingEnabledIndex = null
-                        draggingKey = null
-                    }
+        val enabled = visibleGaugePids(pidsSnapshot, enabled = true, query = query)
+        val disabled = visibleGaugePids(pidsSnapshot, enabled = false, query = query)
+        PidToggleListContent(
+            modifier = Modifier.fillMaxSize().padding(pad).padding(16.dp),
+            searching = searching,
+            enabled = enabled,
+            disabled = disabled,
+            isMetric = isMetric,
+            dragState = PidDragState(draggingKey, draggingEnabledIndex, draggingOffsetY),
+            onToggle = { pidKey, on -> scope.launch { vm.toggleById(pidKey, on) } },
+            onDragStart = { pidKey ->
+                val currentIndex = enabledGaugePids(pidsSnapshot).indexOfFirst { it.stableKey() == pidKey }
+                if (currentIndex >= 0) {
+                    draggingKey = pidKey
+                    draggingEnabledIndex = currentIndex
+                    draggingOffsetY = 0f
+                }
+            },
+            onDrag = { dragAmountY ->
+                draggingOffsetY += dragAmountY
+                val from = draggingEnabledIndex ?: return@PidToggleListContent
+                val target = pidDragTarget(from, draggingOffsetY, rowHeightPx, enabled.lastIndex)
+                if (target != null) {
+                    draggingEnabledIndex = target
+                    draggingOffsetY -= (target - from) * rowHeightPx
+                    scope.launch { vm.moveEnabled(from, target) }
+                }
+            },
+            onDragEnd = {
+                draggingOffsetY = 0f
+                draggingEnabledIndex = null
+                draggingKey = null
+            },
+        )
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun PidToggleTopBar(
+    title: String,
+    searching: Boolean,
+    searchText: String,
+    onSearchTextChange: (String) -> Unit,
+    onStartSearch: () -> Unit,
+    onCancelSearch: () -> Unit,
+    onClose: () -> Unit,
+) {
+    TopAppBar(
+        title = {
+            if (searching) {
+                TextField(
+                    value = searchText,
+                    onValueChange = onSearchTextChange,
+                    singleLine = true,
+                    placeholder = { Text("Search PIDs…") },
+                    modifier = Modifier.fillMaxWidth(),
                 )
+            } else {
+                Text(title)
             }
-            if (disabled.isNotEmpty()) item { SectionLabel("Disabled") }
-            items(
-                items = disabled,
-                key = { pid -> pid.stableKey() },
-            ) { pid ->
-                val pidKey = pid.stableKey()
-                DisabledPidListItem(
-                    pid = pid,
-                    isMetric = isMetric,
-                    onToggle = { on -> scope.launch { vm.toggleById(pidKey, on) } }
-                )
+        },
+        actions = {
+            PidSearchAction(searching, onStartSearch, onCancelSearch)
+        },
+        navigationIcon = {
+            IconButton(onClick = onClose) {
+                Icon(Icons.Outlined.ChevronLeft, contentDescription = "Back")
             }
+        },
+    )
+}
+
+@Composable
+private fun PidSearchAction(
+    searching: Boolean,
+    onStartSearch: () -> Unit,
+    onCancelSearch: () -> Unit,
+) {
+    if (searching) {
+        IconButton(onClick = onCancelSearch) {
+            Icon(Icons.Outlined.Close, contentDescription = "Cancel search")
+        }
+    } else {
+        IconButton(onClick = onStartSearch) {
+            Icon(Icons.Outlined.Search, contentDescription = "Search PIDs")
+        }
+    }
+}
+
+@Composable
+private fun PidToggleListContent(
+    modifier: Modifier,
+    searching: Boolean,
+    enabled: List<ObdiiPid>,
+    disabled: List<ObdiiPid>,
+    isMetric: Boolean,
+    dragState: PidDragState,
+    onToggle: (String, Boolean) -> Unit,
+    onDragStart: (String) -> Unit,
+    onDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit,
+) {
+    LazyColumn(modifier = modifier) {
+        if (!searching) item { Spacer(Modifier.height(2.dp)) }
+        if (enabled.isNotEmpty()) item { SectionLabel("Enabled") }
+        itemsIndexed(
+            items = enabled,
+            key = { _, pid -> pid.stableKey() },
+        ) { enabledIndex, pid ->
+            val pidKey = pid.stableKey()
+            EnabledPidListItem(
+                pid = pid,
+                pidKey = pidKey,
+                isMetric = isMetric,
+                isDragging = dragState.draggingKey == pidKey && dragState.draggingEnabledIndex == enabledIndex,
+                draggingOffsetY = dragState.draggingOffsetY,
+                onToggle = { on -> onToggle(pidKey, on) },
+                onDragStart = { onDragStart(pidKey) },
+                onDrag = onDrag,
+                onDragEnd = onDragEnd,
+            )
+        }
+        if (disabled.isNotEmpty()) item { SectionLabel("Disabled") }
+        items(
+            items = disabled,
+            key = { pid -> pid.stableKey() },
+        ) { pid ->
+            val pidKey = pid.stableKey()
+            DisabledPidListItem(
+                pid = pid,
+                isMetric = isMetric,
+                onToggle = { on -> onToggle(pidKey, on) }
+            )
         }
     }
 }
@@ -255,6 +313,29 @@ private fun DisabledPidListItem(
 
 private fun ObdiiPid.stableKey(): String =
     if (id.isNotBlank()) id else pidCommand
+
+private fun enabledGaugePids(pids: List<ObdiiPid>): List<ObdiiPid> =
+    pids.filter { it.enabled && it.kind == ObdPidKind.gauge }
+
+private fun visibleGaugePids(
+    pids: List<ObdiiPid>,
+    enabled: Boolean,
+    query: String,
+): List<ObdiiPid> {
+    val base = pids.filter { it.enabled == enabled && it.kind == ObdPidKind.gauge }
+    return if (query.isEmpty()) base else base.filter { it.matchesQuery(query) }
+}
+
+private fun pidDragTarget(
+    from: Int,
+    offsetY: Float,
+    rowHeightPx: Float,
+    lastIndex: Int,
+): Int? {
+    val shift = (offsetY / rowHeightPx).toInt()
+    val target = (from + shift).coerceIn(0, lastIndex)
+    return target.takeIf { it != from }
+}
 
 private fun ObdiiPid.matchesQuery(query: String): Boolean =
     label.lowercase().contains(query) ||

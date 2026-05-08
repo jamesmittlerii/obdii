@@ -58,6 +58,12 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import kotlin.math.max
 
+private data class GridDragMetrics(
+    val columns: Int,
+    val itemWidthPx: Float,
+    val itemHeightPx: Float,
+)
+
 @Composable
 fun DashboardScreen(
     view: DashboardScreenModel,
@@ -224,79 +230,114 @@ private fun DashboardGridMode(
                 key = { _, tile -> tile.pid.stableKey() },
             ) { _, tile ->
                 val isDragging = draggingGridKey == tile.pid.stableKey()
-                PremiumCard(
-                    modifier = Modifier
-                        .offset {
-                            if (isDragging) {
-                                IntOffset(
-                                    draggingGridOffset.x.roundToInt(),
-                                    draggingGridOffset.y.roundToInt()
-                                )
-                            } else {
-                                IntOffset.Zero
-                            }
+                GaugeGridItem(
+                    tile = tile,
+                    isMetric = isMetric,
+                    isDragging = isDragging,
+                    draggingGridOffset = draggingGridOffset,
+                    onGaugeTap = onGaugeTap,
+                    onDragStart = {
+                        val currentIndex = enabled.indexOfFirst { it.pid.stableKey() == tile.pid.stableKey() }
+                        if (currentIndex != -1) {
+                            draggingGridKey = tile.pid.stableKey()
+                            draggingGridIndex = currentIndex
+                            draggingGridOffset = Offset.Zero
                         }
-                        .zIndex(if (isDragging) 1f else 0f)
-                        .padding(6.dp)
-                        .fillMaxWidth()
-                        .clickable { onGaugeTap(tile.pid) }
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .pointerInput(tile.pid.stableKey()) {
-                                detectDragGestures(
-                                    onDragStart = {
-                                        val currentIndex = enabled.indexOfFirst { it.pid.stableKey() == tile.pid.stableKey() }
-                                        if (currentIndex != -1) {
-                                            draggingGridKey = tile.pid.stableKey()
-                                            draggingGridIndex = currentIndex
-                                            draggingGridOffset = Offset.Zero
-                                        }
-                                    },
-                                    onDrag = { change, dragAmount ->
-                                        change.consume()
-                                        draggingGridOffset += dragAmount
-                                        val from = draggingGridIndex ?: return@detectDragGestures
-                                        val colShift = (draggingGridOffset.x / itemWidthPx).roundToInt()
-                                        val rowShift = (draggingGridOffset.y / itemHeightPx).roundToInt()
-
-                                        if ((colShift != 0) || (rowShift != 0)) {
-                                            val target = (from + rowShift * columns + colShift)
-                                                .coerceIn(0, enabled.lastIndex)
-                                            if (target != from) {
-                                                draggingGridIndex = target
-                                                draggingGridOffset -= Offset(
-                                                    (target % columns - from % columns) * itemWidthPx,
-                                                    (target / columns - from / columns) * itemHeightPx
-                                                )
-                                                scope.launch { view.viewModel.moveEnabled(from, target) }
-                                            }
-                                        }
-                                    },
-                                    onDragEnd = {
-                                        draggingGridKey = null
-                                        draggingGridIndex = null
-                                        draggingGridOffset = Offset.Zero
-                                    },
-                                    onDragCancel = {
-                                        draggingGridKey = null
-                                        draggingGridIndex = null
-                                        draggingGridOffset = Offset.Zero
-                                    }
-                                )
-                            }
-                            .padding(10.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        RingGaugeMini(tile = tile, isMetric = isMetric, modifier = Modifier.fillMaxWidth())
-                        Text(tile.pid.label, fontWeight = FontWeight.SemiBold)
-                    }
-                }
+                    },
+                    onDrag = { dragAmount ->
+                        draggingGridOffset += dragAmount
+                        val from = draggingGridIndex ?: return@GaugeGridItem
+                        val move = gridDragMove(
+                            from = from,
+                            offset = draggingGridOffset,
+                            metrics = GridDragMetrics(columns, itemWidthPx, itemHeightPx),
+                            lastIndex = enabled.lastIndex,
+                        )
+                        if (move != null) {
+                            draggingGridIndex = move
+                            draggingGridOffset -= gridOffsetConsumed(from, move, columns, itemWidthPx, itemHeightPx)
+                            scope.launch { view.viewModel.moveEnabled(from, move) }
+                        }
+                    },
+                    onDragEnd = {
+                        draggingGridKey = null
+                        draggingGridIndex = null
+                        draggingGridOffset = Offset.Zero
+                    },
+                )
             }
         }
     }
 }
+
+@Composable
+private fun GaugeGridItem(
+    tile: GaugeTile,
+    isMetric: Boolean,
+    isDragging: Boolean,
+    draggingGridOffset: Offset,
+    onGaugeTap: (ObdiiPid) -> Unit,
+    onDragStart: () -> Unit,
+    onDrag: (Offset) -> Unit,
+    onDragEnd: () -> Unit,
+) {
+    PremiumCard(
+        modifier = Modifier
+            .offset { if (isDragging) draggingGridOffset.toIntOffset() else IntOffset.Zero }
+            .zIndex(if (isDragging) 1f else 0f)
+            .padding(6.dp)
+            .fillMaxWidth()
+            .clickable { onGaugeTap(tile.pid) }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .pointerInput(tile.pid.stableKey()) {
+                    detectDragGestures(
+                        onDragStart = { onDragStart() },
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+                            onDrag(dragAmount)
+                        },
+                        onDragEnd = onDragEnd,
+                        onDragCancel = onDragEnd,
+                    )
+                }
+                .padding(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            RingGaugeMini(tile = tile, isMetric = isMetric, modifier = Modifier.fillMaxWidth())
+            Text(tile.pid.label, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+private fun gridDragMove(
+    from: Int,
+    offset: Offset,
+    metrics: GridDragMetrics,
+    lastIndex: Int,
+): Int? {
+    val colShift = (offset.x / metrics.itemWidthPx).roundToInt()
+    val rowShift = (offset.y / metrics.itemHeightPx).roundToInt()
+    if (colShift == 0 && rowShift == 0) return null
+    val target = (from + rowShift * metrics.columns + colShift).coerceIn(0, lastIndex)
+    return target.takeIf { it != from }
+}
+
+private fun gridOffsetConsumed(
+    from: Int,
+    target: Int,
+    columns: Int,
+    itemWidthPx: Float,
+    itemHeightPx: Float,
+): Offset = Offset(
+    (target % columns - from % columns) * itemWidthPx,
+    (target / columns - from / columns) * itemHeightPx,
+)
+
+private fun Offset.toIntOffset(): IntOffset =
+    IntOffset(x.roundToInt(), y.roundToInt())
 
 
 @Composable
