@@ -158,6 +158,7 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
 
     fun resetForTests() {
         disconnect()
+        isInitialized = false
         interestedPids = emptySet()
         supportedMode1Pids = emptySet()
         lastStreamingPids = emptySet()
