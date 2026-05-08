@@ -15,7 +15,7 @@ class ObdCupertinoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const ObdAppProviders(
-      child: const CupertinoApp(
+      child: CupertinoApp(
         title: 'Rheosoft OBDII',
         debugShowCheckedModeBanner: false,
         localizationsDelegates: [
