@@ -55,6 +55,26 @@ private data class PidDragState(
     val draggingOffsetY: Float,
 )
 
+private data class PidToggleLists(
+    val enabled: List<ObdiiPid>,
+    val disabled: List<ObdiiPid>,
+)
+
+private data class PidToggleListActions(
+    val onToggle: (String, Boolean) -> Unit,
+    val onDragStart: (String) -> Unit,
+    val onDrag: (Float) -> Unit,
+    val onDragEnd: () -> Unit,
+)
+
+private data class EnabledPidListItemState(
+    val pid: ObdiiPid,
+    val pidKey: String,
+    val isMetric: Boolean,
+    val isDragging: Boolean,
+    val draggingOffsetY: Float,
+)
+
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 fun PidToggleListScreen(
@@ -103,34 +123,37 @@ fun PidToggleListScreen(
         PidToggleListContent(
             modifier = Modifier.fillMaxSize().padding(pad).padding(16.dp),
             searching = searching,
-            enabled = enabled,
-            disabled = disabled,
             isMetric = isMetric,
+            lists = PidToggleLists(enabled, disabled),
             dragState = PidDragState(draggingKey, draggingEnabledIndex, draggingOffsetY),
-            onToggle = { pidKey, on -> scope.launch { vm.toggleById(pidKey, on) } },
-            onDragStart = { pidKey ->
-                val currentIndex = enabledGaugePids(pidsSnapshot).indexOfFirst { it.stableKey() == pidKey }
-                if (currentIndex >= 0) {
-                    draggingKey = pidKey
-                    draggingEnabledIndex = currentIndex
+            actions = PidToggleListActions(
+                onToggle = { pidKey, on -> scope.launch { vm.toggleById(pidKey, on) } },
+                onDragStart = { pidKey ->
+                    val currentIndex = enabledGaugePids(pidsSnapshot).indexOfFirst { it.stableKey() == pidKey }
+                    if (currentIndex >= 0) {
+                        draggingKey = pidKey
+                        draggingEnabledIndex = currentIndex
+                        draggingOffsetY = 0f
+                    }
+                },
+                onDrag = { dragAmountY ->
+                    draggingOffsetY += dragAmountY
+                    val from = draggingEnabledIndex
+                    if (from != null) {
+                        val target = pidDragTarget(from, draggingOffsetY, rowHeightPx, enabled.lastIndex)
+                        if (target != null) {
+                            draggingEnabledIndex = target
+                            draggingOffsetY -= (target - from) * rowHeightPx
+                            scope.launch { vm.moveEnabled(from, target) }
+                        }
+                    }
+                },
+                onDragEnd = {
                     draggingOffsetY = 0f
-                }
-            },
-            onDrag = { dragAmountY ->
-                draggingOffsetY += dragAmountY
-                val from = draggingEnabledIndex ?: return@PidToggleListContent
-                val target = pidDragTarget(from, draggingOffsetY, rowHeightPx, enabled.lastIndex)
-                if (target != null) {
-                    draggingEnabledIndex = target
-                    draggingOffsetY -= (target - from) * rowHeightPx
-                    scope.launch { vm.moveEnabled(from, target) }
-                }
-            },
-            onDragEnd = {
-                draggingOffsetY = 0f
-                draggingEnabledIndex = null
-                draggingKey = null
-            },
+                    draggingEnabledIndex = null
+                    draggingKey = null
+                },
+            ),
         )
     }
 }
@@ -192,45 +215,43 @@ private fun PidSearchAction(
 private fun PidToggleListContent(
     modifier: Modifier,
     searching: Boolean,
-    enabled: List<ObdiiPid>,
-    disabled: List<ObdiiPid>,
     isMetric: Boolean,
+    lists: PidToggleLists,
     dragState: PidDragState,
-    onToggle: (String, Boolean) -> Unit,
-    onDragStart: (String) -> Unit,
-    onDrag: (Float) -> Unit,
-    onDragEnd: () -> Unit,
+    actions: PidToggleListActions,
 ) {
     LazyColumn(modifier = modifier) {
         if (!searching) item { Spacer(Modifier.height(2.dp)) }
-        if (enabled.isNotEmpty()) item { SectionLabel("Enabled") }
+        if (lists.enabled.isNotEmpty()) item { SectionLabel("Enabled") }
         itemsIndexed(
-            items = enabled,
+            items = lists.enabled,
             key = { _, pid -> pid.stableKey() },
         ) { enabledIndex, pid ->
             val pidKey = pid.stableKey()
             EnabledPidListItem(
-                pid = pid,
-                pidKey = pidKey,
-                isMetric = isMetric,
-                isDragging = dragState.draggingKey == pidKey && dragState.draggingEnabledIndex == enabledIndex,
-                draggingOffsetY = dragState.draggingOffsetY,
-                onToggle = { on -> onToggle(pidKey, on) },
-                onDragStart = { onDragStart(pidKey) },
-                onDrag = onDrag,
-                onDragEnd = onDragEnd,
+                state = EnabledPidListItemState(
+                    pid = pid,
+                    pidKey = pidKey,
+                    isMetric = isMetric,
+                    isDragging = dragState.draggingKey == pidKey && dragState.draggingEnabledIndex == enabledIndex,
+                    draggingOffsetY = dragState.draggingOffsetY,
+                ),
+                onToggle = { on -> actions.onToggle(pidKey, on) },
+                onDragStart = { actions.onDragStart(pidKey) },
+                onDrag = actions.onDrag,
+                onDragEnd = actions.onDragEnd,
             )
         }
-        if (disabled.isNotEmpty()) item { SectionLabel("Disabled") }
+        if (lists.disabled.isNotEmpty()) item { SectionLabel("Disabled") }
         items(
-            items = disabled,
+            items = lists.disabled,
             key = { pid -> pid.stableKey() },
         ) { pid ->
             val pidKey = pid.stableKey()
             DisabledPidListItem(
                 pid = pid,
                 isMetric = isMetric,
-                onToggle = { on -> onToggle(pidKey, on) }
+                onToggle = { on -> actions.onToggle(pidKey, on) }
             )
         }
     }
@@ -238,11 +259,7 @@ private fun PidToggleListContent(
 
 @Composable
 private fun EnabledPidListItem(
-    pid: ObdiiPid,
-    pidKey: String,
-    isMetric: Boolean,
-    isDragging: Boolean,
-    draggingOffsetY: Float,
+    state: EnabledPidListItemState,
     onToggle: (Boolean) -> Unit,
     onDragStart: () -> Unit,
     onDrag: (Float) -> Unit,
@@ -250,15 +267,15 @@ private fun EnabledPidListItem(
 ) {
     PremiumCard(
         modifier = Modifier
-            .offset { IntOffset(0, if (isDragging) draggingOffsetY.roundToInt() else 0) }
-            .zIndex(if (isDragging) 1f else 0f)
+            .offset { IntOffset(0, if (state.isDragging) state.draggingOffsetY.roundToInt() else 0) }
+            .zIndex(if (state.isDragging) 1f else 0f)
             .fillMaxWidth()
             .padding(bottom = 8.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .pointerInput(pidKey) {
+                .pointerInput(state.pidKey) {
                     detectDragGestures(
                         onDragStart = { onDragStart() },
                         onDrag = { change, dragAmount ->
@@ -274,11 +291,11 @@ private fun EnabledPidListItem(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(pid.name)
-                Text(pid.displayRange(isMetric), color = Color.Gray)
+                Text(state.pid.name)
+                Text(state.pid.displayRange(state.isMetric), color = Color.Gray)
             }
             Switch(
-                checked = pid.enabled,
+                checked = state.pid.enabled,
                 onCheckedChange = onToggle,
             )
         }

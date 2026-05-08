@@ -52,6 +52,23 @@ import com.rheosoft.obdii.core.OBDConnectionState
 import com.rheosoft.obdii.screenmodels.SettingsScreenModel
 import java.io.File
 
+private data class ConnectionSectionState(
+    val statusLabel: String,
+    val selectedType: ConnectionType,
+    val typeMenuExpanded: Boolean,
+    val autoConnect: Boolean,
+    val connectButtonLabel: String,
+    val isConnectButtonDisabled: Boolean,
+    val connectionState: OBDConnectionState,
+)
+
+private data class ConnectionSectionActions(
+    val onTypeMenuExpandedChange: (Boolean) -> Unit,
+    val onTypeSelected: (ConnectionType) -> Unit,
+    val onAutoConnectChange: (Boolean) -> Unit,
+    val onConnectTapped: () -> Unit,
+)
+
 @Composable
 fun SettingsScreen(
     view: SettingsScreenModel,
@@ -96,24 +113,28 @@ fun SettingsScreen(
             }
             Spacer(Modifier.height(6.dp))
             ConnectionSection(
-                statusLabel = statusLabel,
-                selectedType = selectedType,
-                typeMenuExpanded = typeMenuExpanded,
-                onTypeMenuExpandedChange = { typeMenuExpanded = it },
-                onTypeSelected = { type ->
-                    selectedType = type
-                    vm.onConnectionTypeChanged(type)
-                    typeMenuExpanded = false
-                },
-                autoConnect = autoConnect,
-                onAutoConnectChange = { 
-                    autoConnect = it
-                    vm.onAutoConnectChanged(it)
-                },
-                connectButtonLabel = connectButtonLabel,
-                isConnectButtonDisabled = vm.isConnectButtonDisabled,
-                connectionState = vm.connectionState,
-                onConnectTapped = { vm.handleConnectionButtonTap() }
+                state = ConnectionSectionState(
+                    statusLabel = statusLabel,
+                    selectedType = selectedType,
+                    typeMenuExpanded = typeMenuExpanded,
+                    autoConnect = autoConnect,
+                    connectButtonLabel = connectButtonLabel,
+                    isConnectButtonDisabled = vm.isConnectButtonDisabled,
+                    connectionState = vm.connectionState,
+                ),
+                actions = ConnectionSectionActions(
+                    onTypeMenuExpandedChange = { typeMenuExpanded = it },
+                    onTypeSelected = { type ->
+                        selectedType = type
+                        vm.onConnectionTypeChanged(type)
+                        typeMenuExpanded = false
+                    },
+                    onAutoConnectChange = {
+                        autoConnect = it
+                        vm.onAutoConnectChanged(it)
+                    },
+                    onConnectTapped = { vm.handleConnectionButtonTap() },
+                ),
             )
             if (selectedType == ConnectionType.wifi) {
                 Spacer(Modifier.height(6.dp))
@@ -177,17 +198,8 @@ private fun UnitsSection(selectedUnits: MeasurementUnit, onUnitsSelected: (Measu
 
 @Composable
 private fun ConnectionSection(
-    statusLabel: String,
-    selectedType: ConnectionType,
-    typeMenuExpanded: Boolean,
-    onTypeMenuExpandedChange: (Boolean) -> Unit,
-    onTypeSelected: (ConnectionType) -> Unit,
-    autoConnect: Boolean,
-    onAutoConnectChange: (Boolean) -> Unit,
-    connectButtonLabel: String,
-    isConnectButtonDisabled: Boolean,
-    connectionState: OBDConnectionState,
-    onConnectTapped: () -> Unit
+    state: ConnectionSectionState,
+    actions: ConnectionSectionActions,
 ) {
     SectionLabel("Connection")
     val connectionRowMinHeight = 52.dp
@@ -201,7 +213,7 @@ private fun ConnectionSection(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text("Status")
-            val statusColor = when (statusLabel) {
+            val statusColor = when (state.statusLabel) {
                 "Connected" -> Color(0xFF2E7D32)
                 "Connecting..." -> Color(0xFFEF6C00)
                 "Connected to Adapter..." -> Color(0xFF1976D2)
@@ -209,7 +221,7 @@ private fun ConnectionSection(
                 "Failed" -> Color(0xFFC62828)
                 else -> Color.Gray
             }
-            Text(statusLabel, color = statusColor)
+            Text(state.statusLabel, color = statusColor)
         }
         HorizontalDivider()
         Row(
@@ -223,11 +235,11 @@ private fun ConnectionSection(
             Text("Type")
             Box(contentAlignment = Alignment.CenterEnd) {
                 TextButton(
-                    onClick = { onTypeMenuExpandedChange(true) },
+                    onClick = { actions.onTypeMenuExpandedChange(true) },
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
                 ) {
                     Text(
-                        when (selectedType) {
+                        when (state.selectedType) {
                             ConnectionType.demo -> "Demo"
                             ConnectionType.wifi -> "WiFi"
                             ConnectionType.bluetooth -> "Bluetooth LE"
@@ -240,20 +252,20 @@ private fun ConnectionSection(
                     )
                 }
                 DropdownMenu(
-                    expanded = typeMenuExpanded,
-                    onDismissRequest = { onTypeMenuExpandedChange(false) },
+                    expanded = state.typeMenuExpanded,
+                    onDismissRequest = { actions.onTypeMenuExpandedChange(false) },
                 ) {
                     DropdownMenuItem(
                         text = { Text("Demo") },
-                        onClick = { onTypeSelected(ConnectionType.demo) },
+                        onClick = { actions.onTypeSelected(ConnectionType.demo) },
                     )
                     DropdownMenuItem(
                         text = { Text("WiFi") },
-                        onClick = { onTypeSelected(ConnectionType.wifi) },
+                        onClick = { actions.onTypeSelected(ConnectionType.wifi) },
                     )
                     DropdownMenuItem(
                         text = { Text("Bluetooth LE") },
-                        onClick = { onTypeSelected(ConnectionType.bluetooth) },
+                        onClick = { actions.onTypeSelected(ConnectionType.bluetooth) },
                     )
                 }
             }
@@ -269,8 +281,8 @@ private fun ConnectionSection(
         ) {
             Text("Automatically Connect")
             Switch(
-                checked = autoConnect,
-                onCheckedChange = onAutoConnectChange,
+                checked = state.autoConnect,
+                onCheckedChange = actions.onAutoConnectChange,
             )
         }
         HorizontalDivider()
@@ -284,16 +296,16 @@ private fun ConnectionSection(
         ) {
             TextButton(
                 contentPadding = ButtonDefaults.TextButtonWithIconContentPadding,
-                onClick = onConnectTapped,
-                enabled = !isConnectButtonDisabled,
+                onClick = actions.onConnectTapped,
+                enabled = !state.isConnectButtonDisabled,
             ) {
-                val isConnecting = connectionState == OBDConnectionState.connecting ||
-                    connectionState == OBDConnectionState.connectedToAdapter ||
-                    connectionState == OBDConnectionState.settingUpVehicle
+                val isConnecting = state.connectionState == OBDConnectionState.connecting ||
+                    state.connectionState == OBDConnectionState.connectedToAdapter ||
+                    state.connectionState == OBDConnectionState.settingUpVehicle
 
                 if (isConnecting) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(connectButtonLabel)
+                        Text(state.connectButtonLabel)
                         Spacer(Modifier.width(8.dp))
                         CircularProgressIndicator(
                             modifier = Modifier.size(14.dp),
@@ -302,7 +314,7 @@ private fun ConnectionSection(
                         )
                     }
                 } else {
-                    Text(connectButtonLabel)
+                    Text(state.connectButtonLabel)
                 }
             }
         }

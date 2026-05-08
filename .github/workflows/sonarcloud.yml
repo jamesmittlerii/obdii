@@ -68,6 +68,23 @@ jobs:
           KOTLINOBD2_DIR: ${{ github.workspace }}/SwiftOBD2/kotlinobd2
         run: ./gradlew :coreApp:test :coreApp:jacocoTestReport
 
+      - name: Enable KVM for Android emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Generate Android UI coverage
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          KOTLINOBD2_DIR: ${{ github.workspace }}/SwiftOBD2/kotlinobd2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: cd kotlin_obdii && ./gradlew :androidApp:createDebugCoverageReport
+
       - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@v7
         env:

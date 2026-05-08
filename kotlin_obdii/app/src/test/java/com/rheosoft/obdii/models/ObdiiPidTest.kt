@@ -22,6 +22,16 @@ class ObdiiPidTest {
     }
 
     @Test
+    fun `value range overlap and zero width normalization edge cases`() {
+        val range = ValueRange(10.0, 20.0)
+
+        assertTrue(range.overlaps(ValueRange(0.0, 10.0)))
+        assertTrue(range.overlaps(ValueRange(20.0, 30.0)))
+        assertFalse(range.overlaps(ValueRange(21.0, 30.0)))
+        assertEquals(0.0, ValueRange(4.0, 4.0).normalizedPosition(99.0))
+    }
+
+    @Test
     fun `obd pid combined range defaults`() {
         val pid = ObdiiPid(
             id = "rpm_test",
@@ -52,6 +62,24 @@ class ObdiiPidTest {
         assertEquals(PidColor.ORANGE, pid.colorForValue(3000.0, true))
         assertEquals(PidColor.RED, pid.colorForValue(5000.0, true))
         assertEquals(PidColor.BLUE_GREY, pid.colorForValue(9000.0, true))
+    }
+
+    @Test
+    fun `color uses converted imperial ranges`() {
+        val pid = ObdiiPid(
+            id = "speed",
+            label = "Speed",
+            name = "Vehicle Speed",
+            pidCommand = "010D",
+            units = "km/h",
+            typicalRange = ValueRange(0.0, 100.0),
+            warningRange = ValueRange(100.0, 130.0),
+            dangerRange = ValueRange(130.0, 200.0),
+        )
+
+        assertEquals(PidColor.GREEN, pid.colorForValue(60.0, isMetric = false))
+        assertEquals(PidColor.ORANGE, pid.colorForValue(115.0, isMetric = false))
+        assertEquals(PidColor.RED, pid.colorForValue(150.0, isMetric = false))
     }
 
     @Test

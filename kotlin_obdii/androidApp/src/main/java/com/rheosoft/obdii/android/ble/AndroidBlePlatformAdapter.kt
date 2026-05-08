@@ -171,98 +171,164 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
             ?: throw CommunicationError("Unknown BLE peripheral: $peripheralId")
 
         suspendCancellableCoroutine { continuation ->
-            var completed = false
-            val mainHandler = Handler(Looper.getMainLooper())
-            val timeout = Runnable {
-                if (completed) return@Runnable
-                completed = true
-                closeSession(peripheralId, disconnect = true)
-                if (continuation.isActive) continuation.resumeWithException(CommunicationError("BLE connect timed out"))
-            }
-            fun failConnection(message: String, cause: Throwable? = null) {
-                if (completed || !continuation.isActive) return
-                completed = true
-                mainHandler.removeCallbacks(timeout)
-                continuation.resumeWithException(CommunicationError(message, cause))
-            }
-
-            val callback = object : BluetoothGattCallback() {
-                override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-                    logI("connect:state status=$status newState=$newState id=$peripheralId")
-                    if (isFailedConnectionState(status, newState)) {
-                        failConnection("BLE connection failed (status=$status, state=$newState)")
-                        runCatching { gatt.close() }
-                        sessions.remove(peripheralId)
-                        return
-                    }
-                    if (newState == BluetoothProfile.STATE_CONNECTED && !gatt.discoverServices()) {
-                        failConnection("BLE discoverServices failed to start")
-                    }
-                }
-
-                override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
-                    val session = sessions[peripheralId] ?: return
-                    if (status == BluetoothGatt.GATT_SUCCESS) {
-                        cacheDiscoveredServices(session, gatt)
-                        resumeDiscovery(session)
-                        if (!completed && continuation.isActive) {
-                            completed = true
-                            mainHandler.removeCallbacks(timeout)
-                            continuation.resume(Unit)
-                        }
-                    } else {
-                        val error = CommunicationError("BLE service discovery failed: $status")
-                        resumeDiscoveryWithError(session, error)
-                        failConnection("BLE service discovery failed: $status")
-                    }
-                }
-
-                override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, value: ByteArray) {
-                    notifyListener(peripheralId, characteristic, value)
-                }
-
-                @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-                override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
-                    notifyListener(peripheralId, characteristic, characteristic.value ?: ByteArray(0))
-                }
-
-                override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
-                    val session = sessions[peripheralId] ?: return
-                    resumeUnitContinuation(
-                        continuation = session.writeContinuation,
-                        error = statusError(status, "BLE write failed"),
-                    )
-                    session.writeContinuation = null
-                }
-
-                override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
-                    val session = sessions[peripheralId] ?: return
-                    resumeUnitContinuation(
-                        continuation = session.descriptorContinuation,
-                        error = statusError(status, "BLE descriptor write failed"),
-                    )
-                    session.descriptorContinuation = null
-                }
-            }
-
-            @Suppress("DEPRECATION")
-            val gatt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                device.connectGatt(context, false, callback, BluetoothDevice.TRANSPORT_LE)
-            } else {
-                device.connectGatt(context, false, callback)
-            } ?: run {
+            val attempt = ConnectionAttempt(peripheralId, continuation)
+            val gatt = device.openGatt(attempt.callback) ?: run {
                 continuation.resumeWithException(CommunicationError("BLE connectGatt returned null"))
                 return@suspendCancellableCoroutine
             }
 
-            sessions[peripheralId] = GattSession(gatt, callback)
+            sessions[peripheralId] = GattSession(gatt, attempt.callback)
             continuation.invokeOnCancellation {
-                mainHandler.removeCallbacks(timeout)
+                attempt.cancelTimeout()
                 closeSession(peripheralId, disconnect = true)
             }
-            mainHandler.postDelayed(timeout, timeoutMs.coerceAtLeast(1000))
+            attempt.scheduleTimeout(timeoutMs)
         }
     }
+
+    private inner class ConnectionAttempt(
+        private val peripheralId: String,
+        private val continuation: CancellableContinuation<Unit>,
+    ) {
+        private var completed = false
+        private val mainHandler = Handler(Looper.getMainLooper())
+        private val timeout = Runnable {
+            if (completed) return@Runnable
+            completed = true
+            closeSession(peripheralId, disconnect = true)
+            if (continuation.isActive) {
+                continuation.resumeWithException(CommunicationError("BLE connect timed out"))
+            }
+        }
+
+        val callback: BluetoothGattCallback = object : BluetoothGattCallback() {
+            override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+                handleConnectionStateChange(gatt, status, newState)
+            }
+
+            override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+                handleServicesDiscovered(gatt, status)
+            }
+
+            override fun onCharacteristicChanged(
+                gatt: BluetoothGatt,
+                characteristic: BluetoothGattCharacteristic,
+                value: ByteArray,
+            ) {
+                notifyListener(peripheralId, characteristic, value)
+            }
+
+            @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+            override fun onCharacteristicChanged(
+                gatt: BluetoothGatt,
+                characteristic: BluetoothGattCharacteristic,
+            ) {
+                notifyListener(peripheralId, characteristic, characteristic.value ?: ByteArray(0))
+            }
+
+            override fun onCharacteristicWrite(
+                gatt: BluetoothGatt,
+                characteristic: BluetoothGattCharacteristic,
+                status: Int,
+            ) {
+                resumeWrite(status)
+            }
+
+            override fun onDescriptorWrite(
+                gatt: BluetoothGatt,
+                descriptor: BluetoothGattDescriptor,
+                status: Int,
+            ) {
+                resumeDescriptorWrite(status)
+            }
+        }
+
+        fun scheduleTimeout(timeoutMs: Long) {
+            mainHandler.postDelayed(timeout, timeoutMs.coerceAtLeast(1000))
+        }
+
+        fun cancelTimeout() {
+            mainHandler.removeCallbacks(timeout)
+        }
+
+        @SuppressLint("MissingPermission")
+        private fun handleConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+            logI("connect:state status=$status newState=$newState id=$peripheralId")
+            when {
+                isFailedConnectionState(status, newState) -> failConnectionState(gatt, status, newState)
+                newState == BluetoothProfile.STATE_CONNECTED && !gatt.discoverServices() ->
+                    failConnection("BLE discoverServices failed to start")
+            }
+        }
+
+        private fun handleServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+            val session = sessions[peripheralId] ?: return
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                completeServiceDiscovery(session, gatt)
+            } else {
+                failServiceDiscovery(session, status)
+            }
+        }
+
+        private fun completeServiceDiscovery(session: GattSession, gatt: BluetoothGatt) {
+            cacheDiscoveredServices(session, gatt)
+            resumeDiscovery(session)
+            completeConnection()
+        }
+
+        private fun failServiceDiscovery(session: GattSession, status: Int) {
+            val error = CommunicationError("BLE service discovery failed: $status")
+            resumeDiscoveryWithError(session, error)
+            failConnection("BLE service discovery failed: $status")
+        }
+
+        private fun completeConnection() {
+            if (completed || !continuation.isActive) return
+            completed = true
+            cancelTimeout()
+            continuation.resume(Unit)
+        }
+
+        private fun failConnectionState(gatt: BluetoothGatt, status: Int, newState: Int) {
+            failConnection("BLE connection failed (status=$status, state=$newState)")
+            runCatching { gatt.close() }
+            sessions.remove(peripheralId)
+        }
+
+        private fun failConnection(message: String, cause: Throwable? = null) {
+            if (completed || !continuation.isActive) return
+            completed = true
+            cancelTimeout()
+            continuation.resumeWithException(CommunicationError(message, cause))
+        }
+
+        private fun resumeWrite(status: Int) {
+            val session = sessions[peripheralId] ?: return
+            resumeUnitContinuation(
+                continuation = session.writeContinuation,
+                error = statusError(status, "BLE write failed"),
+            )
+            session.writeContinuation = null
+        }
+
+        private fun resumeDescriptorWrite(status: Int) {
+            val session = sessions[peripheralId] ?: return
+            resumeUnitContinuation(
+                continuation = session.descriptorContinuation,
+                error = statusError(status, "BLE descriptor write failed"),
+            )
+            session.descriptorContinuation = null
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun BluetoothDevice.openGatt(callback: BluetoothGattCallback): BluetoothGatt? =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            connectGatt(context, false, callback, BluetoothDevice.TRANSPORT_LE)
+        } else {
+            @Suppress("DEPRECATION")
+            connectGatt(context, false, callback)
+        }
 
     private fun isFailedConnectionState(status: Int, newState: Int): Boolean =
         status != BluetoothGatt.GATT_SUCCESS || newState == BluetoothProfile.STATE_DISCONNECTED

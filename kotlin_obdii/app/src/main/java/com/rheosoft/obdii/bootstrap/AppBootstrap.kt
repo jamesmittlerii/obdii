@@ -31,9 +31,7 @@ object AppBootstrap {
                 get() = ConfigData.autoConnectToOBD
             override fun load() = ConfigData.load()
         },
-        pidStore: PidStoreBootstrapper = object : PidStoreBootstrapper {
-            override suspend fun load() = DefaultPidStore.load()
-        },
+        pidStore: PidStoreBootstrapper = PidStoreBootstrapper { DefaultPidStore.load() },
         connection: ConnectionBootstrapper = object : ConnectionBootstrapper {
             override fun initialize() = OBDConnectionManager.initialize()
             override suspend fun connect() = OBDConnectionManager.connect()
