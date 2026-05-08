@@ -2,7 +2,7 @@ package com.rheosoft.obdii.android.ui.screens
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import com.rheosoft.obdii.core.*
 import com.rheosoft.obdii.screenmodels.SettingsScreenModel
 import com.rheosoft.obdii.viewmodels.SettingsViewModel
@@ -73,12 +73,12 @@ class SettingsScreenUiTest {
     @Test
     fun testRendersPrimarySettingsSections() {
         setupScreen()
-        
-        composeRule.onNodeWithText("Units").assertIsDisplayed()
-        composeRule.onNodeWithText("Connection").assertIsDisplayed()
-        composeRule.onNodeWithText("Diagnostics").assertIsDisplayed()
-        composeRule.onNodeWithText("About").assertIsDisplayed()
-        composeRule.onNodeWithText("Gauges").assertIsDisplayed()
+
+        composeRule.assertTextVisible("Units")
+        composeRule.assertTextVisible("Connection")
+        composeRule.assertTextVisibleAfterScroll("Diagnostics")
+        composeRule.assertTextVisibleAfterScroll("About")
+        composeRule.assertTextVisibleAfterScroll("Gauges")
     }
 
     @Test
@@ -86,9 +86,9 @@ class SettingsScreenUiTest {
         val config = MockSettingsConfig().apply { pushConnectionType(ConnectionType.wifi) }
         setupScreen(config = config)
 
-        composeRule.onNodeWithText("Connection details").assertIsDisplayed()
-        composeRule.onNodeWithText("Host").assertIsDisplayed()
-        composeRule.onNodeWithText("Port").assertIsDisplayed()
+        composeRule.assertTextVisibleAfterScroll("Connection details")
+        composeRule.assertTextVisibleAfterScroll("Host")
+        composeRule.assertTextVisibleAfterScroll("Port")
     }
 
     @Test
@@ -138,6 +138,6 @@ class SettingsScreenUiTest {
     @Test
     fun testDiagnosticsSectionShowsShareLogsAction() {
         setupScreen()
-        composeRule.onNodeWithText("Share Logs").assertIsDisplayed()
+        composeRule.assertTextVisibleAfterScroll("Share Logs")
     }
 }

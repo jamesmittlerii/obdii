@@ -1,7 +1,7 @@
 package com.rheosoft.obdii.android.ui.screens
 
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import com.rheosoft.obdii.models.ObdPidKind
 import com.rheosoft.obdii.models.ObdiiPid
 import com.rheosoft.obdii.models.ValueRange
@@ -35,9 +35,9 @@ class GaugeDetailScreenUiTest {
             GaugeDetailScreen(detail = detail, isMetric = true, onClose = {})
         }
 
-        composeRule.onNodeWithText("Current").assertIsDisplayed()
-        composeRule.onNodeWithText("Statistics").assertIsDisplayed()
-        composeRule.onNodeWithText("Maximum range").assertIsDisplayed()
+        composeRule.assertTextVisible("Current")
+        composeRule.assertTextVisible("Statistics")
+        composeRule.assertTextVisibleAfterScroll("Maximum range")
     }
 
     @Test
@@ -50,7 +50,7 @@ class GaugeDetailScreenUiTest {
             GaugeDetailScreen(detail = detail, isMetric = true, onClose = {})
         }
 
-        composeRule.onNodeWithText("No data yet").assertIsDisplayed()
+        composeRule.assertTextVisibleAfterScroll("No data yet")
     }
 
     @Test

@@ -2,7 +2,7 @@ package com.rheosoft.obdii.android.ui.screens
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import com.rheosoft.obdii.core.*
 import com.rheosoft.obdii.screenmodels.MilStatusScreenModel
 import com.rheosoft.obdii.viewmodels.MilStatusViewModel

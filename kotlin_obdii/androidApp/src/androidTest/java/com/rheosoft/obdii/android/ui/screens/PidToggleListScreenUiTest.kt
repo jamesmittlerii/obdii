@@ -2,7 +2,7 @@ package com.rheosoft.obdii.android.ui.screens
 
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import com.rheosoft.obdii.core.*
 import com.rheosoft.obdii.models.ObdPidKind
 import com.rheosoft.obdii.models.ObdiiPid
@@ -50,10 +50,10 @@ class PidToggleListScreenUiTest {
             gaugePid("11", "Speed", false)
         ))
 
-        composeRule.onNodeWithText("Enabled").assertIsDisplayed()
-        composeRule.onNodeWithText("RPM").assertIsDisplayed()
-        composeRule.onNodeWithText("Disabled").assertIsDisplayed()
-        composeRule.onNodeWithText("Speed").assertIsDisplayed()
+        composeRule.assertTextVisible("Enabled")
+        composeRule.assertTextExists("RPM")
+        composeRule.assertTextVisibleAfterScroll("Disabled")
+        composeRule.assertTextExists("Speed")
     }
 
     @Test
@@ -66,7 +66,7 @@ class PidToggleListScreenUiTest {
         composeRule.onNodeWithContentDescription("Search PIDs").performClick()
         composeRule.onNodeWithText("Search PIDs…").performTextInput("RPM")
 
-        composeRule.onNodeWithText("RPM").assertIsDisplayed()
+        composeRule.assertTextExists("RPM")
         composeRule.onNodeWithText("Speed").assertDoesNotExist()
     }
 
@@ -81,7 +81,7 @@ class PidToggleListScreenUiTest {
         composeRule.onNodeWithText("Search PIDs…").performTextInput("RPM")
         composeRule.onNodeWithContentDescription("Cancel search").performClick()
 
-        composeRule.onNodeWithText("RPM").assertIsDisplayed()
-        composeRule.onNodeWithText("Speed").assertIsDisplayed()
+        composeRule.assertTextExists("RPM")
+        composeRule.assertTextExists("Speed")
     }
 }

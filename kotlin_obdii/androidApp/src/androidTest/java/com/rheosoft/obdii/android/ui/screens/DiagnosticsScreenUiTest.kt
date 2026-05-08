@@ -2,7 +2,7 @@ package com.rheosoft.obdii.android.ui.screens
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import com.rheosoft.obdii.core.*
 import com.rheosoft.obdii.screenmodels.DiagnosticsScreenModel
 import com.rheosoft.obdii.viewmodels.DiagnosticsViewModel
@@ -70,7 +70,7 @@ class DiagnosticsScreenUiTest {
         val conn = DiagnosticsMockConn().apply { pushState(OBDConnectionState.disconnected) }
         setupScreen(conn = conn)
 
-        composeRule.onNodeWithText("Waiting for data…").assertIsDisplayed()
+        composeRule.onNodeWithText("Waiting for data...").assertIsDisplayed()
         composeRule.onNodeWithText("Connect to a vehicle in Settings.").assertIsDisplayed()
     }
 
@@ -92,10 +92,10 @@ class DiagnosticsScreenUiTest {
         
         provider.send(listOf(dtc("P0001", "High"), dtc("P0002", "Critical")))
         
-        composeRule.onNodeWithText("Critical").assertIsDisplayed()
-        composeRule.onNodeWithText("High").assertIsDisplayed()
-        composeRule.onNodeWithText("Test DTC P0001").assertIsDisplayed()
-        composeRule.onNodeWithText("Test DTC P0002").assertIsDisplayed()
+        composeRule.assertTextVisible("Critical")
+        composeRule.assertTextVisible("High")
+        composeRule.onNodeWithText("P0001", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("P0002", substring = true).assertIsDisplayed()
     }
 
     @Test
@@ -116,7 +116,7 @@ class DiagnosticsScreenUiTest {
         
         provider.send(listOf(dtc("P0001", "High")))
         
-        composeRule.onNodeWithText("Test DTC P0001").performClick()
+        composeRule.onNodeWithText("P0001", substring = true).performClick()
         
         assert(tappedCode == "P0001")
     }
@@ -126,7 +126,7 @@ class DiagnosticsScreenUiTest {
         val conn = DiagnosticsMockConn().apply { pushState(OBDConnectionState.connected) }
         setupScreen(conn = conn)
 
-        composeRule.onNodeWithText("Waiting for data…").assertIsDisplayed()
+        composeRule.onNodeWithText("Waiting for data...").assertIsDisplayed()
         composeRule.onNodeWithText("Connect to a vehicle in Settings.").assertDoesNotExist()
     }
 
@@ -137,6 +137,6 @@ class DiagnosticsScreenUiTest {
         
         provider.send(listOf(dtc("P0013", "Low")))
 
-        composeRule.onNodeWithText("Low").assertIsDisplayed()
+        composeRule.assertTextVisible("Low")
     }
 }

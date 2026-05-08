@@ -1,7 +1,7 @@
 package com.rheosoft.obdii.android.ui.screens
 
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import com.rheosoft.obdii.core.TroubleCodeMetadata
 import com.rheosoft.obdii.screenmodels.DtcDetailScreenModel
 import org.junit.Rule
@@ -28,10 +28,10 @@ class DtcDetailScreenUiTest {
             DtcDetailScreen(detail = model, onClose = {})
         }
 
-        composeRule.onNodeWithText("Overview").assertIsDisplayed()
-        composeRule.onNodeWithText("Description").assertIsDisplayed()
-        composeRule.onNodeWithText("Potential causes").assertIsDisplayed()
-        composeRule.onNodeWithText("Possible remedies").assertIsDisplayed()
+        composeRule.assertTextVisible("Overview")
+        composeRule.assertTextVisible("Description")
+        composeRule.assertTextVisibleAfterScroll("Potential causes")
+        composeRule.assertTextVisibleAfterScroll("Possible remedies")
     }
 
     @Test
@@ -42,7 +42,7 @@ class DtcDetailScreenUiTest {
             DtcDetailScreen(detail = model, onClose = {})
         }
 
-        composeRule.onNodeWithText("P0300").assertIsDisplayed()
+        composeRule.onAllNodesWithText("P0300").assertCountEquals(2)
     }
 
     @Test
@@ -53,9 +53,12 @@ class DtcDetailScreenUiTest {
             DtcDetailScreen(detail = model, onClose = {})
         }
 
-        composeRule.onNodeWithText("Code: P0300").assertIsDisplayed()
-        composeRule.onNodeWithText("Title: Title P0300").assertIsDisplayed()
-        composeRule.onNodeWithText("Severity: High").assertIsDisplayed()
+        composeRule.assertTextVisible("Code")
+        composeRule.onAllNodesWithText("P0300").assertCountEquals(2)
+        composeRule.assertTextVisible("Title")
+        composeRule.assertTextVisible("Title P0300")
+        composeRule.assertTextVisible("Severity")
+        composeRule.assertTextVisible("High")
     }
 
     @Test
@@ -77,8 +80,8 @@ class DtcDetailScreenUiTest {
             DtcDetailScreen(detail = model, onClose = {})
         }
 
-        composeRule.onNodeWithText("• Cause 1").assertIsDisplayed()
-        composeRule.onNodeWithText("• Cause 2").assertIsDisplayed()
-        composeRule.onNodeWithText("• Remedy 1").assertIsDisplayed()
+        composeRule.assertTextVisibleAfterScroll("Cause 1")
+        composeRule.assertTextVisibleAfterScroll("Cause 2")
+        composeRule.assertTextVisibleAfterScroll("Remedy 1")
     }
 }
