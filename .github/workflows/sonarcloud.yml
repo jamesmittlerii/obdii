@@ -20,6 +20,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }} # Required for private submodules
 
       - name: Checkout SwiftOBD2
         uses: actions/checkout@v5
