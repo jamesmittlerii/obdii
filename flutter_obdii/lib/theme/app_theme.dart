@@ -8,7 +8,7 @@ class AppTheme {
   static const Color _darkBackground = Color(0xFF0F172A); // Slate 900
   static const Color _darkSurface = Color(0xFF1E293B); // Slate 800
   static const Color _darkSurfaceContainer = Color(0xFF334155); // Slate 700
-  
+
   // ─────────────────────────────────────────────
   // Colors - Light
   // ─────────────────────────────────────────────
@@ -33,7 +33,27 @@ class AppTheme {
   // TextTheme
   // ─────────────────────────────────────────────
   static TextTheme _buildTextTheme(TextTheme base) {
+    if (!GoogleFonts.config.allowRuntimeFetching) return base;
     return GoogleFonts.interTextTheme(base);
+  }
+
+  static TextStyle _inter({
+    required double fontSize,
+    required FontWeight fontWeight,
+    required Color color,
+  }) {
+    if (!GoogleFonts.config.allowRuntimeFetching) {
+      return TextStyle(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+      );
+    }
+    return GoogleFonts.inter(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+    );
   }
 
   // ─────────────────────────────────────────────
@@ -46,18 +66,13 @@ class AppTheme {
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: Colors.black.withValues(alpha: 0.10),
-          width: 1,
-        ),
+        side: BorderSide(color: Colors.black.withValues(alpha: 0.10), width: 1),
       ),
     );
   }
 
   static ListTileThemeData _buildListTileTheme() {
-    return const ListTileThemeData(
-      iconColor: _primaryAccent,
-    );
+    return const ListTileThemeData(iconColor: _primaryAccent);
   }
 
   // ─────────────────────────────────────────────
@@ -93,9 +108,17 @@ class AppTheme {
         indicatorColor: _primaryAccent.withValues(alpha: 0.15),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: _primaryAccentDarker);
+            return _inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: _primaryAccentDarker,
+            );
           }
-          return GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey.shade600);
+          return _inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade600,
+          );
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
@@ -148,9 +171,17 @@ class AppTheme {
         indicatorColor: _primaryAccent.withValues(alpha: 0.2),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: _primaryAccent);
+            return _inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: _primaryAccent,
+            );
           }
-          return GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey.shade400);
+          return _inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade400,
+          );
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {

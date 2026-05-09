@@ -4,6 +4,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -128,6 +129,85 @@ class ObdConnectionManagerTest {
         OBDConnectionManager.disconnect()
         assertEquals(OBDConnectionState.disconnected, OBDConnectionManager.connectionState)
         assertTrue(OBDConnectionManager.pidStats.isEmpty())
+    }
+
+    @Test
+    fun `disconnect clears all terminal state projections`() = runTest {
+        val token = PidInterestRegistry.instance.makeToken()
+        PidInterestRegistry.instance.replace(setOf("0101", "03"), token)
+
+        try {
+            OBDConnectionManager.connect()
+
+            repeat(20) {
+                if (OBDConnectionManager.milStatus != null && OBDConnectionManager.troubleCodes != null) {
+                    return@repeat
+                }
+                Thread.sleep(100)
+            }
+
+            OBDConnectionManager.disconnect()
+
+            assertEquals(OBDConnectionState.disconnected, OBDConnectionManager.connectionState)
+            assertTrue(OBDConnectionManager.pidStats.isEmpty())
+            assertNull(OBDConnectionManager.troubleCodes)
+            assertNull(OBDConnectionManager.fuelStatus)
+            assertNull(OBDConnectionManager.milStatus)
+            assertNull(OBDConnectionManager.connectedPeripheralName)
+        } finally {
+            PidInterestRegistry.instance.clear(token)
+        }
+    }
+
+    @Test
+    fun `state streams expose current values`() = runTest {
+        assertEquals(OBDConnectionState.disconnected, OBDConnectionManager.connectionStateStream.value)
+        assertTrue(OBDConnectionManager.pidStatsStream.value.isEmpty())
+        assertNull(OBDConnectionManager.diagnosticsStream.value)
+        assertNull(OBDConnectionManager.fuelStatusStream.value)
+        assertNull(OBDConnectionManager.milStatusStream.value)
+    }
+
+    @Test
+    fun `connect is ignored while already connected`() = runTest {
+        OBDConnectionManager.connect()
+        assertEquals(OBDConnectionState.connected, OBDConnectionManager.connectionState)
+
+        OBDConnectionManager.connect()
+
+        assertEquals(OBDConnectionState.connected, OBDConnectionManager.connectionState)
+    }
+
+    @Test
+    fun `update connection details disconnects active connection`() = runTest {
+        OBDConnectionManager.connect()
+
+        ConfigData.connectionType = ConnectionType.wifi
+        OBDConnectionManager.updateConnectionDetails()
+
+        assertEquals(OBDConnectionState.disconnected, OBDConnectionManager.connectionState)
+        assertTrue(OBDConnectionManager.pidStats.isEmpty())
+    }
+
+    @Test
+    fun `bluetooth without platform adapter fails on jvm`() = runTest {
+        ConfigData.connectionType = ConnectionType.bluetooth
+        OBDConnectionManager.updateConnectionDetails()
+
+        runCatching { OBDConnectionManager.connect() }
+
+        assertEquals(OBDConnectionState.failed, OBDConnectionManager.connectionState)
+    }
+
+    @Test
+    fun `pid stats equality and hash reflect values`() {
+        val first = PIDStats("010C", MeasurementResult(2500.0, "rpm"))
+        val same = PIDStats("010C", MeasurementResult(2500.0, "rpm"))
+        val different = first.copyWith(MeasurementResult(3000.0, "rpm"))
+
+        assertEquals(first, same)
+        assertEquals(first.hashCode(), same.hashCode())
+        assertNotEquals(first, different)
     }
 
     @Test

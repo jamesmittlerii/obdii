@@ -32,6 +32,13 @@ class ObdiiPidTest {
     }
 
     @Test
+    fun `value range conversion falls back for unknown units`() {
+        val range = ValueRange(1.0, 2.0)
+
+        assertEquals(range, range.converted("unknown", isMetric = false))
+    }
+
+    @Test
     fun `obd pid combined range defaults`() {
         val pid = ObdiiPid(
             id = "rpm_test",
@@ -44,6 +51,23 @@ class ObdiiPidTest {
         val combined = pid.combinedRange()
         assertEquals(0.0, combined.min)
         assertEquals(1.0, combined.max)
+    }
+
+    @Test
+    fun `obd pid combined range spans all configured ranges`() {
+        val pid = ObdiiPid(
+            id = "combined",
+            label = "Combined",
+            name = "Combined",
+            pidCommand = "010C",
+            units = "RPM",
+            typicalRange = ValueRange(700.0, 2500.0),
+            warningRange = ValueRange(2500.0, 4000.0),
+            dangerRange = ValueRange(4000.0, 6500.0),
+        )
+
+        assertEquals(ValueRange(700.0, 6500.0), pid.combinedRange())
+        assertEquals("700 – 6500 RPM", pid.displayRange(isMetric = true))
     }
 
     @Test
@@ -109,6 +133,19 @@ class ObdiiPidTest {
     }
 
     @Test
+    fun `metric conversions cover pressure distance mass air and fuel rate formatting`() {
+        val pressure = ObdiiPid("pressure", label = "Pressure", name = "Pressure", pidCommand = "010A", units = "kPa")
+        val distance = pressure.copy(id = "distance", units = "km")
+        val massAir = pressure.copy(id = "mass_air", units = "g/s")
+        val fuelRate = pressure.copy(id = "fuel_rate", units = "L/h")
+
+        assertEquals("15 psi", pressure.formattedValue(100.0, isMetric = false))
+        assertEquals("6 mi", distance.formattedValue(10.0, isMetric = false))
+        assertEquals("1 lb/min", massAir.formattedValue(10.0, isMetric = false))
+        assertEquals("3 gal/h", fuelRate.formattedValue(10.0, isMetric = false))
+    }
+
+    @Test
     fun `copyWith keeps current enabled value when omitted`() {
         val pid = ObdiiPid(
             id = "copy",
@@ -138,6 +175,24 @@ class ObdiiPidTest {
         assertEquals(null, pid.typicalRangeFor(isMetric = true))
         assertEquals(null, pid.warningRangeFor(isMetric = true))
         assertEquals(null, pid.dangerRangeFor(isMetric = true))
+    }
+
+    @Test
+    fun `unknown units keep label and omit units when requested`() {
+        val pid = ObdiiPid(
+            id = "unknown_units",
+            label = "Unknown",
+            name = "Unknown",
+            pidCommand = "01FF",
+            units = "widgets",
+            typicalRange = ValueRange(0.0, 10.0),
+        )
+
+        assertEquals("widgets", pid.unitLabel(isMetric = false))
+        assertEquals(7.5, pid.convertedValue(7.5, isMetric = false))
+        assertEquals(ValueRange(0.0, 10.0), pid.typicalRangeFor(isMetric = false))
+        assertEquals("8 widgets", pid.formattedValue(7.5, isMetric = false))
+        assertEquals("8", pid.formattedValue(7.5, isMetric = false, includeUnits = false))
     }
 
     @Test

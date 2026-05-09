@@ -345,6 +345,29 @@ void main() {
     },
   );
 
+  testWidgets('testConnectionStatusLabelsRenderForDisconnectedAndConnected', (
+    tester,
+  ) async {
+    final config = _MockSettingsConfig();
+    final conn = _MockConnection()
+      ..connectionState = OBDConnectionState.disconnected;
+    final vm = SettingsViewModel(config: config, connection: conn);
+
+    await tester.pumpWidget(_build(vm));
+    await tester.pump();
+
+    expect(find.text('Disconnected'), findsOneWidget);
+
+    conn.emit(OBDConnectionState.connected);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Connected'), findsOneWidget);
+
+    vm.dispose();
+    config.dispose();
+    conn.dispose();
+  });
+
   testWidgets('testConnectionButtonInvokesConnectAndDisconnect', (
     tester,
   ) async {
@@ -429,6 +452,31 @@ void main() {
     conn.dispose();
   });
 
+  testWidgets('testConnectionTypeDisplayNamesCoverEveryOption', (tester) async {
+    expect(ConnectionType.demo.displayName, 'Demo');
+    expect(ConnectionType.wifi.displayName, 'WiFi');
+    expect(ConnectionType.bluetooth.displayName, 'Bluetooth LE');
+  });
+
+  testWidgets('testAutoConnectSwitchUpdatesViewModelAndConfig', (tester) async {
+    final config = _MockSettingsConfig();
+    final conn = _MockConnection();
+    final vm = SettingsViewModel(config: config, connection: conn);
+
+    await tester.pumpWidget(_build(vm));
+    await tester.pump();
+
+    await tester.tap(find.byType(Switch));
+    await tester.pump();
+
+    expect(vm.autoConnectToOBD, isFalse);
+    expect(config.autoConnectToOBD, isFalse);
+
+    vm.dispose();
+    config.dispose();
+    conn.dispose();
+  });
+
   testWidgets('testWifiFieldsUpdateHostAndValidPort', (tester) async {
     final config = _MockSettingsConfig()..connectionType = ConnectionType.wifi;
     final conn = _MockConnection();
@@ -446,6 +494,24 @@ void main() {
     expect(config.wifiHost, '10.0.0.42');
     expect(config.wifiPort, 12345);
     expect(conn.updateConnectionDetailsCallCount, greaterThanOrEqualTo(1));
+
+    vm.dispose();
+    config.dispose();
+    conn.dispose();
+  });
+
+  testWidgets('testInvalidWifiPortIsIgnored', (tester) async {
+    final config = _MockSettingsConfig()..connectionType = ConnectionType.wifi;
+    final conn = _MockConnection();
+    final vm = SettingsViewModel(config: config, connection: conn);
+
+    await tester.pumpWidget(_build(vm));
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField).at(1), '');
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(config.wifiPort, 35000);
 
     vm.dispose();
     config.dispose();
