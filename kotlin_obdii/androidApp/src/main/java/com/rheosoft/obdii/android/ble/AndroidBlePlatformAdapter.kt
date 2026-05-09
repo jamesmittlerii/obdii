@@ -10,6 +10,7 @@ import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothStatusCodes
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
@@ -289,6 +290,7 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
             continuation.resume(Unit)
         }
 
+        @SuppressLint("MissingPermission")
         private fun failConnectionState(gatt: BluetoothGatt, status: Int, newState: Int) {
             failConnection("BLE connection failed (status=$status, state=$newState)")
             runCatching { gatt.close() }
@@ -323,12 +325,7 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
 
     @SuppressLint("MissingPermission")
     private fun BluetoothDevice.openGatt(callback: BluetoothGattCallback): BluetoothGatt? =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            connectGatt(context, false, callback, BluetoothDevice.TRANSPORT_LE)
-        } else {
-            @Suppress("DEPRECATION")
-            connectGatt(context, false, callback)
-        }
+        connectGatt(context, false, callback, BluetoothDevice.TRANSPORT_LE)
 
     private fun isFailedConnectionState(status: Int, newState: Int): Boolean =
         status != BluetoothGatt.GATT_SUCCESS || newState == BluetoothProfile.STATE_DISCONNECTED
@@ -472,7 +469,7 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
         descriptor: BluetoothGattDescriptor,
         descriptorValue: ByteArray,
     ): Boolean = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        gatt.writeDescriptor(descriptor, descriptorValue) == BluetoothGatt.GATT_SUCCESS
+        gatt.writeDescriptor(descriptor, descriptorValue) == BluetoothStatusCodes.SUCCESS
     } else {
         @Suppress("DEPRECATION")
         descriptor.value = descriptorValue
@@ -536,7 +533,7 @@ class AndroidBlePlatformAdapter(private val context: Context) : BlePlatformAdapt
         characteristic: BluetoothGattCharacteristic,
         payload: ByteArray,
     ): Boolean = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        gatt.writeCharacteristic(characteristic, payload, characteristic.writeType) == BluetoothGatt.GATT_SUCCESS
+        gatt.writeCharacteristic(characteristic, payload, characteristic.writeType) == BluetoothStatusCodes.SUCCESS
     } else {
         @Suppress("DEPRECATION")
         characteristic.value = payload
