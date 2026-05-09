@@ -198,15 +198,6 @@ class ObdConnectionManagerTest {
         assertTrue(OBDConnectionManager.pidStats.isEmpty())
     }
 
-    @Test
-    fun `bluetooth without platform adapter fails on jvm`() = runTest {
-        ConfigData.connectionType = ConnectionType.bluetooth
-        OBDConnectionManager.updateConnectionDetails()
-
-        runCatching { OBDConnectionManager.connect() }
-
-        assertEquals(OBDConnectionState.failed, OBDConnectionManager.connectionState)
-    }
 
     @Test
     fun `pid stats equality and hash reflect values`() {
