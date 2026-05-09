@@ -33,7 +33,7 @@ protocol CarPlayVisibilityForwarding: AnyObject {
 }
 
 @MainActor
-class CarPlayBaseTemplateController<VM: BaseViewModel>: NSObject, @MainActor CarPlayTabControlling,
+class CarPlayBaseTemplateController<VM: BaseViewModel>: NSObject, CarPlayTabControlling,
   CarPlayVisibilityForwarding
 {
   weak var interfaceController: CPInterfaceController?

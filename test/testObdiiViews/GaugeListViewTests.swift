@@ -76,8 +76,9 @@ final class GaugeListViewTests: XCTestCase {
         stats: [OBDCommand: OBDConnectionManager.PIDStats] = [:],
         units: MeasurementUnit = .metric
     ) -> GaugeListView {
+        let pidProvider = MockPIDListProvider(pids: pids)
         let vm = makeViewModelWithMocks(pids: pids, stats: stats, units: units)
-        return GaugeListView(viewModel: vm)
+        return GaugeListView(viewModel: vm, pidProvider: pidProvider)
     }
     
     // Allow Combine pipeline in GaugesViewModel to rebuild tiles before inspection
@@ -97,10 +98,10 @@ final class GaugeListViewTests: XCTestCase {
         XCTAssertNotNil(list, "GaugeListView should contain a List")
     }
     
-    func testHasSection() async throws {
+    func testListUsesDirectForEachRows() async throws {
         let view = makeViewWithMocks(pids: [])
         let sections = try view.inspect().findAll(ViewType.Section.self)
-        XCTAssertGreaterThanOrEqual(sections.count, 1, "Should have at least one section")
+        XCTAssertEqual(sections.count, 0, "GaugeListView currently renders rows directly in the List without Section wrappers")
     }
     
     func testNavigationTitle() async throws {
@@ -196,25 +197,15 @@ final class GaugeListViewTests: XCTestCase {
             units: "°C",
             typicalRange: ValueRange(min: 0, max: 120)
         )
-        
-        let view = makeViewWithMocks(pids: [testPID], stats: [:], units: .metric)
+
+        let viewModel = makeViewModelWithMocks(pids: [testPID], stats: [:], units: .metric)
         await pumpMainRunLoop()
-        
-        // Inspect the list row and read the trailing value text
-        let inspected = try view.inspect()
-        let list = try inspected.find(ViewType.List.self)
-        let section = try list.section(0)
-        let forEach = try section.forEach(0)
-        XCTAssertGreaterThan(forEach.count, 0, "Should have at least one row")
-        let row = try forEach.navigationLink(0)
-        
-        let hstack = try row.find(ViewType.HStack.self)
-        let texts = hstack.findAll(ViewType.Text.self)
-        XCTAssertGreaterThanOrEqual(texts.count, 3, "Row should contain name, range, and value texts")
-        
-        let valueText = try texts.last!.string()
-        XCTAssertTrue(valueText.contains("—"), "Should show placeholder dash")
-        XCTAssertTrue(valueText.contains("°C"), "Should show units from mocks")
+
+        XCTAssertEqual(viewModel.displayTiles.count, 1, "Should build one display tile from the mocked PID")
+        let tile = try XCTUnwrap(viewModel.displayTiles.first)
+        XCTAssertEqual(tile.title, "Engine Temperature", "Should preserve the mocked gauge name")
+        XCTAssertTrue(tile.valueText.contains("—"), "Should show placeholder dash when there is no measurement")
+        XCTAssertTrue(tile.valueText.contains("°C"), "Should show units from mocks")
     }
 
     
