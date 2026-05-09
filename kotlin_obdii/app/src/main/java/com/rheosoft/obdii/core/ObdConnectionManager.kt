@@ -99,7 +99,7 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
     fun initialize() {
         if (isInitialized) return
         isInitialized = true
-        syncTransportConfig()
+        syncTransportConfigInternal()
         syncInterestedPids()
     }
 
@@ -113,7 +113,7 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
             obdWarning("Connection attempt ignored, already connected or connecting.", LogCategory.Service)
             return
         }
-        syncTransportConfig()
+        syncTransportConfigInternal()
         _connectionState = OBDConnectionState.connecting
         obdInfo("Starting connection with timeout: 30s", LogCategory.Connection)
 
@@ -206,12 +206,12 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
     private fun bindConnectionSettings() {
         managerScope.launch {
             ConfigData.connectionTypeStream.collectLatest {
-                syncTransportConfig()
+                syncTransportConfigInternal()
             }
         }
     }
 
-    private fun syncTransportConfig() {
+    private fun syncTransportConfigInternal() {
         service.switchConnectionType(ConfigData.connectionType.toLibraryConnectionType(), ConfigData.wifiHost, ConfigData.wifiPort)
         bleAdapter?.let(service::setBleAdapter)
         bindServiceMirrors()
