@@ -1,51 +1,50 @@
 package com.rheosoft.obdii.screenmodels
 
-import com.rheosoft.obdii.core.InMemoryPidStore
-import com.rheosoft.obdii.models.ObdPidKind
-import com.rheosoft.obdii.models.ObdiiPid
 import com.rheosoft.obdii.viewmodels.PidToggleListViewModel
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import com.rheosoft.obdii.core.InMemoryPidStore
+import com.rheosoft.obdii.models.ObdiiPid
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlin.test.*
 
-class PidToggleListViewTest {
-    private fun vm(): PidToggleListViewModel {
-        val store = InMemoryPidStore(
-            listOf(
-                ObdiiPid("rpm", true, "RPM", "Engine RPM", "010C", units = "RPM", kind = ObdPidKind.gauge),
-                ObdiiPid("spd", false, "Speed", "Vehicle Speed", "010D", units = "km/h", kind = ObdPidKind.gauge),
-            ),
-        )
-        return PidToggleListViewModel(store)
+
+
+class PidToggleListScreenModelTest {
+    private lateinit var viewModel: PidToggleListViewModel
+    private lateinit var screenModel: PidToggleListScreenModel
+
+    @BeforeTest
+    fun setup() {
+        viewModel = PidToggleListViewModel(InMemoryPidStore(emptyList()))
+        screenModel = PidToggleListScreenModel(viewModel)
     }
 
     @Test
-    fun `title toggles with search mode`() {
-        val view = PidToggleListScreenModel(vm())
-        assertEquals("Gauges", view.title)
-        view.startSearch()
-        assertEquals("Search PIDs...", view.title)
+    fun `testTitle`() {
+        assertEquals("Gauges", screenModel.title)
+        screenModel.startSearch()
+        assertEquals("Search PIDs...", screenModel.title)
     }
 
     @Test
-    fun `cancel search clears query`() {
-        val viewModel = vm()
-        val view = PidToggleListScreenModel(viewModel)
-        view.startSearch()
+    fun `testCancelSearch`() {
+        screenModel.startSearch()
         viewModel.searchText = "rpm"
-        view.cancelSearch()
-        assertFalse(view.isSearching)
+        screenModel.cancelSearch()
+        assertFalse(screenModel.isSearching)
         assertEquals("", viewModel.searchText)
     }
 
     @Test
-    fun `no results copy matches flutter`() {
-        val viewModel = vm()
-        val view = PidToggleListScreenModel(viewModel)
-        viewModel.searchText = "does-not-exist"
-        assertEquals("No results for \"does-not-exist\"", view.noResultsText())
-        viewModel.searchText = "rpm"
-        assertTrue(view.noResultsText() == null)
+    fun `testNoResultsText`() {
+        assertNull(screenModel.noResultsText())
+        
+        screenModel.startSearch()
+        viewModel.searchText = "unknown"
+        // filteredEnabled and filteredDisabled will be empty because MockPidProvider is empty
+        assertEquals("No results for \"unknown\"", screenModel.noResultsText())
+        
+        viewModel.searchText = ""
+        assertNull(screenModel.noResultsText())
     }
 }

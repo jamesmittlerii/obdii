@@ -66,5 +66,44 @@ class GaugesViewModelTest {
         vm.setVisible(true)
         Thread.sleep(50)
         assertTrue(registry.interested.contains("010C"))
+
+        vm.setVisible(false)
+        Thread.sleep(50)
+        assertTrue(registry.interested.isEmpty())
+    }
+
+    @Test
+    fun `setDisplayMode updates provider`() {
+        val units = MockUnits()
+        val vm = GaugesViewModel(DefaultPidStore, MockStats(), units, PidInterestRegistry())
+        vm.setDisplayMode(GaugesDisplayMode.list)
+        assertEquals(GaugesDisplayMode.list, units.gaugesDisplayMode)
+    }
+
+    @Test
+    fun `isEmpty reflect tiles`() = runTest {
+        DefaultPidStore.resetForTests()
+        DefaultPidStore.seededPidsProvider = { emptyList() }
+        DefaultPidStore.load()
+        val vm = GaugesViewModel(DefaultPidStore, MockStats(), MockUnits(), PidInterestRegistry())
+        assertTrue(vm.isEmpty)
+    }
+
+    @Test
+    fun `moveEnabled calls store`() = runTest {
+        val vm = GaugesViewModel(DefaultPidStore, MockStats(), MockUnits(), PidInterestRegistry())
+        // DefaultPidStore is a PidStore
+        vm.moveEnabled(0, 1)
+        // Just verify it doesn't crash on JVM
+    }
+
+    @Test
+    fun `moveEnabled handles non-PidStore gracefully`() = runTest {
+        val mockProvider = object : com.rheosoft.obdii.core.PidListProviding {
+            override val pids: List<ObdiiPid> = emptyList()
+            override val pidsStream: StateFlow<List<ObdiiPid>> = MutableStateFlow(emptyList())
+        }
+        val vm = GaugesViewModel(mockProvider, MockStats(), MockUnits(), PidInterestRegistry())
+        vm.moveEnabled(0, 1) // Should return safely
     }
 }

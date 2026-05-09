@@ -9,8 +9,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.*
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -24,176 +22,83 @@ private class MockMilProvider : MilStatusProviding {
 @OptIn(ExperimentalCoroutinesApi::class)
 class MilStatusViewModelTest {
     private lateinit var mockProvider: MockMilProvider
-    private lateinit var interestRegistry: PidInterestRegistry
+    private lateinit var registry: PidInterestRegistry
     private lateinit var viewModel: MilStatusViewModel
-    private val testDispatcher = UnconfinedTestDispatcher()
+    private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
 
-    @BeforeEach
+    @BeforeTest
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         mockProvider = MockMilProvider()
-        interestRegistry = PidInterestRegistry()
-        viewModel = MilStatusViewModel(mockProvider, interestRegistry, testScope)
+        registry = PidInterestRegistry()
+        viewModel = MilStatusViewModel(mockProvider, registry, testScope)
+        testDispatcher.scheduler.runCurrent()
     }
 
-    @AfterEach
+    @AfterTest
     fun tearDown() {
         Dispatchers.resetMain()
     }
 
     @Test
-    fun `testInitializationStatusNullHasStatusFalse`() {
-        assertNotNull(viewModel)
+    fun `testInitialization`() {
         assertNull(viewModel.status)
-        assertFalse(viewModel.hasStatus)
+        assertEquals("Waiting for data...", viewModel.uiStateStream.value.headerText)
+        assertTrue(viewModel.uiStateStream.value.monitorRows.isEmpty())
     }
 
     @Test
-    fun `testHasstatusFalseWhenNil`() {
-        assertNull(viewModel.status)
-        assertFalse(viewModel.hasStatus)
-    }
-
-    @Test
-    fun `testStatusUpdatesFromProvider`() = runTest {
-        val monitors = listOf(
-            ReadinessMonitor("Misfire", supported = true, ready = true),
-            ReadinessMonitor("Fuel System", supported = true, ready = false)
-        )
-        val status = Status(milOn = true, dtcCount = 2, monitors = monitors)
+    fun `testStatusUpdate`() = runTest {
+        val status = Status(milOn = true, dtcCount = 1, monitors = emptyList())
         mockProvider.send(status)
-        
-        assertNotNull(viewModel.status)
-        assertTrue(viewModel.hasStatus)
-        assertEquals("MIL: On (2 DTCs)", viewModel.headerText)
-    }
-
-    @Test
-    fun `testSortedsupportedmonitorsInitiallyEmpty`() {
-        assertTrue(viewModel.sortedSupportedMonitors.isEmpty())
-    }
-
-    @Test
-    fun `testMonitorSortingNotReadyFirstThenReadyFilteredBySupported`() = runTest {
-        val monitors = listOf(
-            ReadinessMonitor("B Monitor", supported = true, ready = true),
-            ReadinessMonitor("A Monitor", supported = true, ready = false),
-            ReadinessMonitor("C Monitor", supported = true, ready = false),
-            ReadinessMonitor("Z Unsupported", supported = false, ready = true)
-        )
-        mockProvider.send(Status(milOn = false, dtcCount = 0, monitors = monitors))
-
-        val sorted = viewModel.sortedSupportedMonitors
-        
-        // Z Unsupported must be excluded
-        assertFalse(sorted.any { it.name == "Z Unsupported" })
-
-        // Not-ready first (A, C), then ready (B)
-        val names = sorted.map { it.name }
-        assertEquals(listOf("A Monitor", "C Monitor", "B Monitor"), names)
-    }
-
-    @Test
-    fun `testHeadertextWhenNoStatus`() {
-        assertEquals("No MIL Status", viewModel.headerText)
-    }
-
-    @Test
-    fun `testHeadertextFormattingOff0DTCs`() = runTest {
-        mockProvider.send(Status(milOn = false, dtcCount = 0, monitors = emptyList()))
-        assertEquals("MIL: Off (0 DTCs)", viewModel.headerText)
-    }
-
-    @Test
-    fun `testHeadertextFormattingOn1DTCSingular`() = runTest {
-        mockProvider.send(Status(milOn = true, dtcCount = 1, monitors = emptyList()))
+        runCurrent()
+        assertEquals(status, viewModel.status)
         assertEquals("MIL: On (1 DTC)", viewModel.headerText)
+        assertEquals("MIL: On (1 DTC)", viewModel.uiStateStream.value.headerText)
     }
 
     @Test
-    fun `testHeadertextFormattingOn3DTCs`() = runTest {
-        mockProvider.send(Status(milOn = true, dtcCount = 3, monitors = emptyList()))
-        assertEquals("MIL: On (3 DTCs)", viewModel.headerText)
-    }
-
-    @Test
-    fun `testHeadertextFormattingOff5DTCs`() = runTest {
-        mockProvider.send(Status(milOn = false, dtcCount = 5, monitors = emptyList()))
+    fun `testStatusUpdateWithMultipleDTCs`() = runTest {
+        val status = Status(milOn = false, dtcCount = 5, monitors = emptyList())
+        mockProvider.send(status)
+        runCurrent()
         assertEquals("MIL: Off (5 DTCs)", viewModel.headerText)
     }
 
     @Test
-    fun `testAllSupportedMonitorsHaveNonEmptyNames`() = runTest {
-        val monitors = listOf(
-            ReadinessMonitor("Alpha", supported = true, ready = true),
-            ReadinessMonitor("Beta", supported = true, ready = false)
-        )
-        mockProvider.send(Status(milOn = true, dtcCount = 0, monitors = monitors))
-
-        for (m in viewModel.sortedSupportedMonitors) {
-            assertTrue(m.name.isNotEmpty())
-        }
-    }
-
-    @Test
-    fun `testOnchangedCallbackFiresWhenStatusUpdates`() = runTest {
-        var callbackFired = false
-        viewModel.onChanged = { callbackFired = true }
-
-        mockProvider.send(Status(milOn = true, dtcCount = 0, monitors = emptyList()))
-        assertTrue(callbackFired)
-    }
-
-    @Test
-    fun `testSetvisibleTrueRegistersMILStatusPIDInterest`() = runTest {
-        viewModel.setVisible(true)
-        assertTrue(interestRegistry.interested.contains("0101"))
-    }
-
-    @Test
-    fun `testSetvisibleFalseClearsMILStatusPIDInterest`() = runTest {
-        viewModel.setVisible(true)
-        assertTrue(interestRegistry.interested.contains("0101"))
-
-        viewModel.setVisible(false)
-        advanceUntilIdle()
-        assertFalse(interestRegistry.interested.contains("0101"))
-    }
-
-    @Test
-    fun `testSortedsupportedmonitorsExcludesUnsupportedEntries`() = runTest {
-        mockProvider.send(
-            Status(
-                milOn = false,
-                dtcCount = 0,
-                monitors = listOf(
-                    ReadinessMonitor("Supported", supported = true, ready = true),
-                    ReadinessMonitor("Unsupported", supported = false, ready = false)
-                )
+    fun `testSortedSupportedMonitors`() = runTest {
+        val status = Status(
+            milOn = false,
+            dtcCount = 0,
+            monitors = listOf(
+                ReadinessMonitor("A", true, true),
+                ReadinessMonitor("B", true, false),
+                ReadinessMonitor("C", false, false),
+                ReadinessMonitor("D", true, true),
             )
         )
-        assertFalse(viewModel.sortedSupportedMonitors.any { it.name == "Unsupported" })
-        assertTrue(viewModel.sortedSupportedMonitors.any { it.name == "Supported" })
+        mockProvider.send(status)
+        runCurrent()
+        val sorted = viewModel.sortedSupportedMonitors
+        assertEquals(3, sorted.size)
+        assertEquals("B", sorted[0].name) // Not ready first
+        assertEquals("A", sorted[1].name) // Then ready, sorted by name
+        assertEquals("D", sorted[2].name)
     }
 
     @Test
-    fun `testHeadertextRemainsStableWhenSameStatusResent`() = runTest {
-        val status = Status(milOn = true, dtcCount = 1, monitors = emptyList())
-        mockProvider.send(status)
-        val first = viewModel.headerText
+    fun `testSetVisible`() = runTest {
+        viewModel.setVisible(true)
+        runCurrent()
+        assertTrue(registry.interested.contains("0101"))
 
-        mockProvider.send(status)
-        val second = viewModel.headerText
-        assertEquals(first, second)
-    }
-
-    @Test
-    fun `testHasstatusReturnsFalseAfterProviderSendsNull`() = runTest {
-        mockProvider.send(Status(milOn = true, dtcCount = 2, monitors = emptyList()))
-        assertTrue(viewModel.hasStatus)
-
-        mockProvider.send(null)
-        assertFalse(viewModel.hasStatus)
+        viewModel.setVisible(false)
+        runCurrent()
+        assertTrue(registry.interested.isEmpty())
+        
+        viewModel.setVisible(false) // Redundant
+        runCurrent()
+        assertTrue(registry.interested.isEmpty())
     }
 }

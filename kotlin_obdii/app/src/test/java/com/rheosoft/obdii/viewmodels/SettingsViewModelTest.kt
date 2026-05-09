@@ -209,4 +209,58 @@ class SettingsViewModelTest {
         viewModel.handleConnectionButtonTap()
         assertEquals(1, mockConn.disconnectCount)
     }
+
+    @Test
+    fun `testHandleconnectionbuttontapWhenConnectingDoesNothing`() {
+        mockConn.pushState(OBDConnectionState.connecting)
+        testDispatcher.scheduler.runCurrent()
+        viewModel.handleConnectionButtonTap()
+        assertEquals(0, mockConn.connectCount)
+        assertEquals(0, mockConn.disconnectCount)
+    }
+
+    @Test
+    fun `testHandleconnectionbuttontapWhenFailedCallsConnect`() = runTest {
+        mockConn.pushState(OBDConnectionState.failed)
+        runCurrent()
+        viewModel.handleConnectionButtonTap()
+        runCurrent()
+        assertEquals(1, mockConn.connectCount)
+    }
+
+    @Test
+    fun `testWifiportDebounceCallsUpdateConnectionDetailsWhenWiFiActive`() = runTest {
+        viewModel.onConnectionTypeChanged(ConnectionType.wifi)
+        runCurrent()
+        mockConn.updateCount = 0
+        viewModel.onWifiPortChanged(35002)
+        advanceTimeBy(600)
+        runCurrent()
+        assertTrue(mockConn.updateCount >= 1)
+    }
+
+    @Test
+    fun `testSetAppVersionUpdatesUiState`() {
+        viewModel.setAppVersion("1.2.3")
+        assertEquals("1.2.3", viewModel.uiStateStream.value.appVersion)
+        // Redundant call
+        viewModel.setAppVersion("1.2.3")
+        assertEquals("1.2.3", viewModel.uiStateStream.value.appVersion)
+    }
+
+    @Test
+    fun `testPrepareLogExportReturnsValidJson`() {
+        viewModel.setAppVersion("1.0.0")
+        val export = viewModel.prepareLogExport()
+        assertTrue(export.contains("\"appVersion\":\"1.0.0\""))
+        assertTrue(export.contains("\"metadata\""))
+        assertTrue(export.contains("\"entries\""))
+    }
+
+    @Test
+    fun `testOnunitschangedRedundantCheck`() {
+        viewModel.onUnitsChanged(MeasurementUnit.Metric) // already metric
+        testDispatcher.scheduler.runCurrent()
+        // No crash, just returns
+    }
 }

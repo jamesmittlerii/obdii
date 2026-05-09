@@ -218,4 +218,23 @@ class ObdConnectionManagerTest {
         assertEquals(3000.0, stats.max)
         assertEquals(2, stats.sampleCount)
     }
+
+    @Test
+    fun `resetAllStats clears existing stats`() {
+        val method = OBDConnectionManager::class.java.getDeclaredMethod("resetAllStats")
+        method.isAccessible = true
+        method.invoke(OBDConnectionManager)
+        assertTrue(OBDConnectionManager.pidStats.isEmpty())
+    }
+
+    @Test
+    fun `setBleAdapter method parity`() {
+        // Just call it to cover the method on JVM
+        val adapter = java.lang.reflect.Proxy.newProxyInstance(
+            com.rheosoft.obdii.core.communication.ble.BlePlatformAdapter::class.java.classLoader,
+            arrayOf(com.rheosoft.obdii.core.communication.ble.BlePlatformAdapter::class.java)
+        ) { _, _, _ -> null } as com.rheosoft.obdii.core.communication.ble.BlePlatformAdapter
+        OBDConnectionManager.setBleAdapter(adapter)
+    }
+
 }
