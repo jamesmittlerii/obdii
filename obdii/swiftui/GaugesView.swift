@@ -112,7 +112,7 @@ private struct GaugeTileDropDelegate: DropDelegate {
   let viewModel: GaugesViewModel
   @Binding var draggedTileID: UUID?
 
-  func dropEntered(info: DropInfo) {
+  func dropEntered(_: DropInfo) {
     guard let draggedTileID, draggedTileID != tile.id else { return }
 
     withAnimation {
@@ -120,7 +120,7 @@ private struct GaugeTileDropDelegate: DropDelegate {
     }
   }
 
-  func dropUpdated(info: DropInfo) -> DropProposal? {
+  func dropUpdated(_: DropInfo) -> DropProposal? {
     DropProposal(operation: .move)
   }
 
@@ -129,7 +129,7 @@ private struct GaugeTileDropDelegate: DropDelegate {
     return true
   }
 
-  func dropExited(info: DropInfo) {}
+  func dropExited(_: DropInfo) {}
 }
 
 #Preview {

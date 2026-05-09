@@ -57,7 +57,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate,
   ]
 
   func templateApplicationScene(
-    _ templateApplicationScene: CPTemplateApplicationScene,
+    _ : CPTemplateApplicationScene,
     didConnect interfaceController: CPInterfaceController
   ) {
 
@@ -101,8 +101,8 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate,
   }
 
   func templateApplicationScene(
-    _ templateApplicationScene: CPTemplateApplicationScene,
-    didDisconnectInterfaceController interfaceController: CPInterfaceController
+    _ : CPTemplateApplicationScene,
+    didDisconnectInterfaceController _: CPInterfaceController
   ) {
     unregisterHandsetBridgeObservers()
     self.interfaceController = nil
@@ -122,20 +122,20 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate,
   }
 
   func interfaceController(
-    _ interfaceController: CPInterfaceController, didShow template: CPTemplate, animated: Bool
+    _ : CPInterfaceController, didShow template: CPTemplate, animated: Bool
   ) {
     templateDidAppear(template, animated: animated)
   }
 
   func interfaceController(
-    _ interfaceController: CPInterfaceController, didHide template: CPTemplate, animated: Bool
+    _ : CPInterfaceController, didHide template: CPTemplate, animated: Bool
   ) {
     templateDidDisappear(template, animated: animated)
   }
   // Called when a template is popped from the navigation stack - cleanup registry
   func interfaceController(
-    _ interfaceController: CPInterfaceController, didPop template: CPTemplate,
-    to newTopTemplate: CPTemplate, animated: Bool
+    _ : CPInterfaceController, didPop template: CPTemplate,
+    to _: CPTemplate, animated: Bool
   ) {
     unregister(template: template)
   }
