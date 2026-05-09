@@ -140,4 +140,24 @@ class SettingsScreenUiTest {
         setupScreen()
         composeRule.assertTextVisibleAfterScroll("Share Logs")
     }
+
+    @Test
+    fun testSwitchingConnectionTypeThroughMenu() {
+        val config = MockSettingsConfig()
+        setupScreen(config = config)
+
+        composeRule.onNodeWithContentDescription("Connection type menu").performClick()
+        composeRule.onNodeWithText("WiFi").performClick()
+
+        assert(config.connectionType == ConnectionType.wifi)
+    }
+
+    @Test
+    fun testTogglingAutoConnect() {
+        val config = MockSettingsConfig()
+        setupScreen(config = config)
+
+        composeRule.onNode(isToggleable()).performClick()
+        assert(!config.autoConnectToOBD)
+    }
 }

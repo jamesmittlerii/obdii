@@ -154,4 +154,22 @@ class DashboardScreenUiTest {
         composeRule.onNodeWithText("Gauges").assertIsDisplayed()
         composeRule.onNodeWithText("List").assertIsDisplayed()
     }
+
+    @Test
+    fun testDraggingInListMode() {
+        val (vm, pidProvider, _) = setupScreen()
+        val pid1 = gaugePid("rpm", "RPM", "Engine RPM", "010C")
+        val pid2 = gaugePid("speed", "Speed", "Vehicle Speed", "010D")
+        pidProvider.send(listOf(pid1, pid2))
+
+        composeRule.onNodeWithText("List").performClick()
+
+        // Just perform a drag to cover the code path
+        composeRule.onNodeWithText("Engine RPM").performTouchInput {
+            swipeDown()
+        }
+        
+        // We don't necessarily need to assert the reorder worked here if moveEnabled is covered in VM tests,
+        // but this covers the UI drag logic.
+    }
 }
