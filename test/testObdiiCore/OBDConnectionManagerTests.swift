@@ -62,7 +62,7 @@ final class OBDConnectionManagerTests: XCTestCase {
     func testInitialPublishedStatesNil() {
         XCTAssertNil(manager.troubleCodes, "Trouble codes should be nil initially")
         XCTAssertNil(manager.fuelStatus, "Fuel status should be nil initially")
-        XCTAssertNil(manager.MILStatus, "MIL status should be nil initially")
+        XCTAssertNil(manager.milStatus, "MIL status should be nil initially")
         XCTAssertNil(manager.connectedPeripheralName, "Peripheral name should be nil initially")
     }
     
@@ -108,7 +108,7 @@ final class OBDConnectionManagerTests: XCTestCase {
         XCTAssertEqual(manager.connectionState, .disconnected, "Should be disconnected")
         XCTAssertNil(manager.troubleCodes, "Trouble codes should be cleared")
         XCTAssertNil(manager.fuelStatus, "Fuel status should be cleared")
-        XCTAssertNil(manager.MILStatus, "MIL status should be cleared")
+        XCTAssertNil(manager.milStatus, "MIL status should be cleared")
         XCTAssertTrue(manager.pidStats.isEmpty, "PID stats should be cleared")
     }
     
@@ -249,7 +249,7 @@ final class OBDConnectionManagerTests: XCTestCase {
         let token = PIDInterestRegistry.shared.makeToken()
         PIDInterestRegistry.shared.replace(pids: [.mode1(.status)], for: token)
         
-        manager.$MILStatus
+        manager.$milStatus
             .dropFirst() // Skip initial nil
             .sink { status in
                 if status != nil {
@@ -262,9 +262,9 @@ final class OBDConnectionManagerTests: XCTestCase {
         
         await fulfillment(of: [expectation], timeout: 10.0)
         
-        XCTAssertNotNil(manager.MILStatus, "MIL status should be set")
-        
-        if let milStatus = manager.MILStatus {
+        XCTAssertNotNil(manager.milStatus, "MIL status should be set")
+
+        if let milStatus = manager.milStatus {
             // Verify it has expected properties
             XCTAssertNotNil(milStatus.milOn, "MIL on status should be set")
             XCTAssertGreaterThanOrEqual(milStatus.dtcCount, 0, "DTC count should be set")

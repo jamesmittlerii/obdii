@@ -65,11 +65,6 @@ final class CarPlayGaugeDetailController: CarPlayBaseTemplateController<GaugeDet
     if let s = stats {
       let currentStr = pid.formatted(measurement: s.latest, includeUnits: true)
       items.append(CPInformationItem(title: "Current", detail: currentStr))
-    } else {
-      items.append(CPInformationItem(title: "Current", detail: "— \(pid.displayUnits)"))
-    }
-
-    if let s = stats {
       let minStr = pid.formatted(
         measurement: MeasurementResult(value: s.min, unit: s.latest.unit), includeUnits: true)
       let maxStr = pid.formatted(
@@ -77,6 +72,8 @@ final class CarPlayGaugeDetailController: CarPlayBaseTemplateController<GaugeDet
       items.append(CPInformationItem(title: "Min", detail: minStr))
       items.append(CPInformationItem(title: "Max", detail: maxStr))
       items.append(CPInformationItem(title: "Samples", detail: "\(s.sampleCount)"))
+    } else {
+      items.append(CPInformationItem(title: "Current", detail: "— \(pid.displayUnits)"))
     }
 
     items.append(CPInformationItem(title: "Typical Range", detail: pid.displayRange))

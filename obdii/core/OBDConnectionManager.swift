@@ -54,7 +54,7 @@ final class OBDConnectionManager: ObservableObject {
   // FI/O2 fuel system status (nil = not yet received).
   @Published var fuelStatus: [StatusCodeMetadata?]? = nil
   // MIL status (nil = not yet received).
-  @Published var MILStatus: Status? = nil
+  @Published var milStatus: Status? = nil
   // Bluetooth peripheral name, or nil for Wi-Fi/Demo/none.
   @Published var connectedPeripheralName: String? = nil
   // Per-PID statistics for live gauge values.
@@ -178,7 +178,7 @@ final class OBDConnectionManager: ObservableObject {
     lastStreamingPIDs = []
     pidStats.removeAll()
     fuelStatus = nil
-    MILStatus = nil
+    milStatus = nil
     troubleCodes = nil
     connectedPeripheralName = nil
   }
@@ -299,12 +299,10 @@ final class OBDConnectionManager: ObservableObject {
 
       let filtered = Set(
         interestedPIDs.filter { cmd in
-          switch cmd {
-          case .mode1:
+          if case .mode1 = cmd {
             return supportedMode1.contains(cmd)
-          default:
-            return true
           }
+          return true
         })
 
       let removed = interestedPIDs.subtracting(filtered)
@@ -371,7 +369,7 @@ final class OBDConnectionManager: ObservableObject {
           }
         case .status:
           if let status = decode.statusResult {
-            MILStatus = status
+            milStatus = status
           }
         // gauges
         default:

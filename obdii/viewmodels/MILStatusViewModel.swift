@@ -22,7 +22,7 @@ protocol MILStatusProviding {
 
 extension OBDConnectionManager: MILStatusProviding {
   var milStatusPublisher: AnyPublisher<Status?, Never> {
-    $MILStatus.eraseToAnyPublisher()
+    $milStatus.eraseToAnyPublisher()
   }
 }
 

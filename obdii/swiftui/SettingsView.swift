@@ -118,7 +118,9 @@ struct SettingsView: View {
               Text(viewModel.shareErrorMessage ?? "")
             }
           #else
-            Button("Share Logs") {}
+            Button("Share Logs") {
+              /* Logs sharing uses UIKit sheet on iOS; other platforms show a disabled stub. */
+            }
               .disabled(true)
               .foregroundColor(.secondary)
               .accessibilityHidden(true)
@@ -197,13 +199,15 @@ struct SettingsView: View {
   struct ShareSheet: UIViewControllerRepresentable {
     let activityItems: [Any]
 
-    func makeUIViewController(context: Context) -> UIActivityViewController {
+    func makeUIViewController(context _: Context) -> UIActivityViewController {
       UIActivityViewController(
         activityItems: activityItems,
         applicationActivities: nil
       )
     }
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+    func updateUIViewController(_: UIActivityViewController, context _: Context) {
+      /* Activity items are fixed at presentation time; no incremental updates. */
+    }
   }
 #endif
 

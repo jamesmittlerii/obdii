@@ -124,12 +124,14 @@ private struct GaugeTileDropDelegate: DropDelegate {
     DropProposal(operation: .move)
   }
 
-  func performDrop(info: DropInfo) -> Bool {
+  func performDrop(info _: DropInfo) -> Bool {
     draggedTileID = nil
     return true
   }
 
-  func dropExited(_: DropInfo) {}
+  func dropExited(_: DropInfo) {
+    /* Drag lifecycle hook not needed; reorder happens in dropEntered. */
+  }
 }
 
 #Preview {

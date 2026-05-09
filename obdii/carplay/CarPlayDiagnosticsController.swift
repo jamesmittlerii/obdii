@@ -34,6 +34,28 @@ class CarPlayDiagnosticsController: CarPlayBaseTemplateController<DiagnosticsVie
     return item
   }
 
+  private func makeDTCListItem(for code: DiagnosticsViewModel.CodeRow) -> CPListItem {
+    let item = CPListItem(
+      text: code.title,
+      detailText: code.severityText
+    )
+    item.setImage(
+      tintedSymbol(
+        named: code.symbolName,
+        severity: code.detailViewModel.code.severity
+      )
+    )
+    item.handler = { [weak self] _, completion in
+      self?.presentOBDDetail(for: code.detailViewModel.code)
+      completion()
+    }
+    return item
+  }
+
+  private func cpListItems(for section: DiagnosticsViewModel.Section) -> [CPListItem] {
+    section.items.map { makeDTCListItem(for: $0) }
+  }
+
   private func buildSections() -> [CPListSection] {
     // Waiting state
     if viewModel.codes == nil {
@@ -50,26 +72,8 @@ class CarPlayDiagnosticsController: CarPlayBaseTemplateController<DiagnosticsVie
 
     // Build sections from the ViewModel’s grouped/ordered data
     let sections: [CPListSection] = viewModel.sections.map { section in
-      let items: [CPListItem] = section.items.map { code in
-        let item = CPListItem(
-          text: code.title,
-          detailText: code.severityText
-        )
-        item.setImage(
-          tintedSymbol(
-            named: code.symbolName,
-            severity: code.detailViewModel.code.severity
-          )
-        )
-        item.handler = { [weak self] _, completion in
-          self?.presentOBDDetail(for: code.detailViewModel.code)
-          completion()
-        }
-        return item
-      }
-
-      return CPListSection(
-        items: items,
+      CPListSection(
+        items: cpListItems(for: section),
         header: section.title,
         sectionIndexTitle: nil)
     }

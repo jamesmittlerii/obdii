@@ -23,7 +23,9 @@ final class PIDInterestRegistry: ObservableObject {
   // For each UI owner (identified by UUID), which PIDs it needs.
   private var byToken: [UUID: Set<OBDCommand>] = [:]
 
-  private init() {}
+  private init() {
+    /* Singleton via `shared`; default empty registry state — no extra setup. */
+  }
   // Creates a new owner token. Call `replace(pids:for:)` afterward to register interest.
   func makeToken() -> UUID {
     let token = UUID()

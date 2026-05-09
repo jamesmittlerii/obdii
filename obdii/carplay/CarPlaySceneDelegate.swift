@@ -109,13 +109,13 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate,
     ownerByTemplateID.removeAll()
   }
 
-  func templateDidAppear(_ aTemplate: CPTemplate, animated: Bool) {
+  func templateDidAppear(_ aTemplate: CPTemplate, animated _: Bool) {
     guard let owner = ownerByTemplateID[ObjectIdentifier(aTemplate)] as? CarPlayVisibilityForwarding
     else { return }
     owner.templateDidAppear(aTemplate)
   }
 
-  func templateDidDisappear(_ aTemplate: CPTemplate, animated: Bool) {
+  func templateDidDisappear(_ aTemplate: CPTemplate, animated _: Bool) {
     guard let owner = ownerByTemplateID[ObjectIdentifier(aTemplate)] as? CarPlayVisibilityForwarding
     else { return }
     owner.templateDidDisappear(aTemplate)
@@ -135,7 +135,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate,
   // Called when a template is popped from the navigation stack - cleanup registry
   func interfaceController(
     _ : CPInterfaceController, didPop template: CPTemplate,
-    to _: CPTemplate, animated: Bool
+    to _: CPTemplate, animated _: Bool
   ) {
     unregister(template: template)
   }
