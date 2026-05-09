@@ -49,3 +49,18 @@ fun SemanticsNodeInteractionsProvider.assertTextExists(text: String) {
     onAllNodesWithText(text, ignoreCase = true).fetchSemanticsNodes().firstOrNull()
         ?: throw AssertionError("No node found with text '$text'")
 }
+
+/**
+ * Wait for a node with the given text to exist and be displayed.
+ */
+fun androidx.compose.ui.test.junit4.ComposeTestRule.waitForText(
+    text: String,
+    ignoreCase: Boolean = true,
+    substring: Boolean = false,
+    timeoutMillis: Long = 5000
+) {
+    this.waitUntil(timeoutMillis) {
+        this.onAllNodesWithText(text, ignoreCase = ignoreCase, substring = substring)
+            .fetchSemanticsNodes().isNotEmpty()
+    }
+}

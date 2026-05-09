@@ -107,6 +107,7 @@ class DashboardScreenUiTest {
         pidProvider.send(listOf(pid))
         statsProvider.send(mapOf("010C" to PIDStats("010C", MeasurementResult(1200.0, "RPM"))))
 
+        composeRule.waitForText("RPM")
         composeRule.onNodeWithText("RPM").assertIsDisplayed()
         composeRule.onNodeWithText("1200").assertIsDisplayed()
     }
@@ -116,6 +117,7 @@ class DashboardScreenUiTest {
         val (_, pidProvider, _) = setupScreen()
         pidProvider.send(listOf(gaugePid("rpm", "RPM", "Engine RPM", "010C")))
 
+        composeRule.waitForText("List")
         composeRule.onNodeWithText("List").performClick()
 
         composeRule.onNodeWithText("Engine RPM").assertIsDisplayed()
@@ -127,6 +129,7 @@ class DashboardScreenUiTest {
         val (_, pidProvider, _) = setupScreen()
         pidProvider.send(listOf(gaugePid("rpm", "RPM", "Engine RPM", "010C")))
 
+        composeRule.waitForText("List")
         composeRule.onNodeWithText("List").performClick()
 
         composeRule.onNodeWithText("Engine RPM").assertIsDisplayed()
@@ -137,6 +140,7 @@ class DashboardScreenUiTest {
         val (_, pidProvider, _) = setupScreen()
         pidProvider.send(listOf(gaugePid("rpm", "RPM", "Engine RPM", "010C")))
 
+        composeRule.waitForText("List")
         composeRule.onNodeWithText("List").performClick()
         composeRule.onNodeWithText("Gauges").performClick()
 

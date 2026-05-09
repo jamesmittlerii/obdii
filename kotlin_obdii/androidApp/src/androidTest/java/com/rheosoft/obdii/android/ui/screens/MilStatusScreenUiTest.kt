@@ -55,6 +55,7 @@ class MilStatusScreenUiTest {
             )
         ))
 
+        composeRule.waitForText("MIL: On (2 DTCs)")
         composeRule.onNodeWithText("MIL: On (2 DTCs)").assertIsDisplayed()
         composeRule.onNodeWithText("READINESS MONITORS").assertIsDisplayed()
         composeRule.onNodeWithText("Misfire").assertIsDisplayed()
@@ -79,6 +80,7 @@ class MilStatusScreenUiTest {
             monitors = listOf(ReadinessMonitor("Misfire", supported = true, ready = true))
         ))
         
+        composeRule.waitForText("READINESS MONITORS")
         composeRule.onNodeWithText("MALFUNCTION INDICATOR LAMP").assertIsDisplayed()
         composeRule.onNodeWithText("READINESS MONITORS").assertIsDisplayed()
     }

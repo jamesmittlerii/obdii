@@ -81,6 +81,7 @@ class DiagnosticsScreenUiTest {
         
         provider.send(emptyList())
         
+        composeRule.waitForText("No Trouble Codes Found")
         composeRule.onNodeWithText("No Trouble Codes Found").assertIsDisplayed()
         composeRule.onNodeWithText("All systems normal.").assertIsDisplayed()
     }
@@ -92,6 +93,7 @@ class DiagnosticsScreenUiTest {
         
         provider.send(listOf(dtc("P0001", "High"), dtc("P0002", "Critical")))
         
+        composeRule.waitForText("Critical")
         composeRule.assertTextVisible("Critical")
         composeRule.assertTextVisible("High")
         composeRule.onNodeWithText("P0001", substring = true).assertIsDisplayed()
@@ -116,6 +118,7 @@ class DiagnosticsScreenUiTest {
         
         provider.send(listOf(dtc("P0001", "High")))
         
+        composeRule.waitForText("P0001", substring = true)
         composeRule.onNodeWithText("P0001", substring = true).performClick()
         
         assert(tappedCode == "P0001")
@@ -137,6 +140,7 @@ class DiagnosticsScreenUiTest {
         
         provider.send(listOf(dtc("P0013", "Low")))
 
+        composeRule.waitForText("Low")
         composeRule.assertTextVisible("Low")
     }
 }

@@ -47,6 +47,7 @@ class FuelStatusScreenUiTest {
         composeRule.onNodeWithText("Waiting for data...").assertIsDisplayed()
 
         provider.send(emptyList())
+        composeRule.waitForText("No Fuel System Status Codes")
         composeRule.onNodeWithText("No Fuel System Status Codes").assertIsDisplayed()
     }
 
@@ -59,6 +60,7 @@ class FuelStatusScreenUiTest {
             StatusCodeMetadata("OL", "Open loop")
         ))
 
+        composeRule.waitForText("Bank 1")
         composeRule.onNodeWithText("Bank 1").assertIsDisplayed()
         composeRule.onNodeWithText("Closed loop").assertIsDisplayed()
         composeRule.onNodeWithText("Bank 2").assertIsDisplayed()
