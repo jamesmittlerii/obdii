@@ -20,17 +20,20 @@ struct GaugeListView: View {
   @State private var viewModel: GaugesViewModel
   @State private var pids: [OBDPID] = []
   @State private var cancellables = Set<AnyCancellable>()
+  private let pidProvider: PIDListProviding
 
   // Default initializer preserves existing behavior
   @MainActor
   init() {
     _viewModel = State(initialValue: GaugesViewModel())
+    pidProvider = PIDStore.shared
   }
 
   // Injectable initializer for testing/mocking
   @MainActor
-  init(viewModel: GaugesViewModel) {
+  init(viewModel: GaugesViewModel, pidProvider: PIDListProviding? = nil) {
     _viewModel = State(initialValue: viewModel)
+    self.pidProvider = pidProvider ?? PIDStore.shared
   }
 
   var body: some View {
@@ -57,7 +60,7 @@ struct GaugeListView: View {
     .navigationTitle("Live Gauges")
     .onAppear {
       viewModel.onAppear()
-      PIDStore.shared.pidsPublisher
+      pidProvider.pidsPublisher
         .receive(on: RunLoop.main)
         .sink { newPids in
           self.pids = newPids
