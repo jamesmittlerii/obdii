@@ -67,7 +67,11 @@ android {
 
 dependencies {
     implementation(project(":coreApp"))
-    implementation(project(":kotlinobd2"))
+    if (findProject(":kotlinobd2") != null) {
+        implementation(project(":kotlinobd2"))
+    } else {
+        implementation("com.github.jamesmittlerii:SwiftOBD2:0.1.3")
+    }
     implementation("androidx.core:core-ktx:1.18.0")
     implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.compose.ui:ui:1.11.0")

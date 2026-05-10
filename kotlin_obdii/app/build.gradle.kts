@@ -5,10 +5,16 @@ plugins {
 
 repositories {
     mavenCentral()
+    maven { url = uri("https://jitpack.io") }
+
 }
 
 dependencies {
-    implementation(project(":kotlinobd2"))
+    if (findProject(":kotlinobd2") != null) {
+        implementation(project(":kotlinobd2"))
+    } else {
+        implementation("com.github.jamesmittlerii:SwiftOBD2:0.1.3")
+    }
     implementation(kotlin("stdlib"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("com.google.code.gson:gson:2.14.0")
