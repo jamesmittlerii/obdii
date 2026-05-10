@@ -186,8 +186,6 @@ jobs:
     needs: [filter, version_bump]
     if: needs.filter.outputs.swift == 'true' || needs.filter.outputs.pipeline == 'true'
     uses: jamesmittlerii/workflows/.github/workflows/iosnotest_bw.yml@main
-    with:
-      ref: ${{ needs.version_bump.outputs.new_sha }}
     secrets: inherit
 
   sonar_scan:
