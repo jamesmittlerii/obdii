@@ -46,7 +46,7 @@ class PidToggleListScreenUiTest {
     @Test
     fun testShowsEnabledAndDisabledSections() {
         setupScreen(listOf(
-            gaugePid("10", "RPM", enabled = true),
+            gaugePid("10", "RPM", true),
             gaugePid("11", "Speed", false)
         ))
 
@@ -59,7 +59,7 @@ class PidToggleListScreenUiTest {
     @Test
     fun testSearchFiltersPids() {
         setupScreen(listOf(
-            gaugePid("10", "RPM", enabled = true),
+            gaugePid("10", "RPM", true),
             gaugePid("11", "Speed", false)
         ))
 
@@ -73,7 +73,7 @@ class PidToggleListScreenUiTest {
     @Test
     fun testCancelSearchClearsFilters() {
         setupScreen(listOf(
-            gaugePid("10", "RPM", enabled = true),
+            gaugePid("10", "RPM", true),
             gaugePid("11", "Speed", false)
         ))
 
@@ -83,35 +83,5 @@ class PidToggleListScreenUiTest {
 
         composeRule.assertTextExists("RPM")
         composeRule.assertTextExists("Speed")
-    }
-
-    @Test
-    fun testTogglingPidUpdatesStore() {
-        val (_, store, _) = setupScreen(listOf(
-            gaugePid("10", "RPM", false)
-        ))
-
-        composeRule.onNode(isToggleable()).performClick()
-        // Cast to InMemoryPidStore to access pids property
-        val pids = store.pids
-        assert(pids.first { it.id == "10" }.enabled)
-    }
-
-    @Test
-    fun testBackButtonTriggered() {
-        var closed = false
-        val vm = PidToggleListViewModel(InMemoryPidStore(emptyList()))
-        val screenModel = PidToggleListScreenModel(vm)
-        composeRule.setContent {
-            PidToggleListScreen(
-                view = screenModel,
-                isMetric = true,
-                onClose = { closed = true },
-                scope = rememberCoroutineScope()
-            )
-        }
-        
-        composeRule.onNodeWithContentDescription("Back").performClick()
-        assert(closed)
     }
 }

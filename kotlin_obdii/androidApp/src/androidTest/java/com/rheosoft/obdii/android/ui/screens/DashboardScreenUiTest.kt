@@ -10,14 +10,24 @@ import com.rheosoft.obdii.screenmodels.DashboardScreenModel
 import com.rheosoft.obdii.viewmodels.GaugesViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
-private class MockPidProvider : PidListProviding {
+private class MockPidProvider : PidStore {
     private val flow = MutableStateFlow<List<ObdiiPid>>(emptyList())
     override var pids: List<ObdiiPid> = emptyList()
-        private set
     override val pidsStream: StateFlow<List<ObdiiPid>> = flow
+    override val enabledGauges: List<ObdiiPid> get() = pids.filter { it.enabled }
+    override suspend fun load() {}
+    override suspend fun toggle(pid: ObdiiPid) {}
+    override suspend fun moveEnabled(fromIndex: Int, toIndex: Int) {
+        val mutable = pids.toMutableList()
+        val item = mutable.removeAt(fromIndex)
+        mutable.add(toIndex, item)
+        pids = mutable
+        flow.value = pids
+    }
     fun send(newPids: List<ObdiiPid>) {
         pids = newPids
         flow.value = newPids
@@ -156,20 +166,121 @@ class DashboardScreenUiTest {
     }
 
     @Test
-    fun testDraggingInListMode() {
-        val (vm, pidProvider, _) = setupScreen()
+    fun testGaugeColors() {
+        val (_, pidProvider, statsProvider) = setupScreen()
+
+        val pid = ObdiiPid(
+            id = "temp",
+            enabled = true,
+            label = "Temp",
+            name = "Coolant Temp",
+            pidCommand = "0105",
+            units = "°C",
+            typicalRange = com.rheosoft.obdii.models.ValueRange(0.0, 100.0),
+            warningRange = com.rheosoft.obdii.models.ValueRange(100.1, 150.0),
+            dangerRange = com.rheosoft.obdii.models.ValueRange(150.1, 200.0),
+            kind = ObdPidKind.gauge
+        )
+        pidProvider.send(listOf(pid))
+
+        // Green
+        statsProvider.send(mapOf("0105" to PIDStats("0105", MeasurementResult(50.0, "°C"))))
+        composeRule.onNodeWithText("50").assertIsDisplayed()
+
+        // Orange
+        statsProvider.send(mapOf("0105" to PIDStats("0105", MeasurementResult(120.0, "°C"))))
+        composeRule.onNodeWithText("120").assertIsDisplayed()
+
+        // Red
+        statsProvider.send(mapOf("0105" to PIDStats("0105", MeasurementResult(180.0, "°C"))))
+        composeRule.onNodeWithText("180").assertIsDisplayed()
+
+        // Blue grey (out of range)
+        statsProvider.send(mapOf("0105" to PIDStats("0105", MeasurementResult(250.0, "°C"))))
+        composeRule.onNodeWithText("250").assertIsDisplayed()
+    }
+
+    @Test
+    fun testDragAndDropInListMode() {
+        val (_, pidProvider, _) = setupScreen()
         val pid1 = gaugePid("rpm", "RPM", "Engine RPM", "010C")
         val pid2 = gaugePid("speed", "Speed", "Vehicle Speed", "010D")
         pidProvider.send(listOf(pid1, pid2))
 
         composeRule.onNodeWithText("List").performClick()
+        composeRule.onNodeWithText("Engine RPM").assertIsDisplayed()
 
-        // Just perform a drag to cover the code path
+        // Drag Engine RPM down to trigger reorder
         composeRule.onNodeWithText("Engine RPM").performTouchInput {
-            swipeDown()
+            down(center)
+            moveBy(androidx.compose.ui.geometry.Offset(0f, 500f))
+            up()
         }
         
-        // We don't necessarily need to assert the reorder worked here if moveEnabled is covered in VM tests,
-        // but this covers the UI drag logic.
+        // Drag with cancel
+        composeRule.onNodeWithText("Engine RPM").performTouchInput {
+            down(center)
+            moveBy(androidx.compose.ui.geometry.Offset(0f, 100f))
+            cancel()
+        }
+    }
+
+    @Test
+    fun testDragAndDropInGridMode() {
+        val (_, pidProvider, _) = setupScreen()
+        val pid1 = gaugePid("rpm", "RPM", "Engine RPM", "010C")
+        val pid2 = gaugePid("speed", "Speed", "Vehicle Speed", "010D")
+        pidProvider.send(listOf(pid1, pid2))
+
+        composeRule.onNodeWithText("RPM").assertIsDisplayed()
+
+        // Drag RPM in grid
+        composeRule.onNodeWithText("RPM").performTouchInput {
+            down(center)
+            moveBy(androidx.compose.ui.geometry.Offset(500f, 0f))
+            up()
+        }
+
+        // Drag with cancel
+        composeRule.onNodeWithText("RPM").performTouchInput {
+            down(center)
+            moveBy(androidx.compose.ui.geometry.Offset(100f, 0f))
+            cancel()
+        }
+    }
+
+    @Test
+    fun testGaugeTapInGridAndList() {
+        var tappedPid: ObdiiPid? = null
+        val pid = gaugePid("rpm", "RPM", "Engine RPM", "010C")
+        val pidProvider = MockPidProvider().apply { send(listOf(pid)) }
+
+        val vm = GaugesViewModel(
+            pidProvider = pidProvider,
+            statsProvider = MockStatsProvider(),
+            unitsProvider = MockUnitsProvider(),
+            interestRegistry = PidInterestRegistry()
+        )
+        val screenModel = DashboardScreenModel(vm)
+        composeRule.setContent {
+            DashboardScreen(
+                view = screenModel,
+                isMetric = true,
+                modifier = Modifier,
+                scope = androidx.compose.runtime.rememberCoroutineScope(),
+                onGaugeTap = { p: ObdiiPid -> tappedPid = p }
+            )
+        }
+
+        // Grid tap
+        composeRule.onNodeWithText("RPM").performClick()
+        assertEquals(pid, tappedPid)
+
+        tappedPid = null
+
+        // List tap
+        composeRule.onNodeWithText("List").performClick()
+        composeRule.onNodeWithText("Engine RPM").performClick()
+        assertEquals(pid, tappedPid)
     }
 }

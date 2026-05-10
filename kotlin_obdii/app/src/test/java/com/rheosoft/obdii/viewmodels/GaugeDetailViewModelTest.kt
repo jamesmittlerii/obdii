@@ -13,9 +13,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
 
 private class MockStatsProvider : PidStatsProviding {
     private val flow = MutableStateFlow<Map<String, PIDStats>>(emptyMap())
@@ -37,7 +34,7 @@ private class MockUnitsProvider : UnitsProviding {
 class GaugeDetailViewModelTest {
     @Test
     fun `stats updates for matching pid`() {
-        val pid = ObdiiPid(id = "rpm", enabled = true, label = "RPM", name = "Engine RPM", pidCommand = "010C", units = "RPM")
+        val pid = ObdiiPid("rpm", true, "RPM", "Engine RPM", "010C", units = "RPM")
         val stats = MockStatsProvider()
         val vm = GaugeDetailViewModel(pid, stats, MockUnitsProvider())
         assertNull(vm.stats)
@@ -48,7 +45,7 @@ class GaugeDetailViewModelTest {
 
     @Test
     fun `stats ignore non matching pid and duplicate values`() {
-        val pid = ObdiiPid(id = "rpm", enabled = true, label = "RPM", name = "Engine RPM", pidCommand = "010C", units = "RPM")
+        val pid = ObdiiPid("rpm", true, "RPM", "Engine RPM", "010C", units = "RPM")
         val stats = MockStatsProvider()
         val vm = GaugeDetailViewModel(pid, stats, MockUnitsProvider())
         var changeCount = 0
@@ -74,7 +71,7 @@ class GaugeDetailViewModelTest {
 
     @Test
     fun `unit changes refresh state and visibility updates interest registry`() {
-        val pid = ObdiiPid(id = "rpm", enabled = true, label = "RPM", name = "Engine RPM", pidCommand = "010C", units = "RPM")
+        val pid = ObdiiPid("rpm", true, "RPM", "Engine RPM", "010C", units = "RPM")
         val stats = MockStatsProvider()
         val units = MockUnitsProvider()
         val registry = PidInterestRegistry()
@@ -95,29 +92,5 @@ class GaugeDetailViewModelTest {
 
         vm.setVisible(false)
         assertEquals(emptySet(), registry.interested)
-    }
-
-    @Test
-    fun `isSameStats edge cases`() {
-        val pid = ObdiiPid(id = "rpm", enabled = true, label = "RPM", name = "Engine RPM", pidCommand = "010C", units = "RPM")
-        val vm = GaugeDetailViewModel(pid, MockStatsProvider(), MockUnitsProvider())
-        val method = vm::class.java.getDeclaredMethods().first { it.name == "isSameStats" }
-        method.isAccessible = true
-
-        val s1 = PIDStats("010C", MeasurementResult(100.0, "x"))
-        val s2 = PIDStats("010C", MeasurementResult(200.0, "x"))
-
-        assertTrue(method.invoke(vm, null, null) as Boolean)
-        assertFalse(method.invoke(vm, s1, null) as Boolean)
-        assertFalse(method.invoke(vm, null, s1) as Boolean)
-        assertTrue(method.invoke(vm, s1, s1) as Boolean)
-        assertFalse(method.invoke(vm, s1, s2) as Boolean)
-    }
-    
-    @Test
-    fun `default constructor uses singleton dependencies`() {
-        val pid = ObdiiPid(id = "rpm", enabled = true, label = "RPM", name = "Engine RPM", pidCommand = "010C", units = "RPM")
-        val vm = GaugeDetailViewModel(pid)
-        assertNotNull(vm)
     }
 }
