@@ -25,6 +25,7 @@ import UIKit
 import os.log
 
 // Protocol for CarPlay tab controllers, enables uniform initialization and configuration.
+@MainActor
 protocol CarPlayTabControlling: AnyObject {
   // Return the root CPTemplate for this tab.
   func makeRootTemplate() -> CPTemplate
@@ -191,4 +192,3 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate,
     handsetBridgeObservers.removeAll()
   }
 }
-

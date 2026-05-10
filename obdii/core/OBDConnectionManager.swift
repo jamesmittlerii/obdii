@@ -16,7 +16,40 @@ import Foundation
 import SwiftOBD2
 
 @MainActor
+protocol OBDServicing: AnyObject {
+  var connectedPeripheral: CBPeripheral? { get }
+  var connectedPeripheralPublisher: AnyPublisher<CBPeripheral?, Never> { get }
+  var serviceConnectionStatePublisher: AnyPublisher<SwiftOBD2.ConnectionState, Never> { get }
+
+  func startConnection(
+    preferedProtocol: PROTOCOL?,
+    timeout: TimeInterval,
+    querySupportedPIDs: Bool,
+    peripheral: CBPeripheral?
+  ) async throws -> OBDInfo
+  func getSupportedPIDs() async -> [OBDCommand]
+  func stopConnection()
+  func startContinuousUpdates(
+    _ pids: [OBDCommand],
+    unit: MeasurementUnit,
+    interval: TimeInterval
+  ) -> AnyPublisher<[OBDCommand: DecodeResult], Error>
+}
+
+extension OBDService: OBDServicing {
+  var connectedPeripheralPublisher: AnyPublisher<CBPeripheral?, Never> {
+    $connectedPeripheral.eraseToAnyPublisher()
+  }
+
+  var serviceConnectionStatePublisher: AnyPublisher<SwiftOBD2.ConnectionState, Never> {
+    $connectionState.eraseToAnyPublisher()
+  }
+}
+
+@MainActor
 final class OBDConnectionManager: ObservableObject {
+  typealias ServiceFactory = (_ connectionType: ConnectionType, _ host: String, _ port: UInt16)
+    -> OBDServicing
 
   enum ConnectionState: Equatable {
     case disconnected
@@ -46,6 +79,7 @@ final class OBDConnectionManager: ObservableObject {
   private let querySupportedPids = true
 
   static let shared = OBDConnectionManager()
+  private let serviceFactory: ServiceFactory
 
   // connection status
   @Published var connectionState: ConnectionState = .disconnected
@@ -86,7 +120,7 @@ final class OBDConnectionManager: ObservableObject {
   }
 
   // our gateway to the SwiftOBD library to do the comms
-  private var obdService: OBDService
+  private var obdService: OBDServicing
   // General long-lived subscriptions (registry, config, etc.)
   private var managerCancellables = Set<AnyCancellable>()
   // Subscriptions tied to the current OBDService instance.
@@ -97,12 +131,21 @@ final class OBDConnectionManager: ObservableObject {
   private var supportedPids: [OBDCommand] = []
   // Last set of PIDs that were actually being streamed.
   private var lastStreamingPIDs: Set<OBDCommand> = []
+  // Identifies the active connection attempt so stale async completions can be ignored.
+  private var activeConnectionAttemptID = UUID()
 
-  private init() {
-    obdService = OBDService(
-      connectionType: ConfigData.shared.connectionType,
-      host: ConfigData.shared.wifiHost,
-      port: UInt16(ConfigData.shared.wifiPort)
+  private convenience init() {
+    self.init { connectionType, host, port in
+      OBDService(connectionType: connectionType, host: host, port: port)
+    }
+  }
+
+  init(serviceFactory: @escaping ServiceFactory) {
+    self.serviceFactory = serviceFactory
+    self.obdService = serviceFactory(
+      ConfigData.shared.connectionType,
+      ConfigData.shared.wifiHost,
+      UInt16(ConfigData.shared.wifiPort)
     )
 
     bindServiceMirrors()
@@ -112,25 +155,54 @@ final class OBDConnectionManager: ObservableObject {
   // Bind OBDService publishers (per-instance).
   private func bindServiceMirrors() {
     serviceCancellables.removeAll()
+    let service = obdService
 
     // Mirror the connected peripheral name
-    obdService.$connectedPeripheral
+    service.connectedPeripheralPublisher
       .map { $0?.name }
       .removeDuplicates()
       .receive(on: DispatchQueue.main)
       .sink { [weak self] name in
-        self?.connectedPeripheralName = name
+        guard let self, self.isCurrentService(service) else { return }
+        self.connectedPeripheralName = name
       }
       .store(in: &serviceCancellables)
 
     // Mirror the OBDService connection state into our own state machine
-    obdService.$connectionState
+    service.serviceConnectionStatePublisher
       .removeDuplicates()
       .receive(on: DispatchQueue.main)
       .sink { [weak self] serviceState in
-        self?.handleServiceConnectionState(serviceState)
+        guard let self, self.isCurrentService(service) else { return }
+        self.handleServiceConnectionState(serviceState)
       }
       .store(in: &serviceCancellables)
+  }
+
+  private func makeService() -> OBDServicing {
+    serviceFactory(
+      ConfigData.shared.connectionType,
+      ConfigData.shared.wifiHost,
+      UInt16(ConfigData.shared.wifiPort)
+    )
+  }
+
+  private func invalidateConnectionAttempt() {
+    activeConnectionAttemptID = UUID()
+  }
+
+  private func beginConnectionAttempt() -> UUID {
+    let attemptID = UUID()
+    activeConnectionAttemptID = attemptID
+    return attemptID
+  }
+
+  private func isCurrentAttempt(_ attemptID: UUID, service: OBDServicing) -> Bool {
+    attemptID == activeConnectionAttemptID && isCurrentService(service)
+  }
+
+  private func isCurrentService(_ service: OBDServicing) -> Bool {
+    service === obdService
   }
   // Listen for demand-driven interest changes from PIDInterestRegistry.
   private func bindInterestRegistry() {
@@ -213,13 +285,11 @@ final class OBDConnectionManager: ObservableObject {
   func updateConnectionDetails() {
     if connectionState != .disconnected {
       disconnect()
+    } else {
+      invalidateConnectionAttempt()
     }
 
-    obdService = OBDService(
-      connectionType: ConfigData.shared.connectionType,
-      host: ConfigData.shared.wifiHost,
-      port: UInt16(ConfigData.shared.wifiPort)
-    )
+    obdService = makeService()
 
     bindServiceMirrors()
     obdInfo("OBD Service re-initialized with new settings.", category: .service)
@@ -231,25 +301,36 @@ final class OBDConnectionManager: ObservableObject {
       return
     }
 
+    let attemptID = beginConnectionAttempt()
+    let service = obdService
     connectionState = .connecting
 
     do {
-      _ = try await obdService.startConnection(
+      _ = try await service.startConnection(
         // preferedProtocol: .protocol6,
+        preferedProtocol: nil,
         timeout: 30,
-        querySupportedPIDs: querySupportedPids
+        querySupportedPIDs: querySupportedPids,
+        peripheral: nil
       )
 
-      supportedPids = await obdService.getSupportedPIDs()
+      guard isCurrentAttempt(attemptID, service: service) else { return }
+
+      supportedPids = await service.getSupportedPIDs()
+      guard isCurrentAttempt(attemptID, service: service) else { return }
 
       connectionState = .connected
-      connectedPeripheralName = obdService.connectedPeripheral?.name
+      connectedPeripheralName = service.connectedPeripheral?.name
       obdInfo("OBD-II connected successfully.", category: .service)
 
       // Start continuous updates using the current interest set (may be empty)
       startContinuousOBDUpdates(with: PIDInterestRegistry.shared.interested)
 
+    } catch is CancellationError {
+      guard isCurrentAttempt(attemptID, service: service) else { return }
+      obdInfo("OBD-II connection attempt cancelled.", category: .service)
     } catch {
+      guard isCurrentAttempt(attemptID, service: service) else { return }
       let message = error.localizedDescription
       connectionState = .failed(error)
       connectedPeripheralName = nil
@@ -258,6 +339,7 @@ final class OBDConnectionManager: ObservableObject {
   }
 
   func disconnect() {
+    invalidateConnectionAttempt()
     obdService.stopConnection()
     // Do not clear managerCancellables here (those are long-lived)
     streamCancellables.removeAll()
