@@ -4,6 +4,9 @@ import com.rheosoft.obdii.core.communication.ble.BlePlatformAdapter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +28,7 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
     private var service = ObdService(ConfigData.connectionType.toLibraryConnectionType(), ConfigData.wifiHost, ConfigData.wifiPort)
     private var serviceMirrorJob: Job? = null
     private var streamJob: Job? = null
+    private var connectionJob: Job? = null
     private var bleAdapter: BlePlatformAdapter? = null
     private var supportedMode1Pids: Set<String> = emptySet()
     private var lastStreamingPids: Set<String> = emptySet()
@@ -113,6 +117,10 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
             obdWarning("Connection attempt ignored, already connected or connecting.", LogCategory.Service)
             return
         }
+
+        connectionJob?.cancelAndJoin()
+        connectionJob = currentCoroutineContext()[Job]
+
         syncTransportConfigInternal()
         _connectionState = OBDConnectionState.connecting
         obdInfo("Starting connection with timeout: 30s", LogCategory.Connection)
@@ -131,16 +139,26 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
             startContinuousUpdates(interestedPids)
             obdInfo("Successfully connected to vehicle: ${service.connectedPeripheral?.name ?: "Unknown"}", LogCategory.Connection)
         } catch (t: Throwable) {
+            if (t is CancellationException) {
+                obdDebug("Connection attempt cancelled.", LogCategory.Connection)
+                throw t
+            }
             streamJob?.cancel()
             streamJob = null
             _connectedPeripheralName = null
             _connectionState = OBDConnectionState.failed
             obdError("Connection failed: ${t.message}", LogCategory.Connection)
             throw t
+        } finally {
+            if (connectionJob === currentCoroutineContext()[Job]) {
+                connectionJob = null
+            }
         }
     }
 
     override fun disconnect() {
+        connectionJob?.cancel()
+        connectionJob = null
         streamJob?.cancel()
         streamJob = null
         service.stopConnection()

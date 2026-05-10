@@ -167,6 +167,7 @@ class OBDConnectionManager extends ChangeNotifier
   Set<String> _lastStreamingPids = {};
   Set<String> _supportedMode1Pids = {};
   bool _hasSupportedMode1Snapshot = false;
+  int _connectionAttemptId = 0;
 
   // ── Notifiers (replaces Combine @Published) ──────
 
@@ -256,6 +257,11 @@ class OBDConnectionManager extends ChangeNotifier
       return;
     }
 
+    final attemptId = ++_connectionAttemptId;
+    if (_obdService == null) {
+      _rebuildService();
+    }
+    final service = _obdService!;
     _setConnectionState(OBDConnectionState.connecting);
 
     final config = ConfigData.instance;
@@ -263,30 +269,39 @@ class OBDConnectionManager extends ChangeNotifier
     // Bluetooth: check adapter
     if (config.connectionType == ConnectionType.bluetooth) {
       if (!await _ensureBluetoothPermissions()) {
+        if (!_isActiveConnectionAttempt(attemptId, service)) return;
         _setConnectionState(OBDConnectionState.failed);
         return;
       }
+      if (!_isActiveConnectionAttempt(attemptId, service)) return;
       if (!await FlutterBluePlus.isSupported) {
+        if (!_isActiveConnectionAttempt(attemptId, service)) return;
         _setConnectionState(OBDConnectionState.failed);
         return;
       }
+      if (!_isActiveConnectionAttempt(attemptId, service)) return;
       final adapterState = await FlutterBluePlus.adapterState.first;
+      if (!_isActiveConnectionAttempt(attemptId, service)) return;
       if (adapterState != BluetoothAdapterState.on) {
         try {
           await FlutterBluePlus.turnOn();
         } catch (_) {
+          if (!_isActiveConnectionAttempt(attemptId, service)) return;
           _setConnectionState(OBDConnectionState.failed);
           return;
         }
+        if (!_isActiveConnectionAttempt(attemptId, service)) return;
       }
     }
 
     try {
       await obd2lib.Commands.ensureInitialized();
-      final info = await _obdService!.startConnection(
+      if (!_isActiveConnectionAttempt(attemptId, service)) return;
+      final info = await service.startConnection(
         timeout: 30.0,
         querySupportedPIDs: _querySupportedPids,
       );
+      if (!_isActiveConnectionAttempt(attemptId, service)) return;
 
       if (_querySupportedPids && info.supportedPIDs != null) {
         _supportedMode1Pids = info.supportedPIDs!
@@ -297,10 +312,20 @@ class OBDConnectionManager extends ChangeNotifier
         obdInfo('OBD-II connected successfully.', category: LogCategory.service);
       }
     } catch (e) {
+      if (!_isActiveConnectionAttempt(attemptId, service)) {
+        obdDebug(
+          'Ignoring stale connection failure: $e',
+          category: LogCategory.service,
+        );
+        return;
+      }
       _setConnectionState(OBDConnectionState.failed);
       obdError('connect failed: $e', category: LogCategory.service);
     }
   }
+
+  bool _isActiveConnectionAttempt(int attemptId, obd2lib.Obd2Service service) =>
+      attemptId == _connectionAttemptId && identical(service, _obdService);
 
   Future<bool> _ensureBluetoothPermissions() async {
     if (!Platform.isAndroid) return true;
@@ -342,6 +367,7 @@ class OBDConnectionManager extends ChangeNotifier
 
   @override
   void disconnect() {
+    _connectionAttemptId++;
     _obdService?.stopConnection();
     _dataSub?.cancel();
     _clearForTerminalState();
