@@ -23,7 +23,7 @@ final class OBDConnectionManagerTests: XCTestCase {
         private let peripheralSubject = CurrentValueSubject<CBPeripheral?, Never>(nil)
         private let stateSubject = CurrentValueSubject<SwiftOBD2.ConnectionState, Never>(.disconnected)
         private let supportedPIDsResult: [OBDCommand]
-        private let startConnectionHandler: () async throws -> OBDInfo
+        private let startConnectionHandler: @MainActor () async throws -> OBDInfo
         
         var connectedPeripheral: CBPeripheral?
         var connectedPeripheralPublisher: AnyPublisher<CBPeripheral?, Never> {
@@ -36,7 +36,7 @@ final class OBDConnectionManagerTests: XCTestCase {
         
         init(
             supportedPIDs: [OBDCommand] = [],
-            startConnectionHandler: @escaping () async throws -> OBDInfo
+            startConnectionHandler: @escaping @MainActor () async throws -> OBDInfo
         ) {
             self.supportedPIDsResult = supportedPIDs
             self.startConnectionHandler = startConnectionHandler
@@ -476,7 +476,6 @@ final class OBDConnectionManagerTests: XCTestCase {
             code: 99,
             userInfo: [NSLocalizedDescriptionKey: "Delayed failure"]
         )
-        let successInfo = OBDInfo(vin: "demo", supportedPIDs: nil, obdProtocol: nil, ecuMap: nil)
         
         var delayedContinuation: CheckedContinuation<OBDInfo, Error>?
         let slowService = MockOBDService {
@@ -484,11 +483,11 @@ final class OBDConnectionManagerTests: XCTestCase {
                 delayedContinuation = continuation
             }
         }
-        let fastService = MockOBDService {
-            successInfo
-        }
         
-        var services: [OBDServicing] = [slowService, fastService]
+        var services: [OBDServicing] = [
+            slowService,
+            OBDService(connectionType: .demo, host: "", port: 0),
+        ]
         let managerUnderTest = OBDConnectionManager { _, _, _ in
             precondition(!services.isEmpty, "Unexpected service factory call")
             return services.removeFirst()
