@@ -266,9 +266,7 @@ jobs:
           target: google_apis
           arch: x86_64
           disable-animations: true
-          script: |
-            cd kotlin_obdii && chmod +x gradlew
-            ./gradlew :coreApp:test :coreApp:jacocoTestReport :androidApp:createDebugCoverageReport
+          script: cd kotlin_obdii && chmod +x gradlew && ./gradlew :coreApp:test :coreApp:jacocoTestReport :androidApp:createDebugCoverageReport
 
       - name: Flutter Coverage
         if: needs.filter.outputs.flutter == 'true' || needs.filter.outputs.pipeline == 'true'
