@@ -185,18 +185,22 @@ class DashboardScreenUiTest {
 
         // Green
         statsProvider.send(mapOf("0105" to PIDStats("0105", MeasurementResult(50.0, "°C"))))
+        composeRule.waitForText("50")
         composeRule.onNodeWithText("50").assertIsDisplayed()
 
         // Orange
         statsProvider.send(mapOf("0105" to PIDStats("0105", MeasurementResult(120.0, "°C"))))
+        composeRule.waitForText("120")
         composeRule.onNodeWithText("120").assertIsDisplayed()
 
         // Red
         statsProvider.send(mapOf("0105" to PIDStats("0105", MeasurementResult(180.0, "°C"))))
+        composeRule.waitForText("180")
         composeRule.onNodeWithText("180").assertIsDisplayed()
 
         // Blue grey (out of range)
         statsProvider.send(mapOf("0105" to PIDStats("0105", MeasurementResult(250.0, "°C"))))
+        composeRule.waitForText("250")
         composeRule.onNodeWithText("250").assertIsDisplayed()
     }
 
