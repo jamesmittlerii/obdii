@@ -282,6 +282,17 @@ jobs:
           name: swift-sonar-coverage
           path: coverage-swift
 
+      - name: Ensure Coverage Reports Exist
+        run: |
+          mkdir -p coverage-swift
+          if [ ! -f coverage-swift/sonarqube-generic-coverage.xml ] || [ ! -s coverage-swift/sonarqube-generic-coverage.xml ]; then
+            echo '<coverage version="1"></coverage>' > coverage-swift/sonarqube-generic-coverage.xml
+          fi
+          # Ensure directories for other reports exist to avoid sonar warnings
+          mkdir -p kotlin_obdii/app/build/reports/jacoco/test
+          mkdir -p kotlin_obdii/androidApp/build/reports/coverage/androidTest/debug/connected
+          mkdir -p flutter_obdii/coverage
+
       - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@v7
         env:
