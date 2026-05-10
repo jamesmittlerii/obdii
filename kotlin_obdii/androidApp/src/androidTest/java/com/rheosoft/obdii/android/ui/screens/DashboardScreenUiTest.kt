@@ -67,13 +67,13 @@ class DashboardScreenUiTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    private fun gaugePid(id: String, label: String, name: String, command: String) = ObdiiPid(
+    private fun gaugePid(id: String, label: String, name: String, command: String, units: String = "RPM") = ObdiiPid(
         id = id,
         enabled = true,
         label = label,
         name = name,
         pidCommand = command,
-        units = "RPM",
+        units = units,
         kind = ObdPidKind.gauge
     )
 
@@ -96,7 +96,7 @@ class DashboardScreenUiTest {
                 isMetric = unitsProvider.units == MeasurementUnit.Metric,
                 modifier = Modifier,
                 scope = scope,
-                onGaugeTap = {}
+                onGaugeTap = { p: ObdiiPid -> }
             )
         }
         return Triple(vm, pidProvider, statsProvider)
@@ -113,7 +113,7 @@ class DashboardScreenUiTest {
     fun testShowsGaugeTileContentWhenEnabledGaugeExists() {
         val (_, pidProvider, statsProvider) = setupScreen()
         
-        val pid = gaugePid("rpm", "RPM", "Engine RPM", "010C")
+        val pid = gaugePid("rpm", "RPM", "Engine RPM", "010C", units = "rpm_units")
         pidProvider.send(listOf(pid))
         statsProvider.send(mapOf("010C" to PIDStats("010C", MeasurementResult(1200.0, "RPM"))))
 
@@ -125,7 +125,7 @@ class DashboardScreenUiTest {
     @Test
     fun testSwitchingSegmentedControlChangesToListMode() {
         val (_, pidProvider, _) = setupScreen()
-        pidProvider.send(listOf(gaugePid("rpm", "RPM", "Engine RPM", "010C")))
+        pidProvider.send(listOf(gaugePid("rpm", "RPM", "Engine RPM", "010C", units = "rpm_units")))
 
         composeRule.waitForText("List")
         composeRule.onNodeWithText("List").performClick()
@@ -137,7 +137,7 @@ class DashboardScreenUiTest {
     @Test
     fun testListModeShowsRowWithFullGaugeName() {
         val (_, pidProvider, _) = setupScreen()
-        pidProvider.send(listOf(gaugePid("rpm", "RPM", "Engine RPM", "010C")))
+        pidProvider.send(listOf(gaugePid("rpm", "RPM", "Engine RPM", "010C", units = "rpm_units")))
 
         composeRule.waitForText("List")
         composeRule.onNodeWithText("List").performClick()
@@ -148,7 +148,7 @@ class DashboardScreenUiTest {
     @Test
     fun testSwitchingBackFromListReturnsGaugesMode() {
         val (_, pidProvider, _) = setupScreen()
-        pidProvider.send(listOf(gaugePid("rpm", "RPM", "Engine RPM", "010C")))
+        pidProvider.send(listOf(gaugePid("rpm", "RPM", "Engine RPM", "010C", units = "rpm_units")))
 
         composeRule.waitForText("List")
         composeRule.onNodeWithText("List").performClick()
@@ -203,8 +203,8 @@ class DashboardScreenUiTest {
     @Test
     fun testDragAndDropInListMode() {
         val (_, pidProvider, _) = setupScreen()
-        val pid1 = gaugePid("rpm", "RPM", "Engine RPM", "010C")
-        val pid2 = gaugePid("speed", "Speed", "Vehicle Speed", "010D")
+        val pid1 = gaugePid("rpm", "RPM", "Engine RPM", "010C", units = "rpm")
+        val pid2 = gaugePid("speed", "Speed", "Vehicle Speed", "010D", units = "km/h")
         pidProvider.send(listOf(pid1, pid2))
 
         composeRule.onNodeWithText("List").performClick()
@@ -228,8 +228,8 @@ class DashboardScreenUiTest {
     @Test
     fun testDragAndDropInGridMode() {
         val (_, pidProvider, _) = setupScreen()
-        val pid1 = gaugePid("rpm", "RPM", "Engine RPM", "010C")
-        val pid2 = gaugePid("speed", "Speed", "Vehicle Speed", "010D")
+        val pid1 = gaugePid("rpm", "RPM", "Engine RPM", "010C", units = "rpm")
+        val pid2 = gaugePid("speed", "Speed", "Vehicle Speed", "010D", units = "km/h")
         pidProvider.send(listOf(pid1, pid2))
 
         composeRule.onNodeWithText("RPM").assertIsDisplayed()
@@ -252,7 +252,7 @@ class DashboardScreenUiTest {
     @Test
     fun testGaugeTapInGridAndList() {
         var tappedPid: ObdiiPid? = null
-        val pid = gaugePid("rpm", "RPM", "Engine RPM", "010C")
+        val pid = gaugePid("rpm", "RPM", "Engine RPM", "010C", units = "rpm_units")
         val pidProvider = MockPidProvider().apply { send(listOf(pid)) }
 
         val vm = GaugesViewModel(

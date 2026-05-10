@@ -239,4 +239,129 @@ void main() {
     expect(store.pids.firstWhere((p) => p.id == 'speed').enabled, isTrue);
     expect(viewModel.filteredEnabled.map((p) => p.id), contains('speed'));
   });
+
+  testWidgets('back button pops the navigator', (tester) async {
+    bool popped = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Navigator(
+          onGenerateRoute: (_) => MaterialPageRoute(
+            builder: (context) => PidToggleListView(viewModel: viewModel),
+          ),
+          observers: [
+            _MockNavigatorObserver(() => popped = true),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.chevron_left));
+    await tester.pumpAndSettle();
+
+    expect(popped, isTrue);
+  });
+
+  testWidgets('renders with default constructor (ChangeNotifierProvider)', (
+    tester,
+  ) async {
+    // This covers the branch where no viewModel is injected.
+    // We don't necessarily need to verify store behavior here, just that it builds.
+    // Note: This assumes PidStore.instance and ConfigData.instance are safe to access in tests.
+    await tester.pumpWidget(const MaterialApp(home: PidToggleListView()));
+    expect(find.byType(PidToggleListView), findsOneWidget);
+  });
+
+  testWidgets('reordering valid items calls moveEnabled', (tester) async {
+    await tester.pumpWidget(_build(viewModel));
+    await tester.pump();
+
+    // Enable Speed first to have two items to reorder.
+    final speed = store.pids.firstWhere((p) => p.id == 'speed');
+    await store.toggle(speed);
+    await tester.pumpAndSettle(); // Ensure rebuild with 2 enabled items
+    
+    // Now we have:
+    // 0: Header "ENABLED"
+    // 1: RPM
+    // 2: Speed
+    
+    // Move RPM (oldIndex 1) to after Speed (newIndex 3)
+    final listFinder = find.byType(ReorderableListView);
+    final ReorderableListView list = tester.widget(listFinder);
+    
+    list.onReorder(1, 3);
+    await tester.pumpAndSettle();
+
+    // In our _TestPidStore, we can check the order.
+    final enabledPids = store.pids.where((p) => p.enabled).toList();
+    expect(enabledPids[0].id, 'speed');
+    expect(enabledPids[1].id, 'rpm');
+  });
+
+  testWidgets('reordering invalid items (header/disabled) does nothing', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_build(viewModel));
+    await tester.pump();
+
+    final ReorderableListView list = tester.widget(find.byType(ReorderableListView));
+    
+    // Attempt to move Header (index 0)
+    list.onReorder(0, 2);
+    await tester.pump();
+    expect(store.pids.where((p) => p.enabled).first.id, 'rpm');
+
+    // Attempt to move from disabled section (e.g. index 4)
+    list.onReorder(4, 1);
+    await tester.pump();
+    expect(store.pids.where((p) => p.enabled).first.id, 'rpm');
+  });
+
+  testWidgets('display updates when units change', (tester) async {
+    await tester.pumpWidget(_build(viewModel));
+    await tester.pump();
+
+    expect(find.textContaining('km/h'), findsOneWidget);
+
+    // Update units and notify
+    unitsProvider.units = MeasurementUnit.imperial;
+    unitsProvider._controller.add(MeasurementUnit.imperial);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('mph'), findsOneWidget);
+  });
+
+  testWidgets('renders correctly when sections are empty', (tester) async {
+    // Disable everything
+    for (var pid in List.from(store.pids)) {
+      if (pid.enabled) await store.toggle(pid);
+    }
+    await tester.pumpWidget(_build(viewModel));
+    await tester.pump();
+
+    expect(find.text('ENABLED'), findsNothing);
+    expect(find.text('DISABLED'), findsOneWidget);
+    
+    // Enable everything
+    for (var pid in List.from(store.pids)) {
+      if (!pid.enabled && pid.kind == ObdPidKind.gauge) await store.toggle(pid);
+    }
+    await tester.pumpWidget(_build(viewModel));
+    await tester.pump();
+    
+    expect(find.text('DISABLED'), findsNothing);
+    expect(find.text('ENABLED'), findsOneWidget);
+  });
+}
+
+class _MockNavigatorObserver extends NavigatorObserver {
+  final VoidCallback onPop;
+  _MockNavigatorObserver(this.onPop);
+
+  @override
+  void didPop(Route route, Route? previousRoute) {
+    onPop();
+    super.didPop(route, previousRoute);
+  }
 }
