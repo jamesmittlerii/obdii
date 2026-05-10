@@ -133,6 +133,14 @@ class OBDConnectionManager extends ChangeNotifier
   OBDConnectionManager._();
   static const bool _querySupportedPids = true;
 
+  /// When non-null (tests only), skips the real FlutterBluePlus lookup.
+  @visibleForTesting
+  static Future<bool> Function()? debugBluetoothIsSupportedOverride;
+
+  /// When non-null (tests only), skips waiting on [FlutterBluePlus.adapterState].
+  @visibleForTesting
+  static Future<BluetoothAdapterState> Function()?
+      debugBluetoothInitialAdapterStateOverride;
 
   // ── Published state ─────────────────────────────
 
@@ -278,37 +286,69 @@ class OBDConnectionManager extends ChangeNotifier
     return false;
   }
 
+  /// Sets [failed] if this connection attempt is still current; otherwise no-op.
+  void _markBluetoothPrepFailedIfStillActive(
+    int attemptId,
+    obd2lib.Obd2Service service,
+  ) {
+    if (!_isActiveConnectionAttempt(attemptId, service)) return;
+    _setConnectionState(OBDConnectionState.failed);
+  }
+
+  Future<bool> _readFlutterBluePlusIsSupported() async {
+    final override = debugBluetoothIsSupportedOverride;
+    if (override != null) return override();
+    return FlutterBluePlus.isSupported;
+  }
+
+  Future<BluetoothAdapterState> _readFlutterBluePlusInitialAdapterState() async {
+    final override = debugBluetoothInitialAdapterStateOverride;
+    if (override != null) return override();
+    return FlutterBluePlus.adapterState.first;
+  }
+
+  Future<bool> _bluetoothPermissionsAndHardwareReady(
+    int attemptId,
+    obd2lib.Obd2Service service,
+  ) async {
+    if (!await _ensureBluetoothPermissions()) {
+      _markBluetoothPrepFailedIfStillActive(attemptId, service);
+      return false;
+    }
+    if (!_isActiveConnectionAttempt(attemptId, service)) return false;
+    if (!await _readFlutterBluePlusIsSupported()) {
+      _markBluetoothPrepFailedIfStillActive(attemptId, service);
+      return false;
+    }
+    return _isActiveConnectionAttempt(attemptId, service);
+  }
+
+  Future<bool> _ensureBluetoothAdapterOnForSession(
+    int attemptId,
+    obd2lib.Obd2Service service,
+  ) async {
+    final adapterState = await _readFlutterBluePlusInitialAdapterState();
+    if (!_isActiveConnectionAttempt(attemptId, service)) return false;
+    if (adapterState == BluetoothAdapterState.on) return true;
+
+    try {
+      await FlutterBluePlus.turnOn();
+    } catch (_) {
+      _markBluetoothPrepFailedIfStillActive(attemptId, service);
+      return false;
+    }
+    return _isActiveConnectionAttempt(attemptId, service);
+  }
+
   /// Returns false if [connect] should stop (failure or superseded attempt).
   Future<bool> _prepareBluetoothForConnection(
     int attemptId,
     obd2lib.Obd2Service service,
   ) async {
-    if (!await _ensureBluetoothPermissions()) {
-      if (!_isActiveConnectionAttempt(attemptId, service)) return false;
-      _setConnectionState(OBDConnectionState.failed);
+    if (!await _bluetoothPermissionsAndHardwareReady(attemptId, service)) {
       return false;
     }
-    if (!_isActiveConnectionAttempt(attemptId, service)) return false;
-    if (!await FlutterBluePlus.isSupported) {
-      if (!_isActiveConnectionAttempt(attemptId, service)) return false;
-      _setConnectionState(OBDConnectionState.failed);
-      return false;
-    }
-    if (!_isActiveConnectionAttempt(attemptId, service)) return false;
-
-    final adapterState = await FlutterBluePlus.adapterState.first;
-    if (!_isActiveConnectionAttempt(attemptId, service)) return false;
-    if (adapterState != BluetoothAdapterState.on) {
-      try {
-        await FlutterBluePlus.turnOn();
-      } catch (_) {
-        if (!_isActiveConnectionAttempt(attemptId, service)) return false;
-        _setConnectionState(OBDConnectionState.failed);
-        return false;
-      }
-      if (!_isActiveConnectionAttempt(attemptId, service)) return false;
-    }
-    return true;
+    return _ensureBluetoothAdapterOnForSession(attemptId, service);
   }
 
   Future<void> _establishObdConnectionSession(
@@ -316,33 +356,54 @@ class OBDConnectionManager extends ChangeNotifier
     obd2lib.Obd2Service service,
   ) async {
     try {
-      await obd2lib.Commands.ensureInitialized();
-      if (!_isActiveConnectionAttempt(attemptId, service)) return;
-      final info = await service.startConnection(
-        timeout: 30.0,
-        querySupportedPIDs: _querySupportedPids,
-      );
-      if (!_isActiveConnectionAttempt(attemptId, service)) return;
-
-      if (_querySupportedPids && info.supportedPIDs != null) {
-        _supportedMode1Pids = info.supportedPIDs!
-            .map((cmd) => cmd.properties.command)
-            .where((cmd) => cmd.startsWith('01'))
-            .toSet();
-        _hasSupportedMode1Snapshot = true;
-        obdInfo('OBD-II connected successfully.', category: LogCategory.service);
-      }
+      await _runStartConnectionHandshake(attemptId, service);
     } catch (e) {
-      if (!_isActiveConnectionAttempt(attemptId, service)) {
-        obdDebug(
-          'Ignoring stale connection failure: $e',
-          category: LogCategory.service,
-        );
-        return;
-      }
-      _setConnectionState(OBDConnectionState.failed);
-      obdError('connect failed: $e', category: LogCategory.service);
+      _handleStartConnectionFailure(e, attemptId, service);
     }
+  }
+
+  Future<void> _runStartConnectionHandshake(
+    int attemptId,
+    obd2lib.Obd2Service service,
+  ) async {
+    await obd2lib.Commands.ensureInitialized();
+    if (!_isActiveConnectionAttempt(attemptId, service)) return;
+    final info = await service.startConnection(
+      timeout: 30.0,
+      querySupportedPIDs: _querySupportedPids,
+    );
+    if (!_isActiveConnectionAttempt(attemptId, service)) return;
+    _captureSupportedMode1Pids(info);
+  }
+
+  void _captureSupportedMode1Pids(obd2lib.ObdInfo info) {
+    if (!_querySupportedPids) return;
+
+    final pids = info.supportedPIDs;
+    if (pids == null) return;
+
+    _supportedMode1Pids = pids
+        .map((cmd) => cmd.properties.command)
+        .where((cmd) => cmd.startsWith('01'))
+        .toSet();
+    _hasSupportedMode1Snapshot = true;
+    obdInfo('OBD-II connected successfully.', category: LogCategory.service);
+  }
+
+  void _handleStartConnectionFailure(
+    Object e,
+    int attemptId,
+    obd2lib.Obd2Service service,
+  ) {
+    if (!_isActiveConnectionAttempt(attemptId, service)) {
+      obdDebug(
+        'Ignoring stale connection failure: $e',
+        category: LogCategory.service,
+      );
+      return;
+    }
+    _setConnectionState(OBDConnectionState.failed);
+    obdError('connect failed: $e', category: LogCategory.service);
   }
 
   bool _isActiveConnectionAttempt(int attemptId, obd2lib.Obd2Service service) =>

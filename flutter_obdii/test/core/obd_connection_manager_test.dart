@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_obd2/flutter_obd2.dart' as obd2lib;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,6 +17,9 @@ void main() {
   final manager = OBDConnectionManager.instance;
 
   setUp(() {
+    OBDConnectionManager.debugBluetoothIsSupportedOverride = null;
+    OBDConnectionManager.debugBluetoothInitialAdapterStateOverride = null;
+
     // Setup the log bridge to handle the 'Setting up vehicle' transition in tests
     obd2lib.ObdLog.setHandler((
       message, {
@@ -190,5 +196,44 @@ void main() {
     await manager.connect();
 
     expect(manager.connectionState, OBDConnectionState.connecting);
+  });
+
+  test('testWifiConnectRefusedSetsFailedState', () async {
+    final socket = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    final closedPort = socket.port;
+    await socket.close();
+
+    ConfigData.instance.connectionType = ConnectionType.wifi;
+    ConfigData.instance.wifiHost = '127.0.0.1';
+    ConfigData.instance.wifiPort = closedPort;
+
+    manager.updateConnectionDetails();
+    await manager.connect();
+
+    expect(manager.connectionState, OBDConnectionState.failed);
+  });
+
+  /// Covers LE-unsupported prereq without loading the FlutterBluePlus platform.
+  test('testBluetoothPrepFailedWhenLeUnsupportedOverride', () async {
+    OBDConnectionManager.debugBluetoothIsSupportedOverride = () async => false;
+
+    ConfigData.instance.connectionType = ConnectionType.bluetooth;
+    manager.updateConnectionDetails();
+    await manager.connect();
+
+    expect(manager.connectionState, OBDConnectionState.failed);
+  });
+
+  /// Adapter already on: skips plugin adapter stream and exercises handshake entry.
+  test('testBluetoothPrepWithAdapterOnOverride', () async {
+    OBDConnectionManager.debugBluetoothIsSupportedOverride = () async => true;
+    OBDConnectionManager.debugBluetoothInitialAdapterStateOverride =
+        () async => BluetoothAdapterState.on;
+
+    ConfigData.instance.connectionType = ConnectionType.bluetooth;
+    manager.updateConnectionDetails();
+    await manager.connect().timeout(const Duration(seconds: 60));
+
+    expect(manager.connectionState, OBDConnectionState.failed);
   });
 }
