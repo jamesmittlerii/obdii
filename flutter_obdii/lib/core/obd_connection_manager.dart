@@ -250,12 +250,7 @@ class OBDConnectionManager extends ChangeNotifier
 
   @override
   Future<void> connect() async {
-    if (connectionState == OBDConnectionState.connected ||
-        connectionState == OBDConnectionState.connecting) {
-      obdWarning('Connection attempt ignored, already connected or connecting.',
-          category: LogCategory.service);
-      return;
-    }
+    if (_shouldIgnoreConnectBecauseAlreadyConnecting()) return;
 
     final attemptId = ++_connectionAttemptId;
     if (_obdService == null) {
@@ -265,35 +260,61 @@ class OBDConnectionManager extends ChangeNotifier
     _setConnectionState(OBDConnectionState.connecting);
 
     final config = ConfigData.instance;
-
-    // Bluetooth: check adapter
     if (config.connectionType == ConnectionType.bluetooth) {
-      if (!await _ensureBluetoothPermissions()) {
-        if (!_isActiveConnectionAttempt(attemptId, service)) return;
-        _setConnectionState(OBDConnectionState.failed);
-        return;
-      }
-      if (!_isActiveConnectionAttempt(attemptId, service)) return;
-      if (!await FlutterBluePlus.isSupported) {
-        if (!_isActiveConnectionAttempt(attemptId, service)) return;
-        _setConnectionState(OBDConnectionState.failed);
-        return;
-      }
-      if (!_isActiveConnectionAttempt(attemptId, service)) return;
-      final adapterState = await FlutterBluePlus.adapterState.first;
-      if (!_isActiveConnectionAttempt(attemptId, service)) return;
-      if (adapterState != BluetoothAdapterState.on) {
-        try {
-          await FlutterBluePlus.turnOn();
-        } catch (_) {
-          if (!_isActiveConnectionAttempt(attemptId, service)) return;
-          _setConnectionState(OBDConnectionState.failed);
-          return;
-        }
-        if (!_isActiveConnectionAttempt(attemptId, service)) return;
-      }
+      final ready = await _prepareBluetoothForConnection(attemptId, service);
+      if (!ready) return;
     }
 
+    await _establishObdConnectionSession(attemptId, service);
+  }
+
+  bool _shouldIgnoreConnectBecauseAlreadyConnecting() {
+    if (connectionState == OBDConnectionState.connected ||
+        connectionState == OBDConnectionState.connecting) {
+      obdWarning('Connection attempt ignored, already connected or connecting.',
+          category: LogCategory.service);
+      return true;
+    }
+    return false;
+  }
+
+  /// Returns false if [connect] should stop (failure or superseded attempt).
+  Future<bool> _prepareBluetoothForConnection(
+    int attemptId,
+    obd2lib.Obd2Service service,
+  ) async {
+    if (!await _ensureBluetoothPermissions()) {
+      if (!_isActiveConnectionAttempt(attemptId, service)) return false;
+      _setConnectionState(OBDConnectionState.failed);
+      return false;
+    }
+    if (!_isActiveConnectionAttempt(attemptId, service)) return false;
+    if (!await FlutterBluePlus.isSupported) {
+      if (!_isActiveConnectionAttempt(attemptId, service)) return false;
+      _setConnectionState(OBDConnectionState.failed);
+      return false;
+    }
+    if (!_isActiveConnectionAttempt(attemptId, service)) return false;
+
+    final adapterState = await FlutterBluePlus.adapterState.first;
+    if (!_isActiveConnectionAttempt(attemptId, service)) return false;
+    if (adapterState != BluetoothAdapterState.on) {
+      try {
+        await FlutterBluePlus.turnOn();
+      } catch (_) {
+        if (!_isActiveConnectionAttempt(attemptId, service)) return false;
+        _setConnectionState(OBDConnectionState.failed);
+        return false;
+      }
+      if (!_isActiveConnectionAttempt(attemptId, service)) return false;
+    }
+    return true;
+  }
+
+  Future<void> _establishObdConnectionSession(
+    int attemptId,
+    obd2lib.Obd2Service service,
+  ) async {
     try {
       await obd2lib.Commands.ensureInitialized();
       if (!_isActiveConnectionAttempt(attemptId, service)) return;
