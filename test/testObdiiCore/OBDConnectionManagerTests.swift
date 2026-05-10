@@ -13,10 +13,64 @@
 import XCTest
 import SwiftOBD2
 import Combine
+import CoreBluetooth
 @testable import obdii
 
 @MainActor
 final class OBDConnectionManagerTests: XCTestCase {
+    
+    final class MockOBDService: OBDServicing {
+        private let peripheralSubject = CurrentValueSubject<CBPeripheral?, Never>(nil)
+        private let stateSubject = CurrentValueSubject<SwiftOBD2.ConnectionState, Never>(.disconnected)
+        private let supportedPIDsResult: [OBDCommand]
+        private let startConnectionHandler: () async throws -> OBDInfo
+        
+        var connectedPeripheral: CBPeripheral?
+        var connectedPeripheralPublisher: AnyPublisher<CBPeripheral?, Never> {
+            peripheralSubject.eraseToAnyPublisher()
+        }
+        var serviceConnectionStatePublisher: AnyPublisher<SwiftOBD2.ConnectionState, Never> {
+            stateSubject.eraseToAnyPublisher()
+        }
+        private(set) var stopConnectionCallCount = 0
+        
+        init(
+            supportedPIDs: [OBDCommand] = [],
+            startConnectionHandler: @escaping () async throws -> OBDInfo
+        ) {
+            self.supportedPIDsResult = supportedPIDs
+            self.startConnectionHandler = startConnectionHandler
+        }
+        
+        func startConnection(
+            preferedProtocol: PROTOCOL?,
+            timeout: TimeInterval,
+            querySupportedPIDs: Bool,
+            peripheral: CBPeripheral?
+        ) async throws -> OBDInfo {
+            stateSubject.send(.connecting)
+            let info = try await startConnectionHandler()
+            stateSubject.send(.connectedToVehicle)
+            return info
+        }
+        
+        func getSupportedPIDs() async -> [OBDCommand] {
+            supportedPIDsResult
+        }
+        
+        func stopConnection() {
+            stopConnectionCallCount += 1
+            stateSubject.send(.disconnected)
+        }
+        
+        func startContinuousUpdates(
+            _ pids: [OBDCommand],
+            unit: MeasurementUnit,
+            interval: TimeInterval
+        ) -> AnyPublisher<[OBDCommand : DecodeResult], Error> {
+            Empty(completeImmediately: false).eraseToAnyPublisher()
+        }
+    }
     
     var manager: OBDConnectionManager!
     var configData: ConfigData!
@@ -414,5 +468,51 @@ final class OBDConnectionManagerTests: XCTestCase {
         stats3.update(with: MeasurementResult(value: 3000.0, unit: unit))
         
         XCTAssertNotEqual(stats1, stats3, "Stats with different values should not be equal")
+    }
+    
+    func testStaleConnectionFailureDoesNotOverwriteNewerConnection() async throws {
+        let delayedFailure = NSError(
+            domain: "Test",
+            code: 99,
+            userInfo: [NSLocalizedDescriptionKey: "Delayed failure"]
+        )
+        let successInfo = OBDInfo(vin: "demo", supportedPIDs: nil, obdProtocol: nil, ecuMap: nil)
+        
+        var delayedContinuation: CheckedContinuation<OBDInfo, Error>?
+        let slowService = MockOBDService {
+            try await withCheckedThrowingContinuation { continuation in
+                delayedContinuation = continuation
+            }
+        }
+        let fastService = MockOBDService {
+            successInfo
+        }
+        
+        var services: [OBDServicing] = [slowService, fastService]
+        let managerUnderTest = OBDConnectionManager { _, _, _ in
+            precondition(!services.isEmpty, "Unexpected service factory call")
+            return services.removeFirst()
+        }
+        
+        let firstConnect = Task { await managerUnderTest.connect() }
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        
+        managerUnderTest.updateConnectionDetails()
+        await managerUnderTest.connect()
+        XCTAssertEqual(managerUnderTest.connectionState, .connected, "Newer connection should succeed")
+        
+        delayedContinuation?.resume(throwing: delayedFailure)
+        await firstConnect.value
+        
+        XCTAssertEqual(
+            managerUnderTest.connectionState,
+            .connected,
+            "Stale failed attempt must not overwrite active connection"
+        )
+        XCTAssertEqual(
+            slowService.stopConnectionCallCount,
+            1,
+            "Updating connection details should stop the superseded service"
+        )
     }
 }
