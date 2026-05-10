@@ -192,11 +192,38 @@ jobs:
     uses: jamesmittlerii/workflows/.github/workflows/iosnotest_bw.yml@main
     secrets: inherit
 
+  sonar_swift_support:
+    name: Swift Coverage
+    needs: [filter, version_bump, swift_deploy]
+    if: always() && !cancelled() && (needs.filter.outputs.swift == 'true' || needs.filter.outputs.pipeline == 'true')
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.version_bump.outputs.new_sha }}
+          submodules: recursive
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Run Swift tests with coverage
+        run: |
+          RUNTIME_ID=$(xcrun simctl list runtimes iOS -j | python3 -c "import json,sys; print(json.load(sys.stdin)['runtimes'][-1]['identifier'])")
+          sim_udid=$(xcrun simctl create "obdii-ci" "com.apple.CoreSimulator.SimDeviceType.iPhone-16" "$RUNTIME_ID")
+          xcrun simctl boot "$sim_udid" || true
+          xcodebuild -project obdii.xcodeproj -scheme obdii -destination "id=$sim_udid" -enableCodeCoverage YES -resultBundlePath TestResults.xcresult test
+          python3 scripts/convert_xccov_to_sonar.py TestResults.xcresult sonarqube-generic-coverage.xml --workspace "$GITHUB_WORKSPACE"
+
+      - name: Upload Swift coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: swift-sonar-coverage
+          path: sonarqube-generic-coverage.xml
+
   sonar_scan:
     name: SonarCloud Scan
-    needs: [filter, version_bump, kotlin_deploy, flutter_deploy, swift_deploy]
+    needs: [filter, version_bump, sonar_swift_support, kotlin_deploy, flutter_deploy, swift_deploy]
     if: always() && !cancelled()
-    runs-on: macos-26
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with:
@@ -212,7 +239,7 @@ jobs:
           path: SwiftOBD2
           token: ${{ secrets.PAT_TOKEN }}
 
-      - name: Set up Environment
+      - name: Set up Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -223,14 +250,11 @@ jobs:
         with:
           channel: stable
 
-      - name: Swift Coverage
-        if: needs.filter.outputs.swift == 'true' || needs.filter.outputs.pipeline == 'true'
+      - name: Enable KVM
         run: |
-          RUNTIME_ID=$(xcrun simctl list runtimes iOS -j | python3 -c "import json,sys; print(json.load(sys.stdin)['runtimes'][-1]['identifier'])")
-          sim_udid=$(xcrun simctl create "obdii-ci" "com.apple.CoreSimulator.SimDeviceType.iPhone-16" "$RUNTIME_ID")
-          xcrun simctl boot "$sim_udid" || true
-          xcodebuild -project obdii.xcodeproj -scheme obdii -destination "id=$sim_udid" -enableCodeCoverage YES -resultBundlePath TestResults.xcresult test
-          python3 scripts/convert_xccov_to_sonar.py TestResults.xcresult sonarqube-generic-coverage.xml --workspace "$GITHUB_WORKSPACE"
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
 
       - name: Android UI & Kotlin Coverage
         if: needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true'
@@ -240,7 +264,7 @@ jobs:
         with:
           api-level: 35
           target: google_apis
-          arch: arm64-v8a
+          arch: x86_64
           disable-animations: true
           script: |
             cd kotlin_obdii && chmod +x gradlew
@@ -252,6 +276,13 @@ jobs:
           cd flutter_obdii
           flutter pub get
           flutter test --coverage
+
+      - name: Download Swift coverage
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: swift-sonar-coverage
+          path: coverage-swift
 
       - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@v7
