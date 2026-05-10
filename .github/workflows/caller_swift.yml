@@ -5,16 +5,16 @@ permissions:
       pull-requests: write
       id-token: write
 
-on:
-  workflow_dispatch:
-  push:
-    branches: [ "main" ]
-    paths-ignore:
-      - "kotlin_obdii/**"
-      - "flutter_obdii/**"
-      - ".github/workflows/caller_flutter.yml"
-      - ".github/workflows/caller_kotlin.yml"
-      - ".github/workflows/sonarcloud.yml"
+# on:
+#   workflow_dispatch:
+#   push:
+#     branches: [ "main" ]
+#     paths-ignore:
+#       - "kotlin_obdii/**"
+#       - "flutter_obdii/**"
+#       - ".github/workflows/caller_flutter.yml"
+#       - ".github/workflows/caller_kotlin.yml"
+#       - ".github/workflows/sonarcloud.yml"
 #  pull_request:
 #    branches: [ "main" ]
 

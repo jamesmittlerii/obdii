@@ -1,0 +1,304 @@
+name: Main CI/CD Pipeline
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.repository }}-release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  filter:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      kotlin: ${{ steps.filter.outputs.kotlin }}
+      flutter: ${{ steps.filter.outputs.flutter }}
+      swift: ${{ steps.filter.outputs.swift }}
+      pipeline: ${{ steps.filter.outputs.pipeline }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            kotlin:
+              - 'kotlin_obdii/**'
+            flutter:
+              - 'flutter_obdii/**'
+            swift:
+              - 'obdii/**'
+              - 'test/**'
+              - 'obdii.xcodeproj/**'
+            pipeline:
+              - '.github/workflows/main_pipeline.yml'
+              - 'scripts/**'
+              - 'sonar-project.properties'
+
+  kotlin_deploy:
+    name: Kotlin Build & Deploy
+    needs: filter
+    if: needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Sync to latest branch head
+        run: |
+          git fetch origin "${{ github.ref_name }}"
+          git checkout "${{ github.ref_name }}"
+          git reset --hard "origin/${{ github.ref_name }}"
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Bump Kotlin version
+        working-directory: kotlin_obdii
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys
+          path = pathlib.Path("androidApp/build.gradle.kts")
+          text = path.read_text(encoding="utf-8")
+          m_code = re.search(r"^\s*versionCode\s*=\s*(\d+)\s*$", text, re.MULTILINE)
+          if not m_code: sys.exit(1)
+          new_code = int(m_code.group(1)) + 1
+          text = re.sub(r"(^\s*versionCode\s*=\s*)\d+(\s*$)", r"\g<1>" + str(new_code) + r"\g<2>", text, count=1, flags=re.MULTILINE)
+          m_name = re.search(r"^\s*versionName\s*=\s*\"(\d+)\.(\d+)\.(\d+)\"\s*$", text, re.MULTILINE)
+          if m_name:
+              major, minor, patch = map(int, m_name.groups())
+              new_name = f"{major}.{minor}.{patch + 1}"
+              text = re.sub(r"(^\s*versionName\s*=\s*\")\d+\.\d+\.\d+(\"\s*$)", r"\g<1>" + new_name + r"\g<2>", text, count=1, flags=re.MULTILINE)
+          path.write_text(text, encoding="utf-8")
+          PY
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add kotlin_obdii/androidApp/build.gradle.kts
+          git commit -m "ci: bump kotlin version [skip ci]" || echo "No changes"
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: Checkout SwiftOBD2
+        uses: actions/checkout@v5
+        with:
+          repository: jamesmittlerii/SwiftOBD2
+          path: SwiftOBD2
+
+      - name: Decode Keystore
+        working-directory: kotlin_obdii/androidApp
+        run: echo "${{ secrets.KOTLIN_ANDROID_KEYSTORE_BASE64 }}" | base64 -d > upload-keystore.jks
+
+      - name: Write key.properties
+        working-directory: kotlin_obdii/androidApp
+        env:
+          SP: ${{ secrets.KOTLIN_ANDROID_KEYSTORE_PASSWORD }}
+          KP: ${{ secrets.KOTLIN_ANDROID_KEY_PASSWORD }}
+          KA: ${{ secrets.KOTLIN_ANDROID_KEY_ALIAS }}
+        run: |
+          printf "storePassword=$SP\nkeyPassword=$KP\nkeyAlias=$KA\nstoreFile=upload-keystore.jks\n" > key.properties
+
+      - name: Build & Upload to Play Store
+        working-directory: kotlin_obdii
+        env:
+          KOTLINOBD2_DIR: ${{ github.workspace }}/SwiftOBD2/kotlinobd2
+        run: |
+          chmod +x gradlew
+          ./gradlew bundleRelease
+      
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.KOTLIN_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.rheosoft.obdiik
+          releaseFiles: kotlin_obdii/androidApp/build/outputs/bundle/release/*.aab
+          tracks: internal
+          status: completed
+
+  flutter_deploy:
+    name: Flutter Build & Deploy
+    needs: [filter, kotlin_deploy]
+    if: always() && !cancelled() && (needs.filter.outputs.flutter == 'true' || needs.filter.outputs.pipeline == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Sync to latest branch head
+        run: |
+          git fetch origin "${{ github.ref_name }}"
+          git checkout "${{ github.ref_name }}"
+          git reset --hard "origin/${{ github.ref_name }}"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Bump Flutter version
+        working-directory: flutter_obdii
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys
+          path = pathlib.Path("pubspec.yaml")
+          text = path.read_text(encoding="utf-8")
+          m = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$", text, re.MULTILINE)
+          if not m: sys.exit(1)
+          major, minor, patch, build = map(int, m.groups())
+          new_version = f"{major}.{minor}.{patch + 1}+{build + 1}"
+          updated = re.sub(r"^version:\s*.*$", f"version: {new_version}", text, count=1, flags=re.MULTILINE)
+          path.write_text(updated, encoding="utf-8")
+          PY
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add flutter_obdii/pubspec.yaml
+          git commit -m "ci: bump flutter version [skip ci]" || echo "No changes"
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: Build & Deploy Flutter (Android)
+        working-directory: flutter_obdii
+        env:
+          SP: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KP: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KA: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
+          printf "storePassword=$SP\nkeyPassword=$KP\nkeyAlias=$KA\nstoreFile=app/upload-keystore.jks\n" > android/key.properties
+          flutter pub get
+          flutter build appbundle --release --flavor material --target lib/main_material.dart
+      
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.rheosoft.obdiif
+          releaseFiles: flutter_obdii/build/app/outputs/bundle/materialRelease/app-material-release.aab
+          tracks: alpha
+          status: draft
+
+  swift_deploy:
+    name: Swift iOS Deployment
+    needs: [filter, flutter_deploy]
+    if: always() && !cancelled() && (needs.filter.outputs.swift == 'true' || needs.filter.outputs.pipeline == 'true')
+    uses: jamesmittlerii/workflows/.github/workflows/iosnotest_bw.yml@main
+    secrets: inherit
+
+  sonar_swift_support:
+    name: Swift Coverage (Sonar Support)
+    needs: [filter, swift_deploy]
+    if: always() && !cancelled() && (needs.filter.outputs.swift == 'true' || needs.filter.outputs.pipeline == 'true')
+    runs-on: macos-26
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Create simulator
+        id: simulator
+        shell: bash
+        run: |
+          # Simplified simulator creation for iPhone 16
+          RUNTIME_ID=$(xcrun simctl list runtimes iOS -j | python3 -c "import json,sys; print(json.load(sys.stdin)['runtimes'][-1]['identifier'])")
+          DEVICE_TYPE_ID="com.apple.CoreSimulator.SimDeviceType.iPhone-16"
+          sim_udid=$(xcrun simctl create "obdii-ci" "$DEVICE_TYPE_ID" "$RUNTIME_ID")
+          xcrun simctl boot "$sim_udid" || true
+          echo "sim_udid=$sim_udid" >> "$GITHUB_OUTPUT"
+
+      - name: Run Swift tests with coverage
+        run: |
+          xcodebuild -project obdii.xcodeproj -scheme obdii -destination "id=${{ steps.simulator.outputs.sim_udid }}" -enableCodeCoverage YES -resultBundlePath TestResults.xcresult test
+          python3 scripts/convert_xccov_to_sonar.py TestResults.xcresult sonarqube-generic-coverage.xml --workspace "$GITHUB_WORKSPACE"
+
+      - name: Upload Swift coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: swift-sonar-coverage
+          path: sonarqube-generic-coverage.xml
+
+  sonar_scan:
+    name: SonarCloud Scan
+    needs: [filter, sonar_swift_support, kotlin_deploy, flutter_deploy]
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Sync to latest branch head
+        run: |
+          git fetch origin "${{ github.ref_name }}"
+          git checkout "${{ github.ref_name }}"
+          git reset --hard "origin/${{ github.ref_name }}"
+
+      - name: Checkout SwiftOBD2
+        uses: actions/checkout@v5
+        with:
+          repository: jamesmittlerii/SwiftOBD2
+          path: SwiftOBD2
+
+      - name: Set up Environment
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Generate Kotlin Coverage
+        if: needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true'
+        working-directory: kotlin_obdii
+        run: |
+          chmod +x gradlew
+          ./gradlew :coreApp:test :coreApp:jacocoTestReport
+
+      - name: Generate Flutter Coverage
+        if: needs.filter.outputs.flutter == 'true' || needs.filter.outputs.pipeline == 'true'
+        working-directory: flutter_obdii
+        run: |
+          flutter pub get
+          flutter test --coverage
+
+      - name: Download Swift coverage
+        if: needs.filter.outputs.swift == 'true' || needs.filter.outputs.pipeline == 'true'
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: swift-sonar-coverage
+          path: coverage-swift
+
+      - name: SonarCloud scan
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

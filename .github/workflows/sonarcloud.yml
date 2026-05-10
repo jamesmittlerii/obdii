@@ -4,12 +4,12 @@ permissions:
   contents: read
   pull-requests: read
 
-on:
-  workflow_dispatch:
-  push:
-    branches: ["main"]
-  pull_request:
-    types: [opened, synchronize, reopened]
+# on:
+#   workflow_dispatch:
+#   push:
+#     branches: ["main"]
+#   pull_request:
+#     types: [opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.repository }}-release-${{ github.ref }}

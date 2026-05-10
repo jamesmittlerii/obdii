@@ -9,19 +9,19 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   BWS_VERSION: "1.0.0"
 
-on:
-  workflow_dispatch:
-    inputs:
-      run_windows:
-        description: 'Run ONLY Windows Store Material job'
-        required: false
-        default: false
-        type: boolean
-  push:
-    branches: ["main"]
-    paths:
-      - "flutter_obdii/**"
-      - ".github/workflows/caller_flutter.yml"
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       run_windows:
+#         description: 'Run ONLY Windows Store Material job'
+#         required: false
+#         default: false
+#         type: boolean
+#   push:
+#     branches: ["main"]
+#     paths:
+#       - "flutter_obdii/**"
+#       - ".github/workflows/caller_flutter.yml"
 
 concurrency:
   group: ${{ github.repository }}-release-${{ github.ref }}

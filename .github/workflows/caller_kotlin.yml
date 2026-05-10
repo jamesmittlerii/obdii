@@ -5,13 +5,13 @@ permissions:
   pull-requests: write
   id-token: write
 
-on:
-  workflow_dispatch:
-  push:
-    branches: ["main"]
-    paths:
-      - "kotlin_obdii/**"
-      - ".github/workflows/caller_kotlin.yml"
+# on:
+#   workflow_dispatch:
+#   push:
+#     branches: ["main"]
+#     paths:
+#       - "kotlin_obdii/**"
+#       - ".github/workflows/caller_kotlin.yml"
 
 concurrency:
   group: ${{ github.repository }}-release-${{ github.ref }}
