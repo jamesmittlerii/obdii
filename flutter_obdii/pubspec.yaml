@@ -41,11 +41,7 @@ dependencies:
   flutter_blue_plus: ^2.2.1
   share_plus: ^13.1.0
   package_info_plus: ^10.1.0
-  flutter_obd2:
-    git:
-      url: https://github.com/jamesmittlerii/SwiftOBD2.git
-      ref: main
-      path: flutterobd2
+  flutter_obd2: ^0.1.4
   file_selector: ^1.1.0
   permission_handler: ^12.0.1
   google_fonts: ^8.1.0

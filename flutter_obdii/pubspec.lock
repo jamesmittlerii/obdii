@@ -321,7 +321,7 @@ packages:
       path: "../../SwiftOBD2/flutterobd2"
       relative: true
     source: path
-    version: "0.1.0"
+    version: "0.1.4"
   flutter_test:
     dependency: "direct dev"
     description: flutter
