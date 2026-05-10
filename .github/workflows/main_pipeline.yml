@@ -111,6 +111,8 @@ jobs:
         with:
           ref: ${{ needs.version_bump.outputs.new_sha }}
           submodules: recursive
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
       - name: Set up Java
         uses: actions/setup-java@v5
         with:
@@ -152,6 +154,8 @@ jobs:
         with:
           ref: ${{ needs.version_bump.outputs.new_sha }}
           submodules: recursive
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
       - name: Set up Java
         uses: actions/setup-java@v5
         with:
@@ -212,6 +216,8 @@ jobs:
 
       - name: Kotlin Coverage
         if: needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true'
+        env:
+          KOTLINOBD2_DIR: ${{ github.workspace }}/SwiftOBD2/kotlinobd2
         run: |
           cd kotlin_obdii && chmod +x gradlew
           ./gradlew :coreApp:test :coreApp:jacocoTestReport
