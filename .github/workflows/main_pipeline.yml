@@ -66,11 +66,7 @@ jobs:
           if not m_code: sys.exit(1)
           new_code = int(m_code.group(1)) + 1
           text = re.sub(r"(^\s*versionCode\s*=\s*)\d+(\s*$)", r"\g<1>" + str(new_code) + r"\g<2>", text, count=1, flags=re.MULTILINE)
-          m_name = re.search(r"^\s*versionName\s*=\s*\"(\d+)\.(\d+)\.(\d+)\"\s*$", text, re.MULTILINE)
-          if m_name:
-              major, minor, patch = map(int, m_name.groups())
-              new_name = f"{major}.{minor}.{patch + 1}"
-              text = re.sub(r"(^\s*versionName\s*=\s*\")\d+\.\d+\.\d+(\"\s*$)", r"\g<1>" + new_name + r"\g<2>", text, count=1, flags=re.MULTILINE)
+          # versionName (marketing semver) is bumped manually on release; Play requires versionCode only.
           path.write_text(text, encoding="utf-8")
           PY
 
@@ -85,7 +81,8 @@ jobs:
           m = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$", text, re.MULTILINE)
           if not m: sys.exit(1)
           major, minor, patch, build = map(int, m.groups())
-          new_version = f"{major}.{minor}.{patch + 1}+{build + 1}"
+          # Bump +build only for store monotonicity; patch is bumped manually on release.
+          new_version = f"{major}.{minor}.{patch}+{build + 1}"
           updated = re.sub(r"^version:\s*.*$", f"version: {new_version}", text, count=1, flags=re.MULTILINE)
           path.write_text(updated, encoding="utf-8")
           PY
