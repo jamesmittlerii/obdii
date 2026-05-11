@@ -65,4 +65,15 @@ class MainScaffoldUiTest {
         
         composeRule.onNodeWithText("Waiting for data...", substring = true).assertIsDisplayed()
     }
+
+    @Test
+    fun testMilSummaryRowOpensDtcTab() {
+        composeRule.setContent { KotlinObdiiApp() }
+
+        composeRule.clickFirstText("MIL")
+        composeRule.onNodeWithContentDescription("MIL").performClick()
+
+        composeRule.onNodeWithText("MALFUNCTION INDICATOR LAMP").assertDoesNotExist()
+        composeRule.onNodeWithText("Waiting for data...", substring = true).assertIsDisplayed()
+    }
 }

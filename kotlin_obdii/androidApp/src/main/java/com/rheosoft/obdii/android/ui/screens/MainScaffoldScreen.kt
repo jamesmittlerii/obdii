@@ -141,7 +141,11 @@ fun KotlinObdiiApp(permissionsReady: Boolean = true) {
                 onGaugeTap = { pid -> selectedGaugeDetail.value = GaugeDetailScreenModel(GaugeDetailViewModel(pid)) },
             )
             2 -> FuelStatusScreen(fuelView, Modifier.padding(pad))
-            3 -> MilStatusScreen(milView, Modifier.padding(pad))
+            3 -> MilStatusScreen(
+                milView,
+                Modifier.padding(pad),
+                onMilSummaryTap = { selected = 4 },
+            )
             else -> DiagnosticsScreen(
                 view = dtcView,
                 modifier = Modifier.padding(pad),

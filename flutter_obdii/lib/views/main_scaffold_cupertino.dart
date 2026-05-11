@@ -45,6 +45,11 @@ class _MainScaffoldCupertinoState extends State<MainScaffoldCupertino> {
     unawaited(_persistSelectedTab(_tabController.index));
   }
 
+  void _openDtcTab() {
+    _tabController.index = 4;
+    unawaited(_persistSelectedTab(4));
+  }
+
   @override
   void dispose() {
     _tabController.removeListener(_onTabChanged);
@@ -108,7 +113,10 @@ class _MainScaffoldCupertinoState extends State<MainScaffoldCupertino> {
                 view = FuelStatusView(isActive: isActive);
                 break;
               case 3:
-                view = MilStatusView(isActive: isActive);
+                view = MilStatusView(
+                  isActive: isActive,
+                  onMilSummaryTap: _openDtcTab,
+                );
                 break;
               case 4:
                 view = DiagnosticsView(isActive: isActive);

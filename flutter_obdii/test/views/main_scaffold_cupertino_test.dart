@@ -56,4 +56,25 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getInt('ui.selectedTab'), 4);
   });
+
+  testWidgets('mil summary row opens DTC tab and persists', (
+    WidgetTester tester,
+  ) async {
+    _useDesktopSurface(tester);
+    await tester.pumpWidget(_buildApp());
+    await tester.pump();
+
+    await tester.tap(find.text('MIL').first);
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.text('Waiting for data\u2026').first);
+    await tester.pump(const Duration(milliseconds: 200));
+
+    final scaffold = tester.widget<CupertinoTabScaffold>(
+      find.byType(CupertinoTabScaffold),
+    );
+    expect(scaffold.controller?.index, 4);
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getInt('ui.selectedTab'), 4);
+  });
 }

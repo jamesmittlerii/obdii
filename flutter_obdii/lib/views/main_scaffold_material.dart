@@ -55,7 +55,10 @@ class _MainScaffoldState extends State<MainScaffold> {
       const SettingsView(),
       GaugesView(isActive: _selectedIndex == 1),
       FuelStatusView(isActive: _selectedIndex == 2),
-      MilStatusView(isActive: _selectedIndex == 3),
+      MilStatusView(
+        isActive: _selectedIndex == 3,
+        onMilSummaryTap: () => _onDestinationSelected(4),
+      ),
       DiagnosticsView(isActive: _selectedIndex == 4),
     ];
 

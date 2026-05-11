@@ -8,6 +8,7 @@ import com.rheosoft.obdii.screenmodels.MilStatusScreenModel
 import com.rheosoft.obdii.viewmodels.MilStatusViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
@@ -83,5 +84,21 @@ class MilStatusScreenUiTest {
         composeRule.waitForText("READINESS MONITORS")
         composeRule.onNodeWithText("MALFUNCTION INDICATOR LAMP").assertIsDisplayed()
         composeRule.onNodeWithText("READINESS MONITORS").assertIsDisplayed()
+    }
+
+    @Test
+    fun testMilSummaryTapInvokesCallback() {
+        var taps = 0
+        val vm = MilStatusViewModel(provider = MockMilProvider(), interestRegistry = PidInterestRegistry())
+        val screenModel = MilStatusScreenModel(vm)
+        composeRule.setContent {
+            MilStatusScreen(
+                view = screenModel,
+                modifier = Modifier,
+                onMilSummaryTap = { taps++ },
+            )
+        }
+        composeRule.onNodeWithContentDescription("MIL").performClick()
+        assertEquals(1, taps)
     }
 }

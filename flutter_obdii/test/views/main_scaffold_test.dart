@@ -98,4 +98,16 @@ void main() {
     // DiagnosticsView has no AppBar — verify it renders its waiting state.
     expect(find.text('Waiting for data\u2026'), findsOneWidget);
   });
+
+  testWidgets('testMilSummaryRowOpensDtcTab', (WidgetTester tester) async {
+    await tester.pumpWidget(_buildApp());
+    await tester.pump();
+    await tester.tap(find.text('MIL').first);
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.text('Waiting for data\u2026').first);
+    await tester.pump(const Duration(milliseconds: 200));
+
+    final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
+    expect(bar.selectedIndex, 4);
+  });
 }

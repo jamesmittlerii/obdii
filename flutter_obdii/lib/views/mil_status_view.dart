@@ -12,7 +12,10 @@ import '../widgets/check_engine_svg_icon.dart';
 class MilStatusView extends StatefulWidget {
   final bool isActive;
 
-  const MilStatusView({super.key, this.isActive = true});
+  /// When set, tapping the MIL summary row (check engine card) switches to the DTCs tab.
+  final VoidCallback? onMilSummaryTap;
+
+  const MilStatusView({super.key, this.isActive = true, this.onMilSummaryTap});
 
   @override
   State<MilStatusView> createState() => _MilStatusViewState();
@@ -52,7 +55,7 @@ class _MilStatusViewState extends State<MilStatusView> {
               // ── Malfunction Indicator Lamp ───────────────
               _sectionHeader(context, 'Malfunction Indicator Lamp'),
               Card(
-                child: _milContent(context, vm),
+                child: _milContent(context, vm, widget.onMilSummaryTap),
               ),
               const SizedBox(height: 16),
 
@@ -79,16 +82,21 @@ class _MilStatusViewState extends State<MilStatusView> {
     );
   }
 
-  Widget _milContent(BuildContext context, MilStatusViewModel vm) {
+  Widget _milContent(
+    BuildContext context,
+    MilStatusViewModel vm,
+    VoidCallback? onMilSummaryTap,
+  ) {
     if (vm.status == null) {
       // Waiting
-      return const ListTile(
-        leading: SizedBox(
+      return ListTile(
+        onTap: onMilSummaryTap,
+        leading: const SizedBox(
           width: 20,
           height: 20,
           child: CircularProgressIndicator(strokeWidth: 2),
         ),
-        title: Text(
+        title: const Text(
           'Waiting for data…',
           style: TextStyle(color: Colors.grey),
         ),
@@ -96,6 +104,7 @@ class _MilStatusViewState extends State<MilStatusView> {
     } else if (vm.hasStatus) {
       final milOn = vm.status!.milOn;
       return ListTile(
+        onTap: onMilSummaryTap,
         leading: CheckEngineSvgIcon(
           size: 28,
           color: milOn ? Colors.orange : Colors.blue,
@@ -106,9 +115,10 @@ class _MilStatusViewState extends State<MilStatusView> {
         ),
       );
     } else {
-      return const ListTile(
-        leading: Icon(Icons.info_outline, color: Colors.grey),
-        title: Text('No MIL Status', style: TextStyle(color: Colors.grey)),
+      return ListTile(
+        onTap: onMilSummaryTap,
+        leading: const Icon(Icons.info_outline, color: Colors.grey),
+        title: const Text('No MIL Status', style: TextStyle(color: Colors.grey)),
       );
     }
   }

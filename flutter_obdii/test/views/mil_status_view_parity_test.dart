@@ -32,6 +32,15 @@ Widget _build(MilStatusViewModel vm) {
   );
 }
 
+Widget _buildWithMilTap(MilStatusViewModel vm, VoidCallback onMilSummaryTap) {
+  return ChangeNotifierProvider<MilStatusViewModel>.value(
+    value: vm,
+    child: MaterialApp(
+      home: MilStatusView(onMilSummaryTap: onMilSummaryTap),
+    ),
+  );
+}
+
 void main() {
   testWidgets('testHasNavigationStack', (tester) async {
     final p = _MockMilProvider();
@@ -195,6 +204,37 @@ void main() {
     final vm = MilStatusViewModel(provider: p, interestRegistry: PidInterestRegistry());
     await tester.pumpWidget(_build(vm));
     expect(find.byType(Text), findsWidgets);
+    vm.dispose();
+    p.dispose();
+  });
+
+  testWidgets('testMilSummaryTapWaitingStateInvokesCallback', (tester) async {
+    final p = _MockMilProvider();
+    final vm = MilStatusViewModel(provider: p, interestRegistry: PidInterestRegistry());
+    var taps = 0;
+    await tester.pumpWidget(_buildWithMilTap(vm, () => taps++));
+    await tester.pump();
+    await tester.tap(find.textContaining('Waiting for data'));
+    await tester.pump();
+    expect(taps, 1);
+    vm.dispose();
+    p.dispose();
+  });
+
+  testWidgets('testMilSummaryTapWithStatusInvokesCallback', (tester) async {
+    final p = _MockMilProvider();
+    final vm = MilStatusViewModel(provider: p, interestRegistry: PidInterestRegistry());
+    var taps = 0;
+    await tester.pumpWidget(_buildWithMilTap(vm, () => taps++));
+    p.send(obd2lib.Status(
+      milOn: true,
+      dtcCount: 1,
+      monitors: const [],
+    ));
+    await tester.pump(const Duration(milliseconds: 80));
+    await tester.tap(find.text('MIL: On (1 DTC)'));
+    await tester.pump();
+    expect(taps, 1);
     vm.dispose();
     p.dispose();
   });

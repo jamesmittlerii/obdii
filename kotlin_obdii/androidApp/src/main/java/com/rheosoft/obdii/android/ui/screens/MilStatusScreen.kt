@@ -1,5 +1,6 @@
 package com.rheosoft.obdii.android.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,7 +28,11 @@ import com.rheosoft.obdii.android.R
 import com.rheosoft.obdii.screenmodels.MilStatusScreenModel
 
 @Composable
-fun MilStatusScreen(view: MilStatusScreenModel, modifier: Modifier) {
+fun MilStatusScreen(
+    view: MilStatusScreenModel,
+    modifier: Modifier,
+    onMilSummaryTap: () -> Unit = {},
+) {
     DisposableEffect(view) {
         view.setActive(true)
         onDispose { view.setActive(false) }
@@ -37,7 +42,11 @@ fun MilStatusScreen(view: MilStatusScreenModel, modifier: Modifier) {
     LazyColumn(modifier = modifier.fillMaxSize().padding(16.dp)) {
         item {
             SectionLabel(view.milHeader)
-            PremiumCard(modifier = Modifier.fillMaxWidth()) {
+            PremiumCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onMilSummaryTap),
+            ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
