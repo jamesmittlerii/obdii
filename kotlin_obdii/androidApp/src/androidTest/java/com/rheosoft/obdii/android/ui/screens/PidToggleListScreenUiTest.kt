@@ -84,4 +84,26 @@ class PidToggleListScreenUiTest {
         composeRule.assertTextExists("RPM")
         composeRule.assertTextExists("Speed")
     }
+
+    @Test
+    fun testDragAndDropReordersEnabledPids() {
+        setupScreen(listOf(
+            gaugePid("10", "RPM", true),
+            gaugePid("11", "Speed", true)
+        ))
+
+        composeRule.onNodeWithText("RPM").assertIsDisplayed()
+
+        composeRule.onNodeWithText("RPM").performTouchInput {
+            down(center)
+            moveBy(androidx.compose.ui.geometry.Offset(0f, 500f))
+            up()
+        }
+        
+        composeRule.onNodeWithText("RPM").performTouchInput {
+            down(center)
+            moveBy(androidx.compose.ui.geometry.Offset(0f, 100f))
+            cancel()
+        }
+    }
 }

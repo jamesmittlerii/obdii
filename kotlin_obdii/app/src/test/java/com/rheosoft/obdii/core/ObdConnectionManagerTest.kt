@@ -229,4 +229,25 @@ class ObdConnectionManagerTest {
         OBDConnectionManager.setBleAdapter(adapter)
     }
 
+    @Test
+    fun `setSettingUpVehicle transitions state when connectedToAdapter`() {
+        val field = OBDConnectionManager::class.java.getDeclaredField("_connectionState")
+        field.isAccessible = true
+        field.set(OBDConnectionManager, OBDConnectionState.connectedToAdapter)
+        
+        OBDConnectionManager.setSettingUpVehicle()
+        
+        assertEquals(OBDConnectionState.settingUpVehicle, OBDConnectionManager.connectionState)
+    }
+    
+    @Test
+    fun `setSettingUpVehicle ignores other states`() {
+        val field = OBDConnectionManager::class.java.getDeclaredField("_connectionState")
+        field.isAccessible = true
+        field.set(OBDConnectionManager, OBDConnectionState.connected)
+        
+        OBDConnectionManager.setSettingUpVehicle()
+        
+        assertEquals(OBDConnectionState.connected, OBDConnectionManager.connectionState)
+    }
 }

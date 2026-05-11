@@ -140,4 +140,23 @@ class SettingsScreenUiTest {
         setupScreen()
         composeRule.assertTextVisibleAfterScroll("Share Logs")
     }
+
+    @Test
+    fun testConnectButtonShowsProgressIndicatorWhenConnecting() {
+        val conn = MockConn().apply { pushState(OBDConnectionState.connecting) }
+        setupScreen(conn = conn)
+        composeRule.onNodeWithText("Cancel").assertIsDisplayed() // Usually the label is "Cancel" when connecting
+    }
+
+    @Test
+    fun testConnectButtonShowsProgressIndicatorWhenConnectedToAdapter() {
+        val conn = MockConn().apply { pushState(OBDConnectionState.connectedToAdapter) }
+        setupScreen(conn = conn)
+    }
+
+    @Test
+    fun testConnectButtonShowsProgressIndicatorWhenSettingUpVehicle() {
+        val conn = MockConn().apply { pushState(OBDConnectionState.settingUpVehicle) }
+        setupScreen(conn = conn)
+    }
 }

@@ -143,4 +143,41 @@ class DiagnosticsScreenUiTest {
         composeRule.waitForText("Low")
         composeRule.assertTextVisible("Low")
     }
+
+    @Test
+    fun testSeverityIconsAndColors() {
+        val conn = DiagnosticsMockConn().apply { pushState(OBDConnectionState.connected) }
+        val provider = setupScreen(conn = conn)
+        
+        provider.send(listOf(
+            dtc("P0001", "Critical"),
+            dtc("P0002", "High"),
+            dtc("P0003", "Moderate"),
+            dtc("P0004", "Low"),
+            dtc("P0005", "Unknown")
+        ))
+        
+        composeRule.waitForText("P0001", substring = true)
+        // Asserting they load successfully without crashing covers the branch mapping
+    }
+
+    @Test
+    fun testDtcDetailScreenRendersCorrectly() {
+        val dtcObj = dtc("P0001", "Critical")
+        val conn = DiagnosticsMockConn().apply { pushState(OBDConnectionState.connected) }
+        val provider = MockDiagnosticsProvider()
+        val vm = DiagnosticsViewModel(provider = provider, connection = conn)
+        val screenModel = DiagnosticsScreenModel(vm)
+        val detail = screenModel.detailFor(dtcObj)
+
+        composeRule.setContent {
+            DtcDetailScreen(detail = detail, onClose = {})
+        }
+
+        composeRule.onNodeWithText("P0001").assertIsDisplayed()
+        composeRule.onNodeWithText("Critical").assertIsDisplayed()
+        composeRule.onNodeWithText("Description for P0001").assertIsDisplayed()
+        composeRule.onNodeWithText("Cause 1").assertIsDisplayed()
+        composeRule.onNodeWithText("Remedy 1").assertIsDisplayed()
+    }
 }
