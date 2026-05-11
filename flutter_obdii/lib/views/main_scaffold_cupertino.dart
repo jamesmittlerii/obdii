@@ -59,21 +59,39 @@ class _MainScaffoldCupertinoState extends State<MainScaffoldCupertino> {
         ],
       ),
       tabBuilder: (context, index) {
-        final isActive = _tabController.index == index;
-        switch (index) {
-          case 0:
-            return const SettingsView();
-          case 1:
-            return GaugesView(isActive: isActive);
-          case 2:
-            return FuelStatusView(isActive: isActive);
-          case 3:
-            return MilStatusView(isActive: isActive);
-          case 4:
-            return DiagnosticsView(isActive: isActive);
-          default:
-            return const SettingsView();
-        }
+        return AnimatedBuilder(
+          animation: _tabController,
+          builder: (context, _) {
+            final isActive = _tabController.index == index;
+            
+            Widget view;
+            switch (index) {
+              case 0:
+                view = const SettingsView();
+                break;
+              case 1:
+                view = GaugesView(isActive: isActive);
+                break;
+              case 2:
+                view = FuelStatusView(isActive: isActive);
+                break;
+              case 3:
+                view = MilStatusView(isActive: isActive);
+                break;
+              case 4:
+                view = DiagnosticsView(isActive: isActive);
+                break;
+              default:
+                view = const SettingsView();
+                break;
+            }
+            
+            return SafeArea(
+              bottom: false,
+              child: view,
+            );
+          },
+        );
       },
     );
   }
