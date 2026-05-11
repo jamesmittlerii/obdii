@@ -86,6 +86,35 @@ class PidToggleListScreenUiTest {
     }
 
     @Test
+    fun testSearchMatchesPidCommandAndNotesAndHidesSectionHeadersWhenEmpty() {
+        val pidWithNotes = ObdiiPid(
+            id = "",
+            enabled = false,
+            label = "Coolant",
+            name = "Coolant Temperature",
+            pidCommand = "0105",
+            notes = "engine temp",
+            kind = ObdPidKind.gauge,
+        )
+        setupScreen(
+            listOf(
+                gaugePid("10", "RPM", true),
+                pidWithNotes,
+            )
+        )
+
+        composeRule.onNodeWithContentDescription("Search PIDs").performClick()
+        composeRule.onNodeWithText("Search PIDs…").performTextInput("0105")
+        composeRule.assertTextExists("Coolant Temperature")
+        composeRule.onNodeWithText("Enabled").assertDoesNotExist()
+
+        val searchField = composeRule.onNode(hasSetTextAction())
+        searchField.performTextClearance()
+        searchField.performTextInput("engine temp")
+        composeRule.assertTextExists("Coolant Temperature")
+    }
+
+    @Test
     fun testDragAndDropReordersEnabledPids() {
         setupScreen(listOf(
             gaugePid("10", "RPM", true),

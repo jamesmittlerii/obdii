@@ -165,4 +165,25 @@ class SettingsScreenUiTest {
         composeRule.onAllNodesWithText("Connecting...").onFirst().assertIsDisplayed()
         composeRule.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate)).assertExists()
     }
+
+    @Test
+    fun testStatusLabelReflectsFailedState() {
+        val conn = MockConn().apply { pushState(OBDConnectionState.failed) }
+        setupScreen(conn = conn)
+        composeRule.onNodeWithText("Failed").assertIsDisplayed()
+        composeRule.onNodeWithText("Connect").assertIsDisplayed()
+    }
+
+    @Test
+    fun testConnectionTypeMenuSelectionUpdatesRows() {
+        setupScreen()
+
+        composeRule.onNodeWithContentDescription("Connection type menu").performClick()
+        composeRule.onNodeWithText("WiFi").performClick()
+        composeRule.assertTextVisibleAfterScroll("Connection details")
+
+        composeRule.onNodeWithContentDescription("Connection type menu").performClick()
+        composeRule.onNodeWithText("Bluetooth LE").performClick()
+        composeRule.onNodeWithText("Connection details").assertDoesNotExist()
+    }
 }

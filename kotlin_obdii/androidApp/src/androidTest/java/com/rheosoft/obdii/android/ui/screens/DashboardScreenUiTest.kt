@@ -287,4 +287,22 @@ class DashboardScreenUiTest {
         composeRule.onNodeWithText("Engine RPM").performClick()
         assertEquals(pid, tappedPid)
     }
+
+    @Test
+    fun testGaugeWithBlankIdUsesPidCommandKeyAndRendersInList() {
+        val (_, pidProvider, _) = setupScreen()
+        val pid = ObdiiPid(
+            id = "",
+            enabled = true,
+            label = "Coolant",
+            name = "Coolant Temp",
+            pidCommand = "0105",
+            units = "°C",
+            kind = ObdPidKind.gauge,
+        )
+        pidProvider.send(listOf(pid))
+
+        composeRule.onNodeWithText("List").performClick()
+        composeRule.onNodeWithText("Coolant Temp").assertIsDisplayed()
+    }
 }

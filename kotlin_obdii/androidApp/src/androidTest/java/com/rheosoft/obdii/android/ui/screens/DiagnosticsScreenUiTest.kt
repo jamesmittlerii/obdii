@@ -162,6 +162,15 @@ class DiagnosticsScreenUiTest {
     }
 
     @Test
+    fun testWaitingStateWhenConnectingShowsConnectHint() {
+        val conn = DiagnosticsMockConn().apply { pushState(OBDConnectionState.connecting) }
+        setupScreen(conn = conn)
+
+        composeRule.onNodeWithText("Waiting for data...").assertIsDisplayed()
+        composeRule.onNodeWithText("Connect to a vehicle in Settings.").assertIsDisplayed()
+    }
+
+    @Test
     fun testDtcDetailScreenRendersCorrectly() {
         val dtcObj = dtc("P0001", "Critical")
         val conn = DiagnosticsMockConn().apply { pushState(OBDConnectionState.connected) }
