@@ -318,6 +318,19 @@ void main() {
     expect(store.pids.where((p) => p.enabled).first.id, 'rpm');
   });
 
+  testWidgets('reordering to the same enabled index is a no-op', (tester) async {
+    await tester.pumpWidget(_build(viewModel));
+    await tester.pump();
+
+    final ReorderableListView list = tester.widget(find.byType(ReorderableListView));
+    list.onReorder(1, 2); // From enabled row 0 to same effective index.
+    await tester.pump();
+
+    final enabledPids = store.pids.where((p) => p.enabled).toList();
+    expect(enabledPids.length, 1);
+    expect(enabledPids.first.id, 'rpm');
+  });
+
   testWidgets('display updates when units change', (tester) async {
     await tester.pumpWidget(_build(viewModel));
     await tester.pump();
@@ -352,6 +365,31 @@ void main() {
     
     expect(find.text('DISABLED'), findsNothing);
     expect(find.text('ENABLED'), findsOneWidget);
+  });
+
+  testWidgets('shows an empty list when no gauge rows exist and no search text', (
+    tester,
+  ) async {
+    store = _TestPidStore([
+      _pid(
+        id: 'status-only',
+        enabled: false,
+        name: 'Monitor Status',
+        command: '0101',
+        units: 'NA',
+        kind: ObdPidKind.status,
+      ),
+    ]);
+    viewModel.dispose();
+    viewModel = PidToggleListViewModel(store: store, unitsProvider: unitsProvider);
+
+    await tester.pumpWidget(_build(viewModel));
+    await tester.pump();
+
+    expect(find.byType(ReorderableListView), findsOneWidget);
+    expect(find.text('ENABLED'), findsNothing);
+    expect(find.text('DISABLED'), findsNothing);
+    expect(find.textContaining('No results for'), findsNothing);
   });
 }
 

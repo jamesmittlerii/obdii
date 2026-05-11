@@ -196,6 +196,21 @@ void main() {
     conn.dispose();
   });
 
+  testWidgets('testAboutSectionShowsResolvedVersionText', (tester) async {
+    final config = _MockSettingsConfig();
+    final conn = _MockConnection();
+    final vm = SettingsViewModel(config: config, connection: conn);
+
+    await tester.pumpWidget(_build(vm));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.textContaining('OBDII v1.2.3 build:77'), findsOneWidget);
+    expect(find.text('Loading version…'), findsNothing);
+
+    vm.dispose();
+    config.dispose();
+    conn.dispose();
+  });
+
   testWidgets('testConnectButtonLabelReflectsDisconnectedState', (
     tester,
   ) async {

@@ -198,6 +198,14 @@ void main() {
     expect(manager.connectionState, OBDConnectionState.connecting);
   });
 
+  test('testConnectIsIgnoredWhenAlreadyConnected', () async {
+    manager.connectionState = OBDConnectionState.connected;
+
+    await manager.connect();
+
+    expect(manager.connectionState, OBDConnectionState.connected);
+  });
+
   test('testWifiConnectRefusedSetsFailedState', () async {
     final socket = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
     final closedPort = socket.port;
@@ -233,6 +241,19 @@ void main() {
     ConfigData.instance.connectionType = ConnectionType.bluetooth;
     manager.updateConnectionDetails();
     await manager.connect().timeout(const Duration(seconds: 60));
+
+    expect(manager.connectionState, OBDConnectionState.failed);
+  });
+
+  /// Adapter off path: turnOn() is unavailable in tests and should fail gracefully.
+  test('testBluetoothPrepFailsWhenAdapterOffAndTurnOnUnavailable', () async {
+    OBDConnectionManager.debugBluetoothIsSupportedOverride = () async => true;
+    OBDConnectionManager.debugBluetoothInitialAdapterStateOverride =
+        () async => BluetoothAdapterState.off;
+
+    ConfigData.instance.connectionType = ConnectionType.bluetooth;
+    manager.updateConnectionDetails();
+    await manager.connect();
 
     expect(manager.connectionState, OBDConnectionState.failed);
   });
