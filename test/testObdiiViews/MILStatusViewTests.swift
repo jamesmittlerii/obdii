@@ -130,7 +130,7 @@ final class MILStatusViewTests: XCTestCase {
             ReadinessMonitor(name: "Misfire", supported: true, ready: true),
             ReadinessMonitor(name: "Fuel System", supported: true, ready: false)
         ]
-        mock.subject.send(Status(milOn: true, dtcCount: 1, monitors: monitors))
+        mock.subject.send(Status(milOn: true, dtcCount: 1, monitors: monitors, isDiesel: false))
         
         // Now the "Readiness Monitors" section should be present
         let texts = try view.inspect().findAll(ViewType.Text.self)
@@ -202,7 +202,7 @@ final class MILStatusViewTests: XCTestCase {
         XCTAssertEqual(headerText, "No MIL Status", "Should show no status message when status is nil")
         
         // Send a value and verify header updates
-        mock.subject.send(Status(milOn: true, dtcCount: 2, monitors: []))
+        mock.subject.send(Status(milOn: true, dtcCount: 2, monitors: [], isDiesel: false))
         XCTAssertEqual(vm.headerText, "MIL: On (2 DTCs)")
     }
     
@@ -219,7 +219,7 @@ final class MILStatusViewTests: XCTestCase {
             ReadinessMonitor(name: "Misfire", supported: true, ready: true),
             ReadinessMonitor(name: "Fuel System", supported: true, ready: false)
         ]
-        mock.subject.send(Status(milOn: false, dtcCount: 0, monitors: monitors))
+        mock.subject.send(Status(milOn: false, dtcCount: 0, monitors: monitors, isDiesel: false))
         
         XCTAssertFalse(vm.sortedSupportedMonitors.isEmpty, "Should have monitors after status is set")
     }
@@ -245,10 +245,10 @@ final class MILStatusViewTests: XCTestCase {
         XCTAssertEqual(noStatusText, "No MIL Status", "Should show 'No MIL Status' when status is nil")
         
         // Send a status to verify formatting
-        mock.subject.send(Status(milOn: false, dtcCount: 1, monitors: []))
+        mock.subject.send(Status(milOn: false, dtcCount: 1, monitors: [], isDiesel: false))
         XCTAssertEqual(vm.headerText, "MIL: Off (1 DTC)")
         
-        mock.subject.send(Status(milOn: true, dtcCount: 3, monitors: []))
+        mock.subject.send(Status(milOn: true, dtcCount: 3, monitors: [], isDiesel: false))
         XCTAssertEqual(vm.headerText, "MIL: On (3 DTCs)")
     }
 }
