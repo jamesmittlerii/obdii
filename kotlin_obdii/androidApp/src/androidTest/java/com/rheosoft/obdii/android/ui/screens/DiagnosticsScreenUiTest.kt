@@ -174,7 +174,7 @@ class DiagnosticsScreenUiTest {
             DtcDetailScreen(detail = detail, onClose = {})
         }
 
-        composeRule.onNodeWithText("P0001").assertIsDisplayed()
+        composeRule.onAllNodesWithText("P0001").onFirst().assertIsDisplayed()
         composeRule.onNodeWithText("Critical").assertIsDisplayed()
         composeRule.onNodeWithText("Description for P0001").assertIsDisplayed()
         composeRule.onNodeWithText("Cause 1").assertIsDisplayed()

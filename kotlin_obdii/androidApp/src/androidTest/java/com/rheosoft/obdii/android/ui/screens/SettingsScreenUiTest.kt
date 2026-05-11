@@ -1,6 +1,7 @@
 package com.rheosoft.obdii.android.ui.screens
 
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import com.rheosoft.obdii.core.*
@@ -145,18 +146,23 @@ class SettingsScreenUiTest {
     fun testConnectButtonShowsProgressIndicatorWhenConnecting() {
         val conn = MockConn().apply { pushState(OBDConnectionState.connecting) }
         setupScreen(conn = conn)
-        composeRule.onNodeWithText("Cancel").assertIsDisplayed() // Usually the label is "Cancel" when connecting
+        composeRule.onAllNodesWithText("Connecting...").onFirst().assertIsDisplayed()
+        composeRule.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate)).assertExists()
     }
 
     @Test
     fun testConnectButtonShowsProgressIndicatorWhenConnectedToAdapter() {
         val conn = MockConn().apply { pushState(OBDConnectionState.connectedToAdapter) }
         setupScreen(conn = conn)
+        composeRule.onAllNodesWithText("Connecting...").onFirst().assertIsDisplayed()
+        composeRule.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate)).assertExists()
     }
 
     @Test
     fun testConnectButtonShowsProgressIndicatorWhenSettingUpVehicle() {
         val conn = MockConn().apply { pushState(OBDConnectionState.settingUpVehicle) }
         setupScreen(conn = conn)
+        composeRule.onAllNodesWithText("Connecting...").onFirst().assertIsDisplayed()
+        composeRule.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate)).assertExists()
     }
 }
