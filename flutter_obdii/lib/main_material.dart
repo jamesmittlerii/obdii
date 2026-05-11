@@ -3,7 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'app_bootstrap.dart';
 import 'theme/app_theme.dart';
-import 'views/main_scaffold.dart';
+import 'views/main_scaffold_material.dart';
 
 Future<void> main() async {
   await bootstrapObdApp();

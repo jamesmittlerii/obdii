@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'dashboard_view.dart';
-import '../widgets/check_engine_icon.dart';
+import '../widgets/check_engine_svg_icon.dart';
 import 'diagnostics_view.dart';
 import 'fuel_status_view.dart';
 import 'mil_status_view.dart';
@@ -104,8 +104,14 @@ class _MainScaffoldState extends State<MainScaffold> {
             label: 'Fuel',
           ),
           NavigationDestination(
-            icon: CheckEngineIcon(color: Theme.of(context).navigationBarTheme.iconTheme?.resolve({})?.color ?? Theme.of(context).unselectedWidgetColor),
-            selectedIcon: CheckEngineIcon(color: Theme.of(context).navigationBarTheme.iconTheme?.resolve({WidgetState.selected})?.color ?? Theme.of(context).colorScheme.primary),
+            icon: CheckEngineSvgIcon(
+              size: 25,
+              color: Theme.of(context).navigationBarTheme.iconTheme?.resolve({})?.color ?? Theme.of(context).unselectedWidgetColor,
+            ),
+            selectedIcon: CheckEngineSvgIcon(
+              size: 27,
+              color: Theme.of(context).navigationBarTheme.iconTheme?.resolve({WidgetState.selected})?.color ?? Theme.of(context).colorScheme.primary,
+            ),
             label: 'MIL',
           ),
           const NavigationDestination(

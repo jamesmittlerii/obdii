@@ -5,7 +5,7 @@ import 'package:flutter_obd2/flutter_obd2.dart' as obd2lib;
 import 'app_bootstrap.dart';
 import 'core/logger.dart';
 import 'core/obd_connection_manager.dart';
-import 'views/main_scaffold.dart';
+import 'views/main_scaffold_material.dart';
 
 Future<void> main() async {
   // Bridge the library logger to the app's premium logger

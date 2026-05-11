@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../widgets/check_engine_icon.dart';
+import '../widgets/check_engine_svg_icon.dart';
 import 'dashboard_view.dart';
 import 'diagnostics_view.dart';
 import 'fuel_status_view.dart';
@@ -74,8 +74,14 @@ class _MainScaffoldCupertinoState extends State<MainScaffoldCupertino> {
             label: 'Fuel',
           ),
           BottomNavigationBarItem(
-            icon: CheckEngineIcon(color: CupertinoDynamicColor.resolve(CupertinoColors.inactiveGray, context)),
-            activeIcon: CheckEngineIcon(color: CupertinoTheme.of(context).primaryColor),
+            icon: CheckEngineSvgIcon(
+              size: 25,
+              color: CupertinoDynamicColor.resolve(CupertinoColors.inactiveGray, context),
+            ),
+            activeIcon: CheckEngineSvgIcon(
+              size: 27,
+              color: CupertinoTheme.of(context).primaryColor,
+            ),
             label: 'MIL',
           ),
           const BottomNavigationBarItem(

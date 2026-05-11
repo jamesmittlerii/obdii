@@ -13,7 +13,7 @@ import 'package:flutter_obdii/viewmodels/gauges_viewmodel.dart';
 import 'package:flutter_obdii/viewmodels/mil_status_viewmodel.dart';
 import 'package:flutter_obdii/viewmodels/pid_toggle_list_viewmodel.dart';
 import 'package:flutter_obdii/viewmodels/settings_viewmodel.dart';
-import 'package:flutter_obdii/views/main_scaffold.dart';
+import 'package:flutter_obdii/views/main_scaffold_material.dart';
 
 const _testKey = 'HasShownCarPlayDrivingPrompt';
 
