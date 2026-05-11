@@ -9,6 +9,7 @@ import 'package:flutter_obdii/core/obd_connection_manager.dart';
 import 'package:flutter_obdii/core/pid_interest_registry.dart';
 import 'package:flutter_obdii/viewmodels/mil_status_viewmodel.dart';
 import 'package:flutter_obdii/views/mil_status_view.dart';
+import 'package:flutter_obdii/widgets/check_engine_svg_icon.dart';
 
 class _MockMilProvider implements MilStatusProviding {
   @override
@@ -109,13 +110,13 @@ void main() {
     p.dispose();
   });
 
-  testWidgets('testContainsWrenchIcon', (tester) async {
+  testWidgets('testMILRowUsesCheckEngineSvgIcon', (tester) async {
     final p = _MockMilProvider();
     final vm = MilStatusViewModel(provider: p, interestRegistry: PidInterestRegistry());
     await tester.pumpWidget(_build(vm));
     p.send(obd2lib.Status(milOn: true, dtcCount: 1, monitors: const []));
     await tester.pump(const Duration(milliseconds: 80));
-    expect(find.byIcon(Icons.build), findsOneWidget);
+    expect(find.byType(CheckEngineSvgIcon), findsOneWidget);
     vm.dispose();
     p.dispose();
   });

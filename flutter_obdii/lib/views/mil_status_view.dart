@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../viewmodels/mil_status_viewmodel.dart';
+import '../widgets/check_engine_svg_icon.dart';
 
 class MilStatusView extends StatefulWidget {
   final bool isActive;
@@ -95,10 +96,9 @@ class _MilStatusViewState extends State<MilStatusView> {
     } else if (vm.hasStatus) {
       final milOn = vm.status!.milOn;
       return ListTile(
-        leading: Icon(
-          Icons.build,
-          color: milOn ? Colors.orange : Colors.blue,
+        leading: CheckEngineSvgIcon(
           size: 28,
+          color: milOn ? Colors.orange : Colors.blue,
         ),
         title: Text(
           vm.headerText,
