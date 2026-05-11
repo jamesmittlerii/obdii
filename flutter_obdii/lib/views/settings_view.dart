@@ -110,19 +110,37 @@ class _SettingsViewState extends State<SettingsView> {
         Card(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: SegmentedButton<MeasurementUnit>(
-              segments: const [
-                ButtonSegment(
-                  value: MeasurementUnit.metric,
-                  label: Text('Metric'),
-                ),
-                ButtonSegment(
-                  value: MeasurementUnit.imperial,
-                  label: Text('Imperial'),
-                ),
-              ],
-              selected: {vm.units},
-              onSelectionChanged: (s) => vm.onUnitsChanged(s.first),
+            // SegmentedButton is intrinsic-width; Column crossAxisAlignment is start,
+            // so without Center the control sits on the left.
+            child: Center(
+              child: SegmentedButton<MeasurementUnit>(
+                // Avoid selected checkmark + Row(Flexible(label)): long labels like
+                // "Imperial" wrap on first layout until a rebuild (e.g. after toggle).
+                showSelectedIcon: false,
+                style: SegmentedButton.styleFrom(alignment: Alignment.center),
+                segments: const [
+                  ButtonSegment(
+                    value: MeasurementUnit.metric,
+                    label: Text(
+                      'Metric',
+                      textAlign: TextAlign.center,
+                      softWrap: false,
+                      maxLines: 1,
+                    ),
+                  ),
+                  ButtonSegment(
+                    value: MeasurementUnit.imperial,
+                    label: Text(
+                      'Imperial',
+                      textAlign: TextAlign.center,
+                      softWrap: false,
+                      maxLines: 1,
+                    ),
+                  ),
+                ],
+                selected: {vm.units},
+                onSelectionChanged: (s) => vm.onUnitsChanged(s.first),
+              ),
             ),
           ),
         ),

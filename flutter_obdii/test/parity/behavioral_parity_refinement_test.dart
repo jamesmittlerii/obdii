@@ -209,7 +209,7 @@ void main() {
     final r = PidInterestRegistry();
     final t = r.makeToken();
     r.replace({'010C'}, t);
-    await r.clear(t);
+    r.clear(t);
     await Future<void>.delayed(const Duration(milliseconds: 110));
     expect(r.interested.contains('010C'), isFalse);
   });
@@ -220,7 +220,7 @@ void main() {
     final t2 = r.makeToken();
     r.replace({'010C'}, t1);
     r.replace({'010C'}, t2);
-    await r.clear(t1);
+    r.clear(t1);
     await Future<void>.delayed(const Duration(milliseconds: 110));
     expect(r.interested.contains('010C'), isTrue);
   });

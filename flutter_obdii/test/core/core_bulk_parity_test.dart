@@ -104,11 +104,11 @@ void main() {
     r.replace({'010C'}, t2);
     expect(r.interested.length, 1);
   });
-  test('testClearRemovesTokenAfterMicrotask', () async {
+  test('testClearRemovesTokenImmediately', () async {
     final r = PidInterestRegistry();
     final t = r.makeToken();
     r.replace({'010C'}, t);
-    await r.clear(t);
+    r.clear(t);
     await Future<void>.delayed(const Duration(milliseconds: 1));
     expect(r.interested, isEmpty);
   });
@@ -118,13 +118,13 @@ void main() {
     final t2 = r.makeToken();
     r.replace({'010C'}, t1);
     r.replace({'010D'}, t2);
-    await r.clear(t1);
+    r.clear(t1);
     await Future<void>.delayed(const Duration(milliseconds: 1));
     expect(r.interested.contains('010D'), isTrue);
   });
   test('testClearUnknownTokenNoThrow', () async {
     final r = PidInterestRegistry();
-    await r.clear('unknown');
+    r.clear('unknown');
     expect(r.interested, isEmpty);
   });
   test('testReplaceUnknownTokenWorks', () {
@@ -273,7 +273,7 @@ void main() {
     final r = PidInterestRegistry();
     final t = r.makeToken();
     r.replace({}, t);
-    await r.clear(t);
+    r.clear(t);
     expect(r.interested, isEmpty);
   });
   test('testRegistryReplacingSameSetDoesNotChangeUnion', () {
@@ -302,7 +302,7 @@ void main() {
     r.replace({'010C'}, t1);
     r.replace({'010D'}, t2);
     r.replace({'0105'}, t3);
-    await r.clear(t2);
+    r.clear(t2);
     await Future<void>.delayed(const Duration(milliseconds: 1));
     expect(r.interested.contains('010D'), isFalse);
     expect(r.interested.contains('010C'), isTrue);

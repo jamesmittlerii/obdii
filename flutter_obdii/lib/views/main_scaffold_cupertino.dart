@@ -34,6 +34,9 @@ class _MainScaffoldCupertinoState extends State<MainScaffoldCupertino> {
     return CupertinoTabScaffold(
       controller: _tabController,
       tabBar: CupertinoTabBar(
+        // Default is 50; a bit taller gives breathing room above/below icons+labels
+        // (especially on Windows where the bar can feel tight).
+        height: 58,
         items: [
           const BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.settings),

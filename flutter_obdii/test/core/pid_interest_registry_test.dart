@@ -22,12 +22,11 @@ void main() {
     testTokens.clear();
   });
 
-  tearDown(() async {
+  tearDown(() {
     for (final token in testTokens) {
-      await registry.clear(token);
+      registry.clear(token);
     }
     testTokens.clear();
-    await Future.delayed(const Duration(milliseconds: 110));
   });
 
   // ─────────────────────────────────────────────────
@@ -126,20 +125,19 @@ void main() {
   // ─────────────────────────────────────────────────
 
   group('clear', () {
-    test('testClearsTokenPIDsAfterAsyncMicrotask', () async {
+    test('testClearsTokenPIDsImmediately', () {
       final token = registry.makeToken();
       testTokens.add(token);
 
       registry.replace({'010C'}, token);
       expect(registry.interested.contains('010C'), isTrue);
 
-      await registry.clear(token);
-      await Future.delayed(const Duration(milliseconds: 110));
+      registry.clear(token);
 
       expect(registry.interested.contains('010C'), isFalse);
     });
 
-    test('testClearTokenDoesNotAffectOtherTokens', () async {
+    test('testClearTokenDoesNotAffectOtherTokens', () {
       final t1 = registry.makeToken();
       testTokens.add(t1);
       final t2 = registry.makeToken();
@@ -148,8 +146,7 @@ void main() {
       registry.replace({'010C'}, t1);
       registry.replace({'010D'}, t2);
 
-      await registry.clear(t1);
-      await Future.delayed(const Duration(milliseconds: 110));
+      registry.clear(t1);
 
       expect(registry.interested.contains('010C'), isFalse,
           reason: "token1's PID should be cleared");
@@ -157,7 +154,7 @@ void main() {
           reason: "token2's PID should remain");
     });
 
-    test('testSharedPIDStaysWhenOnlyOneTokenCleared', () async {
+    test('testSharedPIDStaysWhenOnlyOneTokenCleared', () {
       final t1 = registry.makeToken();
       testTokens.add(t1);
       final t2 = registry.makeToken();
@@ -166,11 +163,22 @@ void main() {
       registry.replace({'010C'}, t1);
       registry.replace({'010C'}, t2);
 
-      await registry.clear(t1);
-      await Future.delayed(const Duration(milliseconds: 110));
+      registry.clear(t1);
 
       expect(registry.interested.contains('010C'), isTrue,
           reason: 'shared PID should remain while other token holds it');
+    });
+
+    test('testReplaceAfterClearKeepsNewPids', () {
+      final token = registry.makeToken();
+      testTokens.add(token);
+
+      registry.replace({'010C'}, token);
+      registry.clear(token);
+      registry.replace({'010D'}, token);
+
+      expect(registry.interested.contains('010C'), isFalse);
+      expect(registry.interested.contains('010D'), isTrue);
     });
   });
 

@@ -45,10 +45,13 @@ class PidInterestRegistry extends ChangeNotifier {
   }
 
   /// Clears a token's interest. Safe to call multiple times.
-  /// Yields one frame to allow immediate handoff from another view first.
-  Future<void> clear(String token) async {
-    // Let any immediately-following replace() calls run first
-    await Future.microtask(() {});
+  ///
+  /// Removal is synchronous. A previously used async microtask deferral was
+  /// removed: a [replace] for the same token could run before the deferred
+  /// remove (e.g. tab visibility applied in a post-frame callback while stats
+  /// listeners still called [clear] for the inactive state), and the late
+  /// remove would then drop the new interest and stop polling for those PIDs.
+  void clear(String token) {
     _byToken.remove(token);
     _recompute();
   }
