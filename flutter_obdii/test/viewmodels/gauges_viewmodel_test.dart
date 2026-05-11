@@ -5,13 +5,14 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_obd2/flutter_obd2.dart' as obd2lib;
 
 import 'package:flutter_obdii/core/config_data.dart';
 import 'package:flutter_obdii/core/obd_connection_manager.dart';
 import 'package:flutter_obdii/core/pid_interest_registry.dart';
 import 'package:flutter_obdii/core/pid_store.dart';
-import 'package:flutter_obdii/models/obdii_pid.dart';
+import 'package:flutter_obdii/core/obdiipid.dart';
 import 'package:flutter_obdii/viewmodels/gauges_viewmodel.dart';
 
 // ─────────────────────────────────────────────
@@ -103,6 +104,7 @@ void main() {
   late GaugesViewModel viewModel;
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     pidProvider = MockPIDProvider();
     statsProvider = MockStatsProvider();
     unitsProvider = MockUnitsProvider();

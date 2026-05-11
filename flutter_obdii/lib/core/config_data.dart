@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'carplay_bridge.dart';
+import 'constants.dart';
 
 // ─────────────────────────────────────────────
 // MARK: Enums
@@ -85,7 +86,7 @@ class ConfigData extends ChangeNotifier
   static const _kUnits = 'units';
 
   // In-memory state
-  String _wifiHost = '192.168.0.10';
+  String _wifiHost = defaultWifiHost;
   int _wifiPort = 35000;
   bool _autoConnectToOBD = true;
   ConnectionType _connectionType = ConnectionType.bluetooth;
@@ -182,7 +183,7 @@ class ConfigData extends ChangeNotifier
     _loaded = true;
     final prefs = await SharedPreferences.getInstance();
 
-    _wifiHost = prefs.getString(_kWifiHost) ?? '192.168.0.10';
+    _wifiHost = prefs.getString(_kWifiHost) ?? defaultWifiHost;
     _wifiPort = prefs.getInt(_kWifiPort) ?? 35000;
     _autoConnectToOBD = prefs.getBool(_kAutoConnect) ?? true;
 

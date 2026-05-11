@@ -9,7 +9,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../core/obd_connection_manager.dart';
-import '../models/obdii_pid.dart';
+import '../core/obdiipid.dart';
 
 // ─────────────────────────────────────────────
 // Public widget
@@ -45,9 +45,11 @@ class RingGaugeWidget extends StatelessWidget {
       valueLine = pid.formattedValue(v, isMetric, includeUnits: false);
     }
 
-    final normalized = currentValue != null
-        ? ((currentValue - minV) / (maxV == minV ? 1 : maxV - minV)).clamp(0.0, 1.0)
-        : 0.0;
+    double normalized = 0.0;
+    if (currentValue != null) {
+      final range = maxV == minV ? 1.0 : maxV - minV;
+      normalized = ((currentValue - minV) / range).clamp(0.0, 1.0);
+    }
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -68,7 +70,7 @@ class RingGaugeWidget extends StatelessWidget {
                 ),
                 child: Align(
                   // Downward nudge to visually center value+unit in the ring.
-                  alignment: const Alignment(0, 0.39),
+                  alignment: const Alignment(0, 0.30),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -77,7 +79,7 @@ class RingGaugeWidget extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          fontFeatures: [FontFeature.tabularFigures()],
+                          height: 1.0,
                         ),
                       ),
                       if (unitLine.isNotEmpty)
@@ -86,7 +88,7 @@ class RingGaugeWidget extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade400,
-                            fontFeatures: const [FontFeature.tabularFigures()],
+                            height: 1.0,
                           ),
                         ),
                     ],

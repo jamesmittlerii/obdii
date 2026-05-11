@@ -15,16 +15,24 @@ import SwiftUI
 struct PIDToggleListView: View {
 
   // Stable view model instance
-  @State private var viewModel = PIDToggleListViewModel()
+  @State private var viewModel: PIDToggleListViewModel
 
   // Controls presentation of search UI
   @State private var isSearchPresented: Bool = false
 
-  // Break up for type checker clarity
-  private var enabledItems: [OBDPID] { viewModel.filteredEnabled }
-  private var disabledItems: [OBDPID] { viewModel.filteredDisabled }
+  @MainActor
+  init() {
+    _viewModel = State(initialValue: PIDToggleListViewModel())
+  }
+
+  @MainActor
+  init(viewModel: PIDToggleListViewModel) {
+    _viewModel = State(initialValue: viewModel)
+  }
 
   var body: some View {
+    @Bindable var viewModel = viewModel
+
     Group {
       if isSearchPresented {
         listView
@@ -74,38 +82,38 @@ struct PIDToggleListView: View {
     List {
 
       // Enabled Section
-      if !enabledItems.isEmpty {
+      if !viewModel.enabledRows.isEmpty {
         Section(header: Text("Enabled")) {
-          ForEach(enabledItems, id: \.id) { pid in
+          ForEach(viewModel.enabledRows) { row in
             PIDToggleRow(
-              pid: pid,
-              isOn: toggleBinding(for: pid)
+              row: row,
+              isOn: viewModel.binding(for: row.id)
             )
           }
           .onMove { source, dest in
             viewModel.moveEnabled(fromOffsets: source, toOffset: dest)
           }
           // Prevent index mismatches (and flicker) when search is active
-          .moveDisabled(!viewModel.searchText.isEmpty)
+          .moveDisabled(viewModel.isSearchActive)
         }
       }
 
       // Disabled Section
-      if !disabledItems.isEmpty {
+      if !viewModel.disabledRows.isEmpty {
         Section(header: Text("Disabled")) {
-          ForEach(disabledItems, id: \.id) { pid in
+          ForEach(viewModel.disabledRows) { row in
             PIDToggleRow(
-              pid: pid,
-              isOn: toggleBinding(for: pid)
+              row: row,
+              isOn: viewModel.binding(for: row.id)
             )
           }
         }
       }
 
       // Empty search state
-      if enabledItems.isEmpty && disabledItems.isEmpty && !viewModel.searchText.isEmpty {
+      if let emptySearchMessage = viewModel.emptySearchMessage {
         Section {
-          Text("No results for “\(viewModel.searchText)”")
+          Text(emptySearchMessage)
             .foregroundStyle(.secondary)
         }
       }
@@ -113,32 +121,22 @@ struct PIDToggleListView: View {
     .listStyle(.insetGrouped)
   }
 
-  private func toggleBinding(for pid: OBDPID) -> Binding<Bool> {
-    Binding<Bool>(
-      get: { pid.enabled },
-      set: { newValue in
-        if let idx = viewModel.pids.firstIndex(where: { $0.id == pid.id }) {
-          viewModel.toggle(at: idx, to: newValue)
-        }
-      }
-    )
-  }
 }
 
 private struct PIDToggleRow: View {
-  let pid: OBDPID
+  let row: PIDToggleListViewModel.Row
   @Binding var isOn: Bool
 
   var body: some View {
     Toggle(isOn: $isOn) {
       VStack(alignment: .leading, spacing: 2) {
-        Text(pid.name)
-        Text(pid.displayRange)
+        Text(row.title)
+        Text(row.subtitle)
           .font(.footnote)
           .foregroundStyle(.secondary)
       }
     }
-    .accessibilityIdentifier("PIDToggle_\(pid.id.uuidString)")
+    .accessibilityIdentifier(row.accessibilityIdentifier)
   }
 }
 

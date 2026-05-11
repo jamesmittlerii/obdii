@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:flutter_obdii/core/config_data.dart';
-import 'package:flutter_obdii/models/obdii_pid.dart';
+import 'package:flutter_obdii/core/obdiipid.dart';
 import 'package:flutter_obdii/views/gauge_detail_view.dart';
 
 ObdiiPid _pid() => ObdiiPid(

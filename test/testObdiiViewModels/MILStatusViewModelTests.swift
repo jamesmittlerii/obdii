@@ -57,7 +57,7 @@ final class MILStatusViewModelTests: XCTestCase {
             ReadinessMonitor(name: "Misfire", supported: true, ready: true),
             ReadinessMonitor(name: "Fuel System", supported: true, ready: false)
         ]
-        let status = Status(milOn: true, dtcCount: 2, monitors: monitors)
+        let status = Status(milOn: true, dtcCount: 2, monitors: monitors, isDiesel: false)
         
         mockProvider.subject.send(status)
         
@@ -80,7 +80,7 @@ final class MILStatusViewModelTests: XCTestCase {
             ReadinessMonitor(name: "C Monitor", supported: true, ready: false),
             ReadinessMonitor(name: "Z Unsupported", supported: false, ready: true)
         ]
-        let status = Status(milOn: false, dtcCount: 0, monitors: monitors)
+        let status = Status(milOn: false, dtcCount: 0, monitors: monitors, isDiesel: false)
         mockProvider.subject.send(status)
         
         let sorted = viewModel.sortedSupportedMonitors
@@ -95,7 +95,7 @@ final class MILStatusViewModelTests: XCTestCase {
     func testMILStatusProperties() {
         XCTAssertNil(viewModel.status, "Status should be nil initially")
         
-        let status = Status(milOn: false, dtcCount: 1, monitors: [])
+        let status = Status(milOn: false, dtcCount: 1, monitors: [], isDiesel: false)
         mockProvider.subject.send(status)
         
         XCTAssertNotNil(viewModel.status)
@@ -108,7 +108,7 @@ final class MILStatusViewModelTests: XCTestCase {
             ReadinessMonitor(name: "Alpha", supported: true, ready: true),
             ReadinessMonitor(name: "Beta", supported: true, ready: false)
         ]
-        mockProvider.subject.send(Status(milOn: true, dtcCount: 0, monitors: monitors))
+        mockProvider.subject.send(Status(milOn: true, dtcCount: 0, monitors: monitors, isDiesel: false))
         
         for monitor in viewModel.sortedSupportedMonitors {
             XCTAssertFalse(monitor.name.isEmpty, "Monitor should have a name")
@@ -131,7 +131,7 @@ final class MILStatusViewModelTests: XCTestCase {
         ]
         
         for (milOn, dtcCount, expected) in testCases {
-            mockProvider.subject.send(Status(milOn: milOn, dtcCount: dtcCount, monitors: []))
+            mockProvider.subject.send(Status(milOn: milOn, dtcCount: dtcCount, monitors: [], isDiesel: false))
             XCTAssertEqual(viewModel.headerText, expected, "Should format correctly for milOn=\(milOn), dtcCount=\(dtcCount)")
         }
     }
@@ -150,7 +150,7 @@ final class MILStatusViewModelTests: XCTestCase {
         }
         
         // Drive a change via the mock
-        mockProvider.subject.send(Status(milOn: true, dtcCount: 0, monitors: []))
+        mockProvider.subject.send(Status(milOn: true, dtcCount: 0, monitors: [], isDiesel: false))
         
         // Allow main actor queue to process sink
         let exp = expectation(description: "Callback fired")

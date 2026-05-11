@@ -29,6 +29,15 @@ void main() {
 
   setUpAll(() async {
     SharedPreferences.setMockInitialValues({});
+    
+    // Suppress console logging during tests but preserve state transitions
+    obd2lib.ObdLog.setHandler(
+        (message, {level = 'info', category = 'Communication'}) {
+      if (message.contains('Setting up vehicle')) {
+        OBDConnectionManager.instance.setSettingUpVehicle();
+      }
+    });
+
     await config.load();
     config.connectionType = ConnectionType.demo;
     manager.initialize();
@@ -51,7 +60,7 @@ void main() {
     expect(status.dtcCount, 7);
     expect(status.monitors.length, greaterThanOrEqualTo(10));
 
-    await registry.clear(token);
+    registry.clear(token);
   });
 
   test('demo DTC parity: expected 7 Swift mock codes', () async {
@@ -77,7 +86,7 @@ void main() {
       }),
     );
 
-    await registry.clear(token);
+    registry.clear(token);
   });
 
   test('demo Fuel parity: both banks share same status code', () async {
@@ -95,6 +104,6 @@ void main() {
     expect(status[0]!.code, status[1]!.code);
     expect({'1', '2', '3'}.contains(status[0]!.code), isTrue);
 
-    await registry.clear(token);
+    registry.clear(token);
   });
 }

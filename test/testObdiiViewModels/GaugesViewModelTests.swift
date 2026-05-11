@@ -43,6 +43,7 @@ final class GaugesViewModelTests: XCTestCase {
     var pidProvider: MockPIDProvider!
     var statsProvider: MockStatsProvider!
     var unitsProvider: MockUnitsProvider!
+    var recordedMove: (source: IndexSet, destination: Int)?
 
     override func setUp() async throws {
         pidProvider = MockPIDProvider()
@@ -52,7 +53,11 @@ final class GaugesViewModelTests: XCTestCase {
         viewModel = GaugesViewModel(
             pidProvider: pidProvider,
             statsProvider: statsProvider,
-            unitsProvider: unitsProvider
+            unitsProvider: unitsProvider,
+            interestRegistry: PIDInterestRegistry.shared,
+            reorderEnabledGauges: { [weak self] source, destination in
+                self?.recordedMove = (source, destination)
+            }
         )
     }
 
@@ -61,6 +66,7 @@ final class GaugesViewModelTests: XCTestCase {
         pidProvider = nil
         statsProvider = nil
         unitsProvider = nil
+        recordedMove = nil
     }
 
     // Helper to build a simple gauge PID
@@ -184,5 +190,33 @@ final class GaugesViewModelTests: XCTestCase {
         let tiles = viewModel.tiles
         let uniqueIDs = Set(tiles.map { $0.id })
         XCTAssertEqual(tiles.count, uniqueIDs.count, "All tiles should have unique IDs")
+    }
+
+    func testReorderTileMovingForwardUsesExpectedDestination() async throws {
+        let rpm = makeGaugePID(command: .mode1(.rpm))
+        let speed = makeGaugePID(label: "Speed", name: "Vehicle Speed", command: .mode1(.speed), units: "km/h")
+        let coolant = makeGaugePID(label: "Coolant", name: "Coolant Temp", command: .mode1(.coolantTemp), units: "°C")
+        pidProvider.subject.send([rpm, speed, coolant])
+
+        try await Task.sleep(nanoseconds: 1_200_000_000)
+
+        viewModel.reorderTile(withID: rpm.id, to: coolant.id)
+
+        XCTAssertEqual(recordedMove?.source, IndexSet(integer: 0))
+        XCTAssertEqual(recordedMove?.destination, 3)
+    }
+
+    func testReorderTileMovingBackwardUsesExpectedDestination() async throws {
+        let rpm = makeGaugePID(command: .mode1(.rpm))
+        let speed = makeGaugePID(label: "Speed", name: "Vehicle Speed", command: .mode1(.speed), units: "km/h")
+        let coolant = makeGaugePID(label: "Coolant", name: "Coolant Temp", command: .mode1(.coolantTemp), units: "°C")
+        pidProvider.subject.send([rpm, speed, coolant])
+
+        try await Task.sleep(nanoseconds: 1_200_000_000)
+
+        viewModel.reorderTile(withID: coolant.id, to: rpm.id)
+
+        XCTAssertEqual(recordedMove?.source, IndexSet(integer: 2))
+        XCTAssertEqual(recordedMove?.destination, 0)
     }
 }

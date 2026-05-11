@@ -1,0 +1,198 @@
+name: SonarCloud
+
+permissions:
+  contents: read
+  pull-requests: read
+
+on:
+  workflow_dispatch:
+#   push:
+#     branches: ["main"]
+#   pull_request:
+#     types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.repository }}-release-${{ github.ref }}
+  cancel-in-progress: false
+  
+jobs:
+  swift-tests:
+    name: Swift Tests & Coverage
+    runs-on: macos-26
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Create simulator
+        id: simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY' > simulator.env
+          import json
+          import subprocess
+
+          runtimes = json.loads(subprocess.check_output(
+              ["xcrun", "simctl", "list", "runtimes", "available", "-j"],
+              text=True,
+          ))["runtimes"]
+          ios_runtimes = [r for r in runtimes if r.get("isAvailable") and r.get("platform") == "iOS"]
+          ios_runtimes.sort(key=lambda r: r.get("version", "0"))
+          runtime_id = ios_runtimes[-1]["identifier"]
+
+          device_types = json.loads(subprocess.check_output(
+              ["xcrun", "simctl", "list", "devicetypes", "-j"],
+              text=True,
+          ))["devicetypes"]
+          preferred = [
+              "iPhone 16 Pro",
+              "iPhone 16",
+              "iPhone 15 Pro",
+              "iPhone 15",
+              "iPhone 14 Pro",
+              "iPhone 14",
+          ]
+          device_id = None
+          for name in preferred:
+              for device in device_types:
+                  if device.get("name") == name:
+                      device_id = device["identifier"]
+                      break
+              if device_id:
+                  break
+          if device_id is None:
+              for device in device_types:
+                  if device.get("name", "").startswith("iPhone"):
+                      device_id = device["identifier"]
+                      break
+          if device_id is None:
+              raise SystemExit("No iPhone simulator device type found")
+
+          print(f"RUNTIME_ID={runtime_id}")
+          print(f"DEVICE_TYPE_ID={device_id}")
+          PY
+
+          source simulator.env
+          sim_udid=$(xcrun simctl create "obdii-ci" "$DEVICE_TYPE_ID" "$RUNTIME_ID")
+          xcrun simctl boot "$sim_udid" || true
+          xcrun simctl bootstatus "$sim_udid" -b
+          echo "sim_udid=$sim_udid" >> "$GITHUB_OUTPUT"
+
+      - name: Run Swift tests with coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project obdii.xcodeproj \
+            -scheme obdii \
+            -destination "id=${{ steps.simulator.outputs.sim_udid }}" \
+            -enableCodeCoverage YES \
+            -resultBundlePath TestResults.xcresult \
+            test
+
+      - name: Convert Swift coverage to Sonar generic XML
+        run: |
+          python3 scripts/convert_xccov_to_sonar.py \
+            TestResults.xcresult \
+            coverage-swift/sonarqube-generic-coverage.xml \
+            --workspace "$GITHUB_WORKSPACE"
+
+      - name: Upload Swift coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: swift-sonar-coverage
+          path: coverage-swift/sonarqube-generic-coverage.xml
+          if-no-files-found: error
+
+      - name: Shutdown simulator
+        if: always()
+        run: xcrun simctl shutdown "${{ steps.simulator.outputs.sim_udid }}" || true
+
+  scan:
+    name: Test Coverage & Scan
+    needs: swift-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }} # Required for private submodules
+
+      - name: Checkout SwiftOBD2
+        uses: actions/checkout@v5
+        with:
+          repository: jamesmittlerii/SwiftOBD2
+          ref: main
+          path: SwiftOBD2
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Setup Gradle cache
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+          pub-cache: true
+
+      - name: Install Flutter dependencies
+        working-directory: flutter_obdii
+        run: flutter pub get
+
+      - name: Generate Flutter coverage
+        working-directory: flutter_obdii
+        run: flutter test --coverage
+
+      - name: Make Kotlin Gradle wrapper executable
+        working-directory: kotlin_obdii
+        run: chmod +x gradlew
+
+      - name: Generate Kotlin JaCoCo coverage
+        working-directory: kotlin_obdii
+        env:
+          KOTLINOBD2_DIR: ${{ github.workspace }}/SwiftOBD2/kotlinobd2
+        run: ./gradlew :coreApp:test :coreApp:jacocoTestReport
+
+      - name: Enable KVM for Android emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Generate Android UI coverage
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          KOTLINOBD2_DIR: ${{ github.workspace }}/SwiftOBD2/kotlinobd2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: cd kotlin_obdii && ./gradlew :androidApp:createDebugCoverageReport
+
+      - name: Download Swift coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: swift-sonar-coverage
+          path: coverage-swift
+
+      - name: SonarCloud scan
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

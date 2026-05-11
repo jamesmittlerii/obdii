@@ -1,4 +1,3 @@
-import SwiftOBD2
 /**
  * __Final Project__
  * Jim Mittler
@@ -16,7 +15,6 @@ import SwiftUI
 struct DiagnosticsView: View {
 
   @State private var viewModel: DiagnosticsViewModel
-  @State private var interestToken = PIDInterestRegistry.shared.makeToken()
 
   // Default initializer preserves existing app behavior
   init() {
@@ -33,27 +31,20 @@ struct DiagnosticsView: View {
       content
         .navigationTitle("Diagnostic Codes")
     }
-    .onAppear {
-      PIDInterestRegistry.shared.replace(
-        pids: [.mode3(.GET_DTC)],
-        for: interestToken
-      )
-    }
-    .onDisappear {
-      PIDInterestRegistry.shared.clear(token: interestToken)
-    }
+    .onAppear { viewModel.onAppear() }
+    .onDisappear { viewModel.onDisappear() }
   }
 
   @ViewBuilder
   private var content: some View {
     // 1) Waiting: codes == nil
-    if viewModel.codes == nil {
+    if viewModel.isWaiting {
       List {
         waitRow
       }
 
       // 2) Loaded but empty
-    } else if viewModel.sections.isEmpty {
+    } else if viewModel.isEmpty {
       List {
         Text("No Diagnostic Trouble Codes")
           .foregroundStyle(.secondary)
@@ -64,9 +55,9 @@ struct DiagnosticsView: View {
       List {
         ForEach(viewModel.sections, id: \.title) { section in
           Section(header: Text(section.title)) {
-            ForEach(section.items, id: \.code) { code in
+            ForEach(section.items) { code in
               NavigationLink {
-                DTCDetailView(code: code)
+                DTCDetailView(viewModel: code.detailViewModel)
               } label: {
                 codeRow(code)
               }
@@ -89,15 +80,15 @@ struct DiagnosticsView: View {
   }
 
     // show the DTC code
-  private func codeRow(_ code: TroubleCodeMetadata) -> some View {
+  private func codeRow(_ code: DiagnosticsViewModel.CodeRow) -> some View {
     HStack(spacing: 12) {
-      Image(systemName: imageName(for: code.severity))
+      Image(systemName: code.symbolName)
 
       VStack(alignment: .leading, spacing: 2) {
-        Text("\(code.code) • \(code.title)")
+        Text(code.title)
           .lineLimit(1)
 
-        Text(code.severity.rawValue)
+        Text(code.severityText)
           .font(.footnote)
           .foregroundStyle(.secondary)
       }

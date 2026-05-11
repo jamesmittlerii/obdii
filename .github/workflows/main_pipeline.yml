@@ -1,0 +1,384 @@
+name: Main CI/CD Pipeline
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.repository }}-release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  filter:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      kotlin: ${{ steps.filter.outputs.kotlin }}
+      flutter: ${{ steps.filter.outputs.flutter }}
+      swift: ${{ steps.filter.outputs.swift }}
+      pipeline: ${{ steps.filter.outputs.pipeline }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            kotlin:
+              - 'kotlin_obdii/**'
+            flutter:
+              - 'flutter_obdii/**'
+            swift:
+              - 'obdii/**'
+              - 'test/**'
+              - 'obdii.xcodeproj/**'
+            pipeline:
+              - '.github/workflows/main_pipeline.yml'
+              - 'scripts/**'
+              - 'sonar-project.properties'
+
+  version_bump:
+    name: Prepare & Version
+    needs: filter
+    runs-on: ubuntu-latest
+    outputs:
+      new_sha: ${{ steps.sha.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          fetch-depth: 0
+
+      - name: Version Kotlin
+        if: needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true'
+        working-directory: kotlin_obdii
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys
+          path = pathlib.Path("androidApp/build.gradle.kts")
+          text = path.read_text(encoding="utf-8")
+          m_code = re.search(r"^\s*versionCode\s*=\s*(\d+)\s*$", text, re.MULTILINE)
+          if not m_code: sys.exit(1)
+          new_code = int(m_code.group(1)) + 1
+          text = re.sub(r"(^\s*versionCode\s*=\s*)\d+(\s*$)", r"\g<1>" + str(new_code) + r"\g<2>", text, count=1, flags=re.MULTILINE)
+          m_name = re.search(r"^\s*versionName\s*=\s*\"(\d+)\.(\d+)\.(\d+)\"\s*$", text, re.MULTILINE)
+          if m_name:
+              major, minor, patch = map(int, m_name.groups())
+              new_name = f"{major}.{minor}.{patch + 1}"
+              text = re.sub(r"(^\s*versionName\s*=\s*\")\d+\.\d+\.\d+(\"\s*$)", r"\g<1>" + new_name + r"\g<2>", text, count=1, flags=re.MULTILINE)
+          path.write_text(text, encoding="utf-8")
+          PY
+
+      - name: Version Flutter
+        if: needs.filter.outputs.flutter == 'true' || needs.filter.outputs.pipeline == 'true'
+        working-directory: flutter_obdii
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys
+          path = pathlib.Path("pubspec.yaml")
+          text = path.read_text(encoding="utf-8")
+          m = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$", text, re.MULTILINE)
+          if not m: sys.exit(1)
+          major, minor, patch, build = map(int, m.groups())
+          new_version = f"{major}.{minor}.{patch + 1}+{build + 1}"
+          updated = re.sub(r"^version:\s*.*$", f"version: {new_version}", text, count=1, flags=re.MULTILINE)
+          path.write_text(updated, encoding="utf-8")
+          PY
+
+      - name: Commit & Push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "ci: version bump platforms [skip ci]" || echo "No changes"
+          git push origin HEAD:${{ github.ref_name }}
+
+      - id: sha
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  kotlin_deploy:
+    name: Kotlin Deploy
+    needs: [filter, version_bump]
+    if: needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.version_bump.outputs.new_sha }}
+          submodules: recursive
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+      - name: Checkout SwiftOBD2
+        uses: actions/checkout@v5
+        with:
+          repository: jamesmittlerii/SwiftOBD2
+          path: SwiftOBD2
+      - name: Build & Upload to Play Store
+        working-directory: kotlin_obdii
+        env:
+          KOTLINOBD2_DIR: ${{ github.workspace }}/SwiftOBD2/kotlinobd2
+          SP: ${{ secrets.KOTLIN_ANDROID_KEYSTORE_PASSWORD }}
+          KP: ${{ secrets.KOTLIN_ANDROID_KEY_PASSWORD }}
+          KA: ${{ secrets.KOTLIN_ANDROID_KEY_ALIAS }}
+        run: |
+          echo "${{ secrets.KOTLIN_ANDROID_KEYSTORE_BASE64 }}" | base64 -d > androidApp/upload-keystore.jks
+          printf "storePassword=$SP\nkeyPassword=$KP\nkeyAlias=$KA\nstoreFile=upload-keystore.jks\n" > androidApp/key.properties
+          chmod +x gradlew
+          ./gradlew bundleRelease
+      - uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.KOTLIN_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.rheosoft.obdiik
+          releaseFiles: kotlin_obdii/androidApp/build/outputs/bundle/release/*.aab
+          tracks: internal
+          status: completed
+
+  flutter_deploy:
+    name: Flutter Android Deploy
+    needs: [filter, version_bump]
+    if: needs.filter.outputs.flutter == 'true' || needs.filter.outputs.pipeline == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.version_bump.outputs.new_sha }}
+          submodules: recursive
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Build & Deploy Flutter (Android)
+        working-directory: flutter_obdii
+        env:
+          SP: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KP: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KA: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
+          printf "storePassword=$SP\nkeyPassword=$KP\nkeyAlias=$KA\nstoreFile=app/upload-keystore.jks\n" > android/key.properties
+          flutter config --jdk-dir $JAVA_HOME
+          flutter pub get
+          flutter build appbundle --release --flavor material --target lib/main_material.dart
+      - uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.rheosoft.obdiif
+          releaseFiles: flutter_obdii/build/app/outputs/bundle/materialRelease/app-material-release.aab
+          tracks: alpha
+          status: draft
+
+  flutter_apple_deploy:
+    name: Flutter ${{ matrix.platform }} ${{ matrix.display_name }}
+    needs: [filter, version_bump]
+    if: needs.filter.outputs.flutter == 'true' || needs.filter.outputs.pipeline == 'true'
+    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ios, macos]
+        project: [obdiif, obdiic]
+        include:
+          - project: obdiif
+            display_name: Material
+          - project: obdiic
+            display_name: Cupertino
+    env:
+      BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
+      PROJECT_NAME: ${{ matrix.project }}
+      CURRENT_BRANCH: ${{ github.ref_name }}
+      BWS_VERSION: "1.0.0"
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.version_bump.outputs.new_sha }}
+          submodules: recursive
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+
+      - name: Prepare local bin path
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Cache Bitwarden BWS
+        id: cache-bws
+        uses: actions/cache@v5
+        with:
+          path: ~/.local/bin/bws
+          key: bws-${{ runner.os }}-${{ runner.arch }}-${{ env.BWS_VERSION }}
+
+      - name: Install Bitwarden BWS
+        if: steps.cache-bws.outputs.cache-hit != 'true'
+        run: |
+          curl -L -o bws.zip "https://github.com/bitwarden/sdk/releases/download/bws-v${{ env.BWS_VERSION }}/bws-aarch64-apple-darwin-${{ env.BWS_VERSION }}.zip"
+          unzip -q bws.zip -d "$HOME/.local/bin"
+          chmod +x "$HOME/.local/bin/bws"
+
+      - name: Install Pods
+        working-directory: flutter_obdii/${{ matrix.platform }}
+        run: |
+          if [ -f Podfile ]; then
+            bundle exec pod repo update
+            bundle exec pod install
+          fi
+
+      - name: Sync Fastlane Config
+        working-directory: flutter_obdii/${{ matrix.platform }}
+        run: |
+          mkdir -p fastlane
+          cp ../../fastlane/Appfile fastlane/Appfile
+          cp ../../fastlane/Matchfile fastlane/Matchfile
+
+      - name: Build & Upload to TestFlight
+        working-directory: flutter_obdii/${{ matrix.platform }}
+        run: |
+          bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta
+
+      - name: Upload Logs on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gym-logs-${{ matrix.platform }}-${{ matrix.project }}
+          path: ~/Library/Logs/gym/*.log
+
+  swift_deploy:
+    name: Swift iOS Deployment
+    needs: [filter, version_bump]
+    if: needs.filter.outputs.swift == 'true' || needs.filter.outputs.pipeline == 'true'
+    uses: jamesmittlerii/workflows/.github/workflows/iosnotest_bw.yml@main
+    secrets: inherit
+
+  sonar_swift_support:
+    name: Swift Coverage
+    needs: [filter, version_bump, swift_deploy]
+    if: always() && !cancelled() && (needs.filter.outputs.swift == 'true' || needs.filter.outputs.pipeline == 'true')
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.version_bump.outputs.new_sha }}
+          submodules: recursive
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Run Swift tests with coverage
+        run: |
+          RUNTIME_ID=$(xcrun simctl list runtimes iOS -j | python3 -c "import json,sys; print(json.load(sys.stdin)['runtimes'][-1]['identifier'])")
+          sim_udid=$(xcrun simctl create "obdii-ci" "com.apple.CoreSimulator.SimDeviceType.iPhone-16" "$RUNTIME_ID")
+          xcrun simctl boot "$sim_udid" || true
+          xcodebuild -project obdii.xcodeproj -scheme obdii -destination "id=$sim_udid" -enableCodeCoverage YES -resultBundlePath TestResults.xcresult test
+          python3 scripts/convert_xccov_to_sonar.py TestResults.xcresult sonarqube-generic-coverage.xml --workspace "$GITHUB_WORKSPACE"
+
+      - name: Upload Swift coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: swift-sonar-coverage
+          path: sonarqube-generic-coverage.xml
+
+  sonar_scan:
+    name: SonarCloud Scan
+    needs: [filter, version_bump, sonar_swift_support, kotlin_deploy, flutter_deploy, flutter_apple_deploy, swift_deploy]
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.version_bump.outputs.new_sha }}
+          submodules: recursive
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Checkout SwiftOBD2
+        uses: actions/checkout@v5
+        with:
+          repository: jamesmittlerii/SwiftOBD2
+          path: SwiftOBD2
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Android UI & Kotlin Coverage
+        # if: needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          KOTLINOBD2_DIR: ${{ github.workspace }}/SwiftOBD2/kotlinobd2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: cd kotlin_obdii && chmod +x gradlew && ./gradlew :coreApp:test :coreApp:jacocoTestReport :androidApp:createDebugCoverageReport
+
+      - name: Flutter Coverage
+        # if: needs.filter.outputs.flutter == 'true' || needs.filter.outputs.pipeline == 'true'
+        run: |
+          cd flutter_obdii
+          flutter pub get
+          flutter test --coverage
+
+      - name: Download Swift coverage
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: swift-sonar-coverage
+          path: coverage-swift
+
+      - name: Ensure Coverage Reports Exist
+        run: |
+          mkdir -p coverage-swift
+          if [ ! -f coverage-swift/sonarqube-generic-coverage.xml ] || [ ! -s coverage-swift/sonarqube-generic-coverage.xml ]; then
+            echo '<coverage version="1"></coverage>' > coverage-swift/sonarqube-generic-coverage.xml
+          fi
+          # Ensure directories for other reports exist to avoid sonar warnings
+          mkdir -p kotlin_obdii/app/build/reports/jacoco/test
+          mkdir -p kotlin_obdii/androidApp/build/reports/coverage/androidTest/debug/connected
+          mkdir -p flutter_obdii/coverage
+
+      - name: SonarCloud scan
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

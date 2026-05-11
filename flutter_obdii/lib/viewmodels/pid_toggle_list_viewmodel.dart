@@ -7,11 +7,15 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/config_data.dart';
 import '../core/pid_store.dart';
-import '../models/obdii_pid.dart';
+import '../core/obdiipid.dart';
 
 class PidToggleListViewModel extends ChangeNotifier {
   final PidStore _store;
+  final UnitsProviding _unitsProvider;
+
+  bool get isMetric => _unitsProvider.units == MeasurementUnit.metric;
 
   // Local mirror of the store's PID list (copied for sorting/filtering UI)
   List<ObdiiPid> _pids = [];
@@ -26,12 +30,17 @@ class PidToggleListViewModel extends ChangeNotifier {
   }
 
   StreamSubscription? _pidSub;
+  StreamSubscription? _unitsSub;
 
-  PidToggleListViewModel({PidStore? store})
-      : _store = store ?? PidStore.instance {
+  PidToggleListViewModel({PidStore? store, UnitsProviding? unitsProvider})
+      : _store = store ?? PidStore.instance,
+        _unitsProvider = unitsProvider ?? ConfigData.instance {
     _pids = List.from(_store.pids);
     _pidSub = _store.pidsStream.listen((pids) {
       _pids = List.from(pids);
+      notifyListeners();
+    });
+    _unitsSub = _unitsProvider.unitsStream.listen((_) {
       notifyListeners();
     });
   }
@@ -78,6 +87,7 @@ class PidToggleListViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _pidSub?.cancel();
+    _unitsSub?.cancel();
     super.dispose();
   }
 }

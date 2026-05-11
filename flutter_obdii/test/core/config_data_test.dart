@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_obdii/core/config_data.dart';
+import 'package:flutter_obdii/core/constants.dart';
 
 void main() {
   setUp(() async {
@@ -14,7 +15,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     // Reset to defaults manually since ConfigData is a singleton
     final cd = ConfigData.instance;
-    cd.wifiHost = '192.168.0.10';
+    cd.wifiHost = defaultWifiHost;
     cd.wifiPort = 35000;
     cd.autoConnectToOBD = true;
     cd.connectionType = ConnectionType.bluetooth;
@@ -29,7 +30,7 @@ void main() {
 
   group('initial values', () {
     test('testWifihostDefault', () {
-      expect(ConfigData.instance.wifiHost, '192.168.0.10');
+      expect(ConfigData.instance.wifiHost, defaultWifiHost);
     });
 
     test('testWifiportDefault', () {

@@ -1,56 +1,121 @@
-name: Flutter iOS Fastlane workflow
+name: Flutter TestFlight Parallel Deployment
 
 permissions:
   contents: write
   pull-requests: write
   id-token: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  BWS_VERSION: "1.0.0"
+
 on:
   workflow_dispatch:
-  push:
-    branches: ["flutter"]
-    paths:
-      - "flutter_obdii/**"
-      - ".github/workflows/caller_flutter.yml"
+    inputs:
+      run_windows:
+        description: 'Run ONLY Windows Store Material job'
+        required: false
+        default: false
+        type: boolean
+#   push:
+#     branches: ["main"]
+#     paths:
+#       - "flutter_obdii/**"
+#       - ".github/workflows/caller_flutter.yml"
 
 concurrency:
-  group: ${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.repository }}-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  deploy-beta:
-    name: Deploy Flutter to TestFlight
+  prepare:
+    name: Versioning & Dependencies
     runs-on: macos-26
-    timeout-minutes: 45
-    env:
-      CURRENT_BRANCH: ${{ github.ref_name }}
-      APP_ID: ${{ vars.APP_ID }}
-      #APP_IDENTIFIER: com.rheosoft.obdiif
-
+    outputs:
+      commit_sha: ${{ steps.capture_sha.outputs.commit_sha }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           fetch-depth: 0
           token: ${{ secrets.PAT_TOKEN }}
 
-      - name: Select Xcode
-        run: /usr/bin/xcodebuild -version
+      - name: Sync to latest branch head
+        if: github.event_name == 'push'
+        run: |
+          git fetch origin "${{ github.ref_name }}"
+          git checkout "${{ github.ref_name }}"
+          git reset --hard "origin/${{ github.ref_name }}"
+
+      - name: Bump Flutter version
+        if: github.event_name == 'push'
+        working-directory: flutter_obdii
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys
+          path = pathlib.Path("pubspec.yaml")
+          text = path.read_text(encoding="utf-8")
+          m = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$", text, re.MULTILINE)
+          if not m:
+              sys.exit(1)
+          major, minor, patch, build = map(int, m.groups())
+          new_version = f"{major}.{minor}.{patch + 1}+{build + 1}"
+          updated = re.sub(
+              r"^version:\s*.*$",
+              f"version: {new_version}",
+              text,
+              count=1,
+              flags=re.MULTILINE,
+          )
+          path.write_text(updated, encoding="utf-8")
+          PY
+
+      - name: Commit version bump
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add flutter_obdii/pubspec.yaml
+          git commit -m "ci: bump version [skip ci]" || echo "No changes"
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: Capture SHA
+        id: capture_sha
+        run: echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: ${{ matrix.platform }} ${{ matrix.display_name }}
+    if: (github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.run_windows == false)
+    needs: prepare
+    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ios, macos]
+        project: [obdiif, obdiic]
+        include:
+          - project: obdiif
+            display_name: Material
+          - project: obdiic
+            display_name: Cupertino
+    env:
+      BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
+      PROJECT_NAME: ${{ matrix.project }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.prepare.outputs.commit_sha }}
+          submodules: recursive
+          token: ${{ secrets.PAT_TOKEN }}
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-
-      - name: Install Bitwarden Secrets Manager CLI (bws)
-        run: |
-          BWS_VERSION="1.0.0"
-          curl -L -o bws.zip "https://github.com/bitwarden/sdk/releases/download/bws-v${BWS_VERSION}/bws-aarch64-apple-darwin-${BWS_VERSION}.zip"
-          unzip -q bws.zip -d /usr/local/bin
-          chmod +x /usr/local/bin/bws
-          bws --version
+          pub-cache: true
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -58,154 +123,276 @@ jobs:
           ruby-version: "3.2"
           bundler-cache: true
 
-      - name: Install Fastlane dependencies
+      - name: Prepare local bin path
         run: |
-          bundle install
+          mkdir -p "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-      - name: Install CocoaPods for Bundler Ruby
+      - name: Cache Bitwarden BWS
+        id: cache-bws
+        uses: actions/cache@v5
+        with:
+          path: ~/.local/bin/bws
+          key: bws-${{ runner.os }}-${{ runner.arch }}-${{ env.BWS_VERSION }}
+
+      - name: Install Bitwarden BWS
+        if: steps.cache-bws.outputs.cache-hit != 'true'
         run: |
-          bundle install
-          which ruby
-          ruby -v
-          bundle exec pod --version
+          curl -L -o bws.zip "https://github.com/bitwarden/sdk/releases/download/bws-v${{ env.BWS_VERSION }}/bws-aarch64-apple-darwin-${{ env.BWS_VERSION }}.zip"
+          unzip -q bws.zip -d "$HOME/.local/bin"
+          chmod +x "$HOME/.local/bin/bws"
 
-      - name: Pod install sanity check
-        working-directory: flutter_obdii/ios
+      - name: Install Pods
+        working-directory: flutter_obdii/${{ matrix.platform }}
         run: |
           if [ -f Podfile ]; then
             bundle exec pod repo update
             bundle exec pod install
-          else
-            echo "No Podfile present in flutter_obdii/ios; skipping pod install."
           fi
 
-      - name: Bump Flutter version from pubspec
-        id: bump_version
-        working-directory: flutter_obdii
-        run: |
-          python3 - <<'PY'
-          import pathlib, re, sys
-
-          path = pathlib.Path("pubspec.yaml")
-          text = path.read_text(encoding="utf-8")
-          m = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$", text, re.MULTILINE)
-          if not m:
-            print("Could not parse pubspec version line", file=sys.stderr)
-            sys.exit(1)
-
-          major, minor, patch, build = map(int, m.groups())
-          new_minor = minor
-          new_patch = patch + 1
-          new_build = build + 1
-          new_version = f"{major}.{new_minor}.{new_patch}+{new_build}"
-          updated = re.sub(r"^version:\s*.*$", f"version: {new_version}", text, count=1, flags=re.MULTILINE)
-          path.write_text(updated, encoding="utf-8")
-
-          with open(pathlib.Path("../.github_version_env"), "w", encoding="utf-8") as f:
-            f.write(f"FLUTTER_BUILD_NAME={major}.{new_minor}.{new_patch}\n")
-            f.write(f"FLUTTER_BUILD_NUMBER={new_build}\n")
-            f.write(f"PUBSPEC_VERSION={new_version}\n")
-          PY
-          cat ../.github_version_env >> "$GITHUB_ENV"
-
-      - name: Commit bumped pubspec version
-        if: github.event_name == 'push'
-        run: |
-          git add flutter_obdii/pubspec.yaml
-          git commit -m "ci: bump flutter version to ${PUBSPEC_VERSION} [skip ci]" || echo "No version changes to commit"
-          git push origin HEAD:${{ github.ref_name }}
-
-      - name: Flutter pub get
-        working-directory: flutter_obdii
-        run: flutter pub get
-
-      - name: Flutter analyze
-        working-directory: flutter_obdii
-        run: flutter analyze
-
-      #- name: Flutter tests
-      #  working-directory: flutter_obdii
-      #   run: flutter test
-
-      - name: Build iOS Material (no codesign)
-        if: ${{ false }} # Temporarily skipped; fastlane beta builds with target.
-        working-directory: flutter_obdii
-        run: flutter build ios --release --no-codesign -t lib/main_material.dart
-
-      - name: Build iOS Cupertino (no codesign)
-        if: ${{ false }} # Temporarily skipped; fastlane beta builds with target.
-        working-directory: flutter_obdii
-        run: flutter build ios --release --no-codesign -t lib/main_cupertino.dart
-
-      - name: Prepare Fastlane config for Flutter iOS project
-        working-directory: flutter_obdii/ios
+      - name: Sync Fastlane Config
+        working-directory: flutter_obdii/${{ matrix.platform }}
         run: |
           mkdir -p fastlane
           cp ../../fastlane/Appfile fastlane/Appfile
           cp ../../fastlane/Matchfile fastlane/Matchfile
-          ls fastlane
-         # sed -i '' "s|^app_id = .*|app_id = ENV['APP_IDENTIFIER'] || \"com.rheosoft.#{ENV['PROJECT_NAME']}\"|" fastlane/Appfile
 
-      - name: Run Fastlane beta lane (Material -> obdiif)
-        working-directory: flutter_obdii/ios
+      - name: Build & Upload to TestFlight
+        working-directory: flutter_obdii/${{ matrix.platform }}
         run: |
-          set -euo pipefail
-          for attempt in 1 2 3; do
-            echo "Running fastlane via bws for PROJECT_NAME=obdiif (attempt ${attempt}/3)..."
-            if bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta; then
-              exit 0
-            fi
-            if [ "$attempt" -lt 3 ]; then
-              sleep_seconds=$((attempt * 20))
-              echo "bws/fastlane failed; retrying in ${sleep_seconds}s..."
-              sleep "${sleep_seconds}"
-            fi
-          done
-          echo "bws run failed after 3 attempts."
-          exit 1
-        env:
-          BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
-          PROJECT_NAME: obdiif
+          bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta
 
-      - name: Run Fastlane beta lane (Cupertino -> obdiic)
-        working-directory: flutter_obdii/ios
-        run: |
-          set -euo pipefail
-          for attempt in 1 2 3; do
-            echo "Running fastlane via bws for PROJECT_NAME=obdiic (attempt ${attempt}/3)..."
-            if bws run --project-id 9c8584c2-a53a-45fb-a276-b3610119586a -- bundle exec fastlane beta; then
-              exit 0
-            fi
-            if [ "$attempt" -lt 3 ]; then
-              sleep_seconds=$((attempt * 20))
-              echo "bws/fastlane failed; retrying in ${sleep_seconds}s..."
-              sleep "${sleep_seconds}"
-            fi
-          done
-          echo "bws run failed after 3 attempts."
-          exit 1
-        env:
-          BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
-          PROJECT_NAME: obdiic
-
-      - name: Dump gym log on failure
+      - name: Upload Logs on Failure
         if: failure()
-        run: |
-          echo "=== gym log files ==="
-          ls -la ~/Library/Logs/gym || true
-          echo "=== latest gym log (tail) ==="
-          LATEST_LOG=$(ls -t ~/Library/Logs/gym/*.log 2>/dev/null | head -n 1 || true)
-          if [ -n "$LATEST_LOG" ]; then
-            echo "Log: $LATEST_LOG"
-            tail -n 300 "$LATEST_LOG" || true
-          else
-            echo "No gym log found."
-          fi
-
-      - name: Upload gym logs
-        if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: gym-logs
+          name: gym-logs-${{ matrix.platform }}-${{ matrix.project }}
           path: ~/Library/Logs/gym/*.log
-          if-no-files-found: warn
+
+  windows_store_material:
+    name: Windows Store Material
+    if: github.event_name == 'workflow_dispatch' && inputs.run_windows == true
+    needs: prepare
+    runs-on: windows-latest
+    env:
+      FLUTTER_TARGET: lib/main_material.dart
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.prepare.outputs.commit_sha }}
+          submodules: recursive
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+          pub-cache: true
+
+      - name: Install dependencies
+        working-directory: flutter_obdii
+        run: flutter pub get
+
+      - name: Build Windows release (Material)
+        working-directory: flutter_obdii
+        run: flutter build windows --release --target ${{ env.FLUTTER_TARGET }}
+
+      - name: Sync MSIX version from pubspec version
+        shell: pwsh
+        working-directory: flutter_obdii
+        run: |
+          $pubspecPath = "pubspec.yaml"
+          $content = Get-Content -Raw -Path $pubspecPath
+
+          $versionMatch = [regex]::Match($content, '(?m)^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$')
+          if (-not $versionMatch.Success) {
+            throw "Could not parse pubspec version from $pubspecPath"
+          }
+
+          $msixVersion = "$($versionMatch.Groups[1].Value).$($versionMatch.Groups[2].Value).$($versionMatch.Groups[3].Value).0"
+          $updated = [regex]::Replace($content, '(?m)^(\s*)msix_version:\s*.*$', "`${1}msix_version: $msixVersion", 1)
+          if ($updated -eq $content) {
+            throw "Could not find msix_version in $pubspecPath"
+          }
+
+          Set-Content -Path $pubspecPath -Value $updated
+          Write-Host "Synced msix_version to $msixVersion"
+
+      - name: Build MSIX upload package
+        working-directory: flutter_obdii
+        run: dart run msix:create --store --build-windows false
+
+      - name: Locate MSIXUPLOAD
+        id: msix
+        shell: pwsh
+        run: |
+          $releaseDir = "flutter_obdii/build/windows/x64/runner/Release"
+          $pkg = Get-ChildItem -Path $releaseDir -Include "*.msixupload","*.msix" -File -Recurse | Select-Object -First 1
+          if (-not $pkg) { throw "No .msixupload or .msix package found in $releaseDir." }
+          "path=$($pkg.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Upload Windows package artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-material-msixupload
+          path: ${{ steps.msix.outputs.path }}
+
+      - name: Setup Microsoft Store CLI
+        uses: microsoft/microsoft-store-apppublisher@v1
+
+      - name: Preflight Store secrets
+        shell: pwsh
+        env:
+          AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+          SELLER_ID: ${{ secrets.SELLER_ID }}
+          AZURE_AD_APPLICATION_CLIENT_ID: ${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}
+          AZURE_AD_APPLICATION_SECRET: ${{ secrets.AZURE_AD_APPLICATION_SECRET }}
+          MS_STORE_PRODUCT_ID: ${{ secrets.MS_STORE_PRODUCT_ID }}
+        run: |
+          $required = @(
+            "AZURE_AD_TENANT_ID",
+            "SELLER_ID",
+            "AZURE_AD_APPLICATION_CLIENT_ID",
+            "AZURE_AD_APPLICATION_SECRET",
+            "MS_STORE_PRODUCT_ID"
+          )
+          $missing = @()
+          foreach ($name in $required) {
+            if ([string]::IsNullOrWhiteSpace((Get-Item "Env:$name" -ErrorAction SilentlyContinue).Value)) {
+              $missing += $name
+            }
+          }
+          if ($missing.Count -gt 0) {
+            throw "Missing required GitHub secrets: $($missing -join ', ')"
+          }
+          Write-Host "All required Microsoft Store secrets are set."
+
+      - name: Preflight msstore CLI
+        shell: pwsh
+        run: msstore --version
+
+      - name: Preflight package path
+        shell: pwsh
+        run: |
+          $pkgPath = "${{ steps.msix.outputs.path }}"
+          if (-not (Test-Path -LiteralPath $pkgPath)) {
+            throw "Package not found at: $pkgPath"
+          }
+          Write-Host "Package ready: $pkgPath"
+
+      - name: Configure Microsoft Store credentials
+        shell: pwsh
+        run: |
+          msstore reconfigure `
+            --tenantId "${{ secrets.AZURE_AD_TENANT_ID }}" `
+            --sellerId "${{ secrets.SELLER_ID }}" `
+            --clientId "${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}" `
+            --clientSecret "${{ secrets.AZURE_AD_APPLICATION_SECRET }}"
+
+      - name: Clear existing Store draft submission
+        shell: pwsh
+        run: |
+          msstore submission delete "${{ secrets.MS_STORE_PRODUCT_ID }}" --flightId "f02525fd-3718-40e0-b657-bf60db9af138" --no-confirm
+        continue-on-error: true
+
+      - name: Publish package to Microsoft Store (internal flight)
+        shell: pwsh
+        run: |
+          msstore publish "${{ steps.msix.outputs.path }}" --flightId "f02525fd-3718-40e0-b657-bf60db9af138" -id "${{ secrets.MS_STORE_PRODUCT_ID }}"
+
+  google_play_material:
+    name: Google Play Material
+    if: (github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.run_windows == false)
+    needs: prepare
+    runs-on: ubuntu-latest
+    env:
+      FLUTTER_TARGET: lib/main_material.dart
+      PLAY_TRACK: alpha
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.prepare.outputs.commit_sha }}
+          submodules: recursive
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Setup Gradle cache
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+          pub-cache: true
+
+      - name: Install dependencies
+        working-directory: flutter_obdii
+        run: flutter pub get
+
+      - name: Preflight Play Store secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          missing=""
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_PASSWORD ANDROID_KEY_ALIAS GOOGLE_PLAY_SERVICE_ACCOUNT_JSON; do
+            eval "val=\${$name}"
+            if [ -z "$val" ]; then
+              missing="$missing $name"
+            fi
+          done
+          if [ -n "$missing" ]; then
+            echo "Missing required GitHub secrets:$missing" >&2
+            exit 1
+          fi
+          echo "All required Google Play secrets are set."
+
+      - name: Decode Android upload keystore
+        working-directory: flutter_obdii/android/app
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > upload-keystore.jks
+
+      - name: Write key.properties
+        working-directory: flutter_obdii/android
+        env:
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          python3 <<'PY'
+          import os
+          path = "key.properties"
+          with open(path, "w", encoding="utf-8") as f:
+              f.write(f"storePassword={os.environ['STORE_PASSWORD']}\n")
+              f.write(f"keyPassword={os.environ['KEY_PASSWORD']}\n")
+              f.write(f"keyAlias={os.environ['KEY_ALIAS']}\n")
+              f.write("storeFile=app/upload-keystore.jks\n")
+          PY
+
+      - name: Build Material release app bundle
+        working-directory: flutter_obdii
+        run: flutter build appbundle --release --flavor material --target ${{ env.FLUTTER_TARGET }}
+
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.rheosoft.obdiif
+          releaseFiles: flutter_obdii/build/app/outputs/bundle/materialRelease/app-material-release.aab
+          tracks: ${{ env.PLAY_TRACK }}
+          status: draft

@@ -216,6 +216,16 @@ Win32Window::MessageHandler(HWND hwnd,
     case WM_DWMCOLORIZATIONCOLORCHANGED:
       UpdateTheme(hwnd);
       return 0;
+
+    case WM_THEMECHANGED:
+      UpdateTheme(hwnd);
+      return 0;
+
+    case WM_SETTINGCHANGE:
+      // Windows sends this when system personalization settings change,
+      // including the app light/dark preference.
+      UpdateTheme(hwnd);
+      return 0;
   }
 
   return DefWindowProc(window_handle_, message, wparam, lparam);

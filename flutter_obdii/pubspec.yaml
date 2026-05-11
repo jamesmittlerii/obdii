@@ -1,5 +1,5 @@
 name: flutter_obdii
-description: "A new Flutter project."
+description: "Rheosoft OBD2 Application"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.2.1+51
+version: 0.4.15+214
 
 environment:
   sdk: ^3.11.5
@@ -41,12 +41,13 @@ dependencies:
   flutter_blue_plus: ^2.2.1
   share_plus: ^13.1.0
   package_info_plus: ^10.1.0
-  flutter_obd2:
-    git:
-      url: https://github.com/jamesmittlerii/SwiftOBD2.git
-      ref: flutter
-      path: flutterobd2
+  flutter_obd2: ^0.1.4
   file_selector: ^1.1.0
+  permission_handler: ^12.0.1
+  google_fonts: ^8.1.0
+  flutter_svg: ^2.3.0
+
+
 
 dev_dependencies:
   flutter_test:
@@ -59,6 +60,19 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
+  msix: ^3.16.13
+
+msix_config:
+  display_name: Rheosoft OBDII
+  publisher_display_name: Rheosoft
+  identity_name: Rheosoft.RheosoftOBDII
+  publisher: CN=CDD0EB85-E0DB-42EA-821E-CD97C0307B7A
+  msix_version: 0.2.41.0
+  logo_path: windows/runner/resources/rheosoft-obdii-msix-logo-clean-512.png
+ # trim_logo: false
+  background_color: "#00000000"
+  install_certificate: false
+  capabilities: internetClient
 
 flutter_launcher_icons:
   android: true
@@ -86,6 +100,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/OBDPIDs.json
+    - assets/icons/mil_check_engine.svg
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

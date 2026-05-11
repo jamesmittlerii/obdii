@@ -31,8 +31,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
   func scene(
     _ scene: UIScene,
-    willConnectTo session: UISceneSession,
-    options connectionOptions: UIScene.ConnectionOptions
+    willConnectTo _: UISceneSession,
+    options _: UIScene.ConnectionOptions
   ) {
     guard let windowScene = scene as? UIWindowScene else { return }
 
@@ -47,6 +47,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     #endif
     window.rootViewController = ViewController()
     self.window = window
+    // Honor auto-connect on app start for phone UI
+    if ConfigData.shared.autoConnectToOBD {
+      Task { await OBDConnectionManager.shared.connect() }
+    }
     window.makeKeyAndVisible()
   }
 }
@@ -78,3 +82,4 @@ final class UnsupportedDeviceViewController: UIViewController {
     ])
   }
 }
+

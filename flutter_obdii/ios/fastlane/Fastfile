@@ -38,6 +38,14 @@ platform :ios do
         'lib/main_material.dart'
       end
 
+    app_display_name =
+      case project_name
+      when 'obdiic'
+        'Cupertino Obdii'
+      else
+        'Material Obdii'
+      end
+
     bundle_id = ENV['APP_IDENTIFIER'].to_s.strip
     bundle_id = "com.rheosoft.#{project_name}" if bundle_id.empty?
 
@@ -45,6 +53,28 @@ platform :ios do
     provisioning_profile = "match AppStore #{bundle_id}" if provisioning_profile.empty?
 
     project_file = "flutter_obdii/ios/Runner.xcodeproj"
+    ios_project_file = "Runner.xcodeproj"
+    info_plist_path = "Runner/Info.plist"
+
+    update_app_identifier(
+      xcodeproj: ios_project_file,
+      plist_path: info_plist_path,
+      app_identifier: bundle_id
+    )
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: ios_project_file,
+      team_id: "L97LVVC8Y4",
+      bundle_identifier: bundle_id,
+      profile_name: provisioning_profile,
+      targets: ["Runner"],
+      build_configurations: ["Release"]
+    )
+    set_info_plist_value(
+      path: info_plist_path,
+      key: "CFBundleDisplayName",
+      value: app_display_name
+    )
    # increment_build_number(xcodeproj: project_file)
    # commit_version_bump(
    #   message: "Bump version from Fastlane [skip ci]",

@@ -13,92 +13,87 @@ import SwiftOBD2
  */
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 @MainActor
 struct GaugesView: View {
 
   // Stable observable view model instance
   @State private var viewModel: GaugesViewModel
-
-  // Demand-driven polling token (set in @MainActor init to avoid nonisolated call)
-  @State private var interestToken: UUID
-
-  @MainActor
-  init() {
-    _viewModel = State(initialValue: GaugesViewModel())
-    // Create the token on the main actor inside the initializer body
-    let token = PIDInterestRegistry.shared.makeToken()
-    _interestToken = State(initialValue: token)
-  }
-
-  // Injectable initializer for testing/mocking
-  @MainActor
-  init(viewModel: GaugesViewModel, interestToken: UUID? = nil) {
-    _viewModel = State(initialValue: viewModel)
-    // If no token provided, create one here on the main actor
-    let token = interestToken ?? PIDInterestRegistry.shared.makeToken()
-    _interestToken = State(initialValue: token)
-  }
+  @State private var selectedDetailViewModel: GaugeDetailViewModel?
+  @State private var isShowingDetail = false
+  @State private var draggedTileID: UUID?
 
   // Adaptive layout: 2–4 columns depending on device width
   private let columns = [
     GridItem(.adaptive(minimum: 160, maximum: 240), spacing: 16, alignment: .top)
   ]
 
-  // Identity list ignoring measurements
-  private var tileIdentities: [TileIdentity] {
-    viewModel.tiles.map { TileIdentity(id: $0.id, name: $0.pid.name) }
+  @MainActor
+  init() {
+    _viewModel = State(initialValue: GaugesViewModel())
   }
+
+  // Injectable initializer for testing/mocking
+  @MainActor
+  init(viewModel: GaugesViewModel) {
+    _viewModel = State(initialValue: viewModel)
+  }
+
 
   var body: some View {
     ScrollView {
       LazyVGrid(columns: columns, spacing: 16) {
-        ForEach(viewModel.tiles) { tile in
-          NavigationLink {
-            GaugeDetailView(pid: tile.pid)
-          } label: {
-            GaugeTile(pid: tile.pid, measurement: tile.measurement)
+        ForEach(viewModel.displayTiles) { tile in
+          GaugeTile(tile: tile, isBeingDragged: draggedTileID == tile.id)
+          .contentShape(RoundedRectangle(cornerRadius: 12))
+          .onTapGesture {
+            selectedDetailViewModel = tile.detailViewModel
+            isShowingDetail = true
           }
-          .buttonStyle(.plain)
-          .accessibilityIdentifier("GaugeTile_\(tile.pid.id.uuidString)")
+          .onDrag {
+            draggedTileID = tile.id
+            return NSItemProvider(object: tile.id.uuidString as NSString)
+          }
+          .onDrop(
+            of: [UTType.plainText],
+            delegate: GaugeTileDropDelegate(
+              tile: tile,
+              viewModel: viewModel,
+              draggedTileID: $draggedTileID
+            )
+          )
+          .accessibilityIdentifier(tile.tileAccessibilityIdentifier)
         }
       }
       .padding()
     }
+    .navigationDestination(isPresented: $isShowingDetail) {
+      if let selectedDetailViewModel {
+        GaugeDetailView(viewModel: selectedDetailViewModel)
+      }
+    }
     .onAppear {
-      updateInterest()
+      viewModel.onAppear()
     }
     .onDisappear {
-      PIDInterestRegistry.shared.clear(token: interestToken)
-    }
-    .onChange(of: tileIdentities) {
-      updateInterest()
+      viewModel.onDisappear()
     }
   }
-
-  private func updateInterest() {
-    // Demand-driven PID activation
-    let commands: Set<OBDCommand> = Set(viewModel.tiles.map { $0.pid.pid })
-    PIDInterestRegistry.shared.replace(pids: commands, for: interestToken)
-  }
-}
-
-struct TileIdentity: Equatable {
-  let id: UUID
-  let name: String
 }
 
 private struct GaugeTile: View {
-  let pid: OBDPID
-  let measurement: MeasurementResult?
+  let tile: GaugesViewModel.DisplayTile
+  let isBeingDragged: Bool
 
   var body: some View {
     VStack(spacing: 8) {
 
-      RingGaugeView(pid: pid, measurement: measurement)
-        .frame(width: 120, height: 98)
 
-      Text(pid.label)
+      RingGaugeView(model: tile.ring)
+        .frame(width: 120, height: 96)
+
+      Text(tile.shortTitle)
         .font(.headline)
         .lineLimit(1)
         .minimumScaleFactor(0.8)
@@ -108,6 +103,34 @@ private struct GaugeTile: View {
       RoundedRectangle(cornerRadius: 12)
         .fill(Color(UIColor.secondarySystemBackground))
     )
+    .opacity(isBeingDragged ? 0.7 : 1)
+  }
+}
+
+private struct GaugeTileDropDelegate: DropDelegate {
+  let tile: GaugesViewModel.DisplayTile
+  let viewModel: GaugesViewModel
+  @Binding var draggedTileID: UUID?
+
+  func dropEntered(_: DropInfo) {
+    guard let draggedTileID, draggedTileID != tile.id else { return }
+
+    withAnimation {
+      viewModel.reorderTile(withID: draggedTileID, to: tile.id)
+    }
+  }
+
+  func dropUpdated(_: DropInfo) -> DropProposal? {
+    DropProposal(operation: .move)
+  }
+
+  func performDrop(info _: DropInfo) -> Bool {
+    draggedTileID = nil
+    return true
+  }
+
+  func dropExited(_: DropInfo) {
+    /* Drag lifecycle hook not needed; reorder happens in dropEntered. */
   }
 }
 

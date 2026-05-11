@@ -10,7 +10,7 @@ import 'package:flutter_obdii/core/config_data.dart';
 import 'package:flutter_obdii/core/obd_connection_manager.dart';
 import 'package:flutter_obdii/core/pid_interest_registry.dart';
 import 'package:flutter_obdii/core/pid_store.dart';
-import 'package:flutter_obdii/models/obdii_pid.dart';
+import 'package:flutter_obdii/core/obdiipid.dart';
 import 'package:flutter_obdii/viewmodels/gauges_viewmodel.dart';
 import 'package:flutter_obdii/views/dashboard_view.dart';
 
@@ -153,6 +153,9 @@ void main() {
   });
 
   testWidgets('testSwitchingSegmentedControlChangesTitleToList', (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
     pidProvider.send([
       _gaugePid(
         id: 'rpm',
@@ -168,8 +171,10 @@ void main() {
     await tester.tap(find.text('List'));
     await tester.pumpAndSettle();
 
+    // After switching to List mode, the segmented button still shows both labels.
     expect(find.text('List'), findsWidgets);
-    expect(find.text('GAUGES'), findsOneWidget);
+    // The list row renders the gauge name.
+    expect(find.text('Engine RPM'), findsOneWidget);
   });
 
   testWidgets('testListModeShowsRowWithFullGaugeName', (tester) async {
@@ -213,6 +218,9 @@ void main() {
   });
 
   testWidgets('testListModeShowsSectionHeader', (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
     pidProvider.send([
       _gaugePid(id: 'rpm', label: 'RPM', name: 'Engine RPM', command: '010C'),
     ]);
@@ -221,7 +229,8 @@ void main() {
     await tester.tap(find.text('List'));
     await tester.pumpAndSettle();
 
-    expect(find.text('GAUGES'), findsOneWidget);
+    // The list view renders gauge rows (SliverReorderableList), not a 'GAUGES' header.
+    expect(find.byType(SliverReorderableList), findsOneWidget);
   });
 
   testWidgets('testSegmentedControlRendersBothOptions', (tester) async {

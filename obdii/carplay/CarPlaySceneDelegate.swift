@@ -25,6 +25,7 @@ import UIKit
 import os.log
 
 // Protocol for CarPlay tab controllers, enables uniform initialization and configuration.
+@MainActor
 protocol CarPlayTabControlling: AnyObject {
   // Return the root CPTemplate for this tab.
   func makeRootTemplate() -> CPTemplate
@@ -57,7 +58,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate,
   ]
 
   func templateApplicationScene(
-    _ templateApplicationScene: CPTemplateApplicationScene,
+    _ : CPTemplateApplicationScene,
     didConnect interfaceController: CPInterfaceController
   ) {
 
@@ -101,41 +102,41 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate,
   }
 
   func templateApplicationScene(
-    _ templateApplicationScene: CPTemplateApplicationScene,
-    didDisconnectInterfaceController interfaceController: CPInterfaceController
+    _ : CPTemplateApplicationScene,
+    didDisconnectInterfaceController _: CPInterfaceController
   ) {
     unregisterHandsetBridgeObservers()
     self.interfaceController = nil
     ownerByTemplateID.removeAll()
   }
 
-  func templateDidAppear(_ aTemplate: CPTemplate, animated: Bool) {
+  func templateDidAppear(_ aTemplate: CPTemplate, animated _: Bool) {
     guard let owner = ownerByTemplateID[ObjectIdentifier(aTemplate)] as? CarPlayVisibilityForwarding
     else { return }
     owner.templateDidAppear(aTemplate)
   }
 
-  func templateDidDisappear(_ aTemplate: CPTemplate, animated: Bool) {
+  func templateDidDisappear(_ aTemplate: CPTemplate, animated _: Bool) {
     guard let owner = ownerByTemplateID[ObjectIdentifier(aTemplate)] as? CarPlayVisibilityForwarding
     else { return }
     owner.templateDidDisappear(aTemplate)
   }
 
   func interfaceController(
-    _ interfaceController: CPInterfaceController, didShow template: CPTemplate, animated: Bool
+    _ : CPInterfaceController, didShow template: CPTemplate, animated: Bool
   ) {
     templateDidAppear(template, animated: animated)
   }
 
   func interfaceController(
-    _ interfaceController: CPInterfaceController, didHide template: CPTemplate, animated: Bool
+    _ : CPInterfaceController, didHide template: CPTemplate, animated: Bool
   ) {
     templateDidDisappear(template, animated: animated)
   }
   // Called when a template is popped from the navigation stack - cleanup registry
   func interfaceController(
-    _ interfaceController: CPInterfaceController, didPop template: CPTemplate,
-    to newTopTemplate: CPTemplate, animated: Bool
+    _ : CPInterfaceController, didPop template: CPTemplate,
+    to _: CPTemplate, animated _: Bool
   ) {
     unregister(template: template)
   }
@@ -162,9 +163,11 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate,
         queue: .main
       ) { [weak self] note in
         guard let self else { return }
-        CarPlayHandsetBridge.applySettings(userInfo: note.userInfo)
-        OBDConnectionManager.shared.updateConnectionDetails()
-        self.controllers.forEach { $0.refreshFromHandsetBridge() }
+        Task { @MainActor in
+          CarPlayHandsetBridge.applySettings(userInfo: note.userInfo)
+          OBDConnectionManager.shared.updateConnectionDetails()
+          self.controllers.forEach { $0.refreshFromHandsetBridge() }
+        }
       }
     )
 
@@ -175,8 +178,10 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate,
         queue: .main
       ) { [weak self] _ in
         guard let self else { return }
-        PIDStore.shared.reloadFromUserDefaults()
-        self.controllers.forEach { $0.refreshFromHandsetBridge() }
+        Task { @MainActor in
+          PIDStore.shared.reloadFromUserDefaults()
+          self.controllers.forEach { $0.refreshFromHandsetBridge() }
+        }
       }
     )
   }

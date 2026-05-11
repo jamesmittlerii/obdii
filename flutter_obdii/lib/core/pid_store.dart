@@ -10,7 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'carplay_bridge.dart';
-import '../models/obdii_pid.dart';
+import '../core/obdiipid.dart';
 
 // ─────────────────────────────────────────────
 // MARK: PidListProviding (protocol)
@@ -158,9 +158,9 @@ class _PidStoreImpl extends ChangeNotifier implements PidStore {
     }
 
     _pids = newPids;
+    notifyListeners();
     await _persistGaugeOrders(_pids);
     await CarPlayBridge.gaugePreferencesChanged();
-    notifyListeners();
   }
 
   // ── Persistence ──────────────────────────────

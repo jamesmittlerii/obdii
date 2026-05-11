@@ -9,7 +9,7 @@ import 'package:flutter_obd2/flutter_obd2.dart' as obd2lib;
 
 import 'package:flutter_obdii/core/config_data.dart';
 import 'package:flutter_obdii/core/obd_connection_manager.dart';
-import 'package:flutter_obdii/models/obdii_pid.dart';
+import 'package:flutter_obdii/core/obdiipid.dart';
 import 'package:flutter_obdii/viewmodels/gauge_detail_viewmodel.dart';
 
 // ─────────────────────────────────────────────

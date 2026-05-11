@@ -1,4 +1,5 @@
 import SwiftOBD2
+import Combine
 /**
  * __Final Project__
  * Jim Mittler
@@ -17,91 +18,77 @@ import SwiftUI
 struct GaugeListView: View {
 
   @State private var viewModel: GaugesViewModel
-  @State private var interestToken: UUID
+  @State private var pids: [OBDPID] = []
+  @State private var cancellables = Set<AnyCancellable>()
+  private let pidProvider: PIDListProviding
 
   // Default initializer preserves existing behavior
   @MainActor
   init() {
     _viewModel = State(initialValue: GaugesViewModel())
-    // Create the token on the main actor inside the initializer body
-    let token = PIDInterestRegistry.shared.makeToken()
-    _interestToken = State(initialValue: token)
+    pidProvider = PIDStore.shared
   }
 
   // Injectable initializer for testing/mocking
   @MainActor
-  init(viewModel: GaugesViewModel, interestToken: UUID? = nil) {
+  init(viewModel: GaugesViewModel, pidProvider: PIDListProviding? = nil) {
     _viewModel = State(initialValue: viewModel)
-    // If no token provided, create one here on the main actor
-    let token = interestToken ?? PIDInterestRegistry.shared.makeToken()
-    _interestToken = State(initialValue: token)
-  }
-
-  // Used to detect changes in the list of PIDs we should subscribe to.
-  private var tileIdentities: [TileIdentity] {
-    viewModel.tiles.map { TileIdentity(id: $0.id, name: $0.pid.name) }
+    self.pidProvider = pidProvider ?? PIDStore.shared
   }
 
   var body: some View {
     List {
-      Section(header: Text("Gauges")) {
-        ForEach(viewModel.tiles) { tile in
+      let enabled = pids.filter { $0.kind == .gauge && $0.enabled }
+      ForEach(enabled, id: \.id) { pid in
+        if let tile = viewModel.displayTiles.first(where: { $0.id == pid.id }) {
           NavigationLink {
-            GaugeDetailView(pid: tile.pid)
+            GaugeDetailView(viewModel: tile.detailViewModel)
           } label: {
             tileRow(tile)
           }
+        } else {
+          HStack {
+            Text("…")
+            Spacer()
+          }
         }
+      }
+      .onMove { source, destination in
+        PIDStore.shared.moveEnabled(fromOffsets: source, toOffset: destination)
       }
     }
     .navigationTitle("Live Gauges")
-    .onAppear { updateInterest() }
-    .onDisappear { PIDInterestRegistry.shared.clear(token: interestToken) }
-    .onChange(of: tileIdentities) {
-      updateInterest()
+    .onAppear {
+      viewModel.onAppear()
+      pidProvider.pidsPublisher
+        .receive(on: RunLoop.main)
+        .sink { newPids in
+          self.pids = newPids
+        }
+        .store(in: &cancellables)
     }
+    .onDisappear { viewModel.onDisappear() }
   }
 
-  private func tileRow(_ tile: GaugesViewModel.Tile) -> some View {
+  private func tileRow(_ tile: GaugesViewModel.DisplayTile) -> some View {
     HStack {
       VStack(alignment: .leading, spacing: 4) {
-        Text(tile.pid.name)
+        Text(tile.title)
           .font(.headline)
 
-        Text(tile.pid.displayRange)
+        Text(tile.subtitle)
           .font(.subheadline)
           .foregroundStyle(.secondary)
       }
 
       Spacer()
 
-      Text(currentValueText(for: tile))
+      Text(tile.valueText)
         .font(.title3.monospacedDigit())
-        .foregroundStyle(currentValueColor(for: tile))
-        .accessibilityLabel("\(tile.pid.name) value")
+        .foregroundStyle(tile.valueColor)
+        .accessibilityLabel(tile.valueAccessibilityLabel)
     }
     .contentShape(Rectangle())
-  }
-
-  private func updateInterest() {
-    let commands: Set<OBDCommand> = Set(viewModel.tiles.map { $0.pid.pid })
-    PIDInterestRegistry.shared.replace(pids: commands, for: interestToken)
-  }
-
-  private func currentValueText(for tile: GaugesViewModel.Tile) -> String {
-    if let m = tile.measurement {
-      return tile.pid.formatted(measurement: m, includeUnits: true)
-    } else {
-      return "— \(tile.pid.displayUnits)"
-    }
-  }
-
-  private func currentValueColor(for tile: GaugesViewModel.Tile) -> Color {
-    if let m = tile.measurement {
-      return tile.pid.color(for: m.value)
-    } else {
-      return .secondary
-    }
   }
 }
 

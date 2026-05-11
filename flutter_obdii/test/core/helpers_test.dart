@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flutter_obdii/models/obdii_pid.dart';
+import 'package:flutter_obdii/core/helpers.dart';
+import 'package:flutter_obdii/core/obdiipid.dart';
 
 void main() {
+  test('clampDouble returns bounds or original value', () {
+    expect(Helpers.clampDouble(-1, 0, 10), 0);
+    expect(Helpers.clampDouble(11, 0, 10), 10);
+    expect(Helpers.clampDouble(4.5, 0, 10), 4.5);
+  });
+
   test('testSymbolImageCreation', () {
     const icon = Icons.settings;
     expect(icon, isNotNull);
@@ -57,7 +64,12 @@ void main() {
   });
 
   test('testTintedSymbolForAllSeverities', () {
-    final colors = <Color>[Colors.blue, Colors.amber, Colors.orange, Colors.red];
+    final colors = <Color>[
+      Colors.blue,
+      Colors.amber,
+      Colors.orange,
+      Colors.red,
+    ];
     expect(colors.length, 4);
   });
 
@@ -93,4 +105,3 @@ void main() {
     expect(UnitConversion.fromMetricLabel('°C', false)?.displayLabel, '°F');
   });
 }
-

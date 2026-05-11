@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="fastlane.lanes">
+    
+    
+    
+      
+      <testcase classname="fastlane.lanes" name="0: default_platform" time="0.00027">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="1: match" time="89.9635">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="2: update_code_signing_settings" time="0.088132">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="3: cd .. &amp;&amp; flutter build macos --release --no-codesign -t lib/main_material.dart" time="0.011475">
+        
+          <failure message="/opt/homebrew/lib/ruby/gems/3.3.0/gems/fastlane-2.233.0/fastlane/lib/fastlane/actions/actions_helper.rb:67:in `execute_action&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/fastlane-2.233.0/fastlane/lib/fastlane/fast_file.rb:224:in `sh&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/fastlane-2.233.0/fastlane/lib/fastlane/fast_file.rb:216:in `sh&apos;&#10;Fastfile:53:in `block (2 levels) in parsing_binding&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/fastlane-2.233.0/fastlane/lib/fastlane/lane.rb:41:in `call&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/fastlane-2.233.0/fastlane/lib/fastlane/runner.rb:49:in `block in execute&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/fastlane-2.233.0/fastlane/lib/fastlane/runner.rb:45:in `chdir&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/fastlane-2.233.0/fastlane/lib/fastlane/runner.rb:45:in `execute&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/fastlane-2.233.0/fastlane/lib/fastlane/lane_manager.rb:46:in `cruise_lane&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/fastlane-2.233.0/fastlane/lib/fastlane/command_line_handler.rb:34:in `handle&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/fastlane-2.233.0/fastlane/lib/fastlane/commands_generator.rb:110:in `block (2 levels) in run&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/commander-4.6.0/lib/commander/command.rb:187:in `call&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/commander-4.6.0/lib/commander/command.rb:157:in `run&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/commander-4.6.0/lib/commander/runner.rb:444:in `run_active_command&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/fastlane-2.233.0/fastlane_core/lib/fastlane_core/ui/fastlane_runner.rb:124:in `run!&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/commander-4.6.0/lib/commander/delegates.rb:18:in `run!&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/fastlane-2.233.0/fastlane/lib/fastlane/commands_generator.rb:363:in `run&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/fastlane-2.233.0/fastlane/lib/fastlane/commands_generator.rb:43:in `start&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/fastlane-2.233.0/fastlane/lib/fastlane/cli_tools_distributor.rb:132:in `take_off&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/fastlane-2.233.0/bin/fastlane:23:in `&lt;top (required)&gt;&apos;&#10;/opt/homebrew/Cellar/ruby@3.3/3.3.11/lib/ruby/3.3.0/rubygems.rb:304:in `load&apos;&#10;/opt/homebrew/Cellar/ruby@3.3/3.3.11/lib/ruby/3.3.0/rubygems.rb:304:in `activate_and_load_bin_path&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/bin/fastlane:25:in `&lt;top (required)&gt;&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/bundler-2.7.2/lib/bundler/cli/exec.rb:59:in `load&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/bundler-2.7.2/lib/bundler/cli/exec.rb:59:in `kernel_load&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/bundler-2.7.2/lib/bundler/cli/exec.rb:23:in `run&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/bundler-2.7.2/lib/bundler/cli.rb:456:in `exec&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/bundler-2.7.2/lib/bundler/vendor/thor/lib/thor/command.rb:28:in `run&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/bundler-2.7.2/lib/bundler/vendor/thor/lib/thor/invocation.rb:127:in `invoke_command&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/bundler-2.7.2/lib/bundler/vendor/thor/lib/thor.rb:538:in `dispatch&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/bundler-2.7.2/lib/bundler/cli.rb:35:in `dispatch&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/bundler-2.7.2/lib/bundler/vendor/thor/lib/thor/base.rb:584:in `start&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/bundler-2.7.2/lib/bundler/cli.rb:29:in `start&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/bundler-2.7.2/exe/bundle:28:in `block in &lt;top (required)&gt;&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/bundler-2.7.2/lib/bundler/friendly_errors.rb:118:in `with_friendly_errors&apos;&#10;/opt/homebrew/lib/ruby/gems/3.3.0/gems/bundler-2.7.2/exe/bundle:20:in `&lt;top (required)&gt;&apos;&#10;/opt/homebrew/Cellar/ruby@3.3/3.3.11/lib/ruby/3.3.0/rubygems.rb:304:in `load&apos;&#10;/opt/homebrew/Cellar/ruby@3.3/3.3.11/lib/ruby/3.3.0/rubygems.rb:304:in `activate_and_load_bin_path&apos;&#10;/opt/homebrew/opt/ruby@3.3/bin/bundle:25:in `&lt;main&gt;&apos;&#10;&#10;Exit status of command &apos;cd .. &amp;&amp; flutter build macos --release --no-codesign -t lib/main_material.dart&apos; was 127 instead of 0.&#10;sh: flutter: command not found&#10;" />
+        
+      </testcase>
+    
+  </testsuite>
+</testsuites>

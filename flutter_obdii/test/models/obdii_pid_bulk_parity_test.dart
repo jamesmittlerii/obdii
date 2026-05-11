@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flutter_obdii/models/obdii_pid.dart';
+import 'package:flutter_obd2/flutter_obd2.dart' as obd2lib;
+import 'package:flutter_obdii/core/logger.dart';
+import 'package:flutter_obdii/core/obdiipid.dart';
 
 ObdiiPid _pidFromCommandName(String command) {
   return ObdiiPid.fromJson({
@@ -10,6 +12,16 @@ ObdiiPid _pidFromCommandName(String command) {
     'name': 'Test',
     'pid': {'type': 'mode1', 'command': command},
     'units': 'km/h',
+  });
+}
+
+ObdiiPid _pidFromGmCommand(String command) {
+  return ObdiiPid.fromJson({
+    'id': 'gm_$command',
+    'label': 'Test',
+    'name': 'Test',
+    'pid': {'type': 'GMmode22', 'command': command},
+    'units': 'kPa',
   });
 }
 
@@ -33,6 +45,12 @@ ObdiiPid _pidWithRanges({
 }
 
 void main() {
+  ObdLogger.instance.mutesConsole = true;
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    await obd2lib.Commands.ensureInitialized();
+  });
+
   // command mapping parity
   test('testMapsRpm', () => expect(_pidFromCommandName('rpm').pidCommand, '010C'));
   test('testMapsSpeed', () => expect(_pidFromCommandName('speed').pidCommand, '010D'));
@@ -119,9 +137,10 @@ void main() {
   test('testMapsO2Sensor6WRCurrent', () => expect(_pidFromCommandName('O2Sensor6WRCurrent').pidCommand, '0139'));
   test('testMapsO2Sensor7WRCurrent', () => expect(_pidFromCommandName('O2Sensor7WRCurrent').pidCommand, '013A'));
   test('testMapsO2Sensor8WRCurrent', () => expect(_pidFromCommandName('O2Sensor8WRCurrent').pidCommand, '013B'));
-  test('testMapsEngineOilPressure', () => expect(_pidFromCommandName('engineOilPressure').pidCommand, '2215B4'));
-  test('testMapsACHighPressure', () => expect(_pidFromCommandName('ACHighPressure').pidCommand, '2215BD'));
-  test('testMapsTransFluidTemp', () => expect(_pidFromCommandName('transFluidTemp').pidCommand, '2215BE'));
+  test('testMapsGmEngineOilTemp', () => expect(_pidFromGmCommand('engineOilTemp').pidCommand, '221154'));
+  test('testMapsGmEngineOilPressure', () => expect(_pidFromGmCommand('engineOilPressure').pidCommand, '221470'));
+  test('testMapsGmACHighPressure', () => expect(_pidFromGmCommand('ACHighPressure').pidCommand, '221144'));
+  test('testMapsGmTransFluidTemp', () => expect(_pidFromGmCommand('transFluidTemp').pidCommand, '221940'));
 
   // ValueRange behavior
   test('testValuerangeContainsLowerBound', () => expect(const ValueRange(min: 0, max: 10).contains(0), isTrue));

@@ -5,10 +5,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import '../core/config_data.dart';
 import '../viewmodels/gauges_viewmodel.dart';
+import 'animated_tap_card.dart';
 import 'gauge_detail_view.dart';
 import 'ring_gauge_widget.dart';
 
@@ -16,7 +15,6 @@ import 'ring_gauge_widget.dart';
 // Display mode (persisted, mirrors @AppStorage)
 // ─────────────────────────────────────────────
 
-enum _GaugesDisplayMode { gauges, list }
 
 // ─────────────────────────────────────────────
 // Container — holds the segmented picker
@@ -32,37 +30,12 @@ class GaugesView extends StatefulWidget {
 }
 
 class _GaugesViewState extends State<GaugesView> {
-  _GaugesDisplayMode _mode = _GaugesDisplayMode.gauges;
-  static const _prefKey = 'gaugesDisplayMode';
-
   void _syncVisibility() {
     if (!mounted) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<GaugesViewModel>().setVisible(widget.isActive);
     });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _loadMode();
-  }
-
-  Future<void> _loadMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_prefKey);
-    if (raw != null && mounted) {
-      setState(() {
-        _mode = raw == 'list' ? _GaugesDisplayMode.list : _GaugesDisplayMode.gauges;
-      });
-    }
-  }
-
-  Future<void> _setMode(_GaugesDisplayMode mode) async {
-    setState(() => _mode = mode);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_prefKey, mode == _GaugesDisplayMode.list ? 'list' : 'gauges');
   }
 
   @override
@@ -81,44 +54,47 @@ class _GaugesViewState extends State<GaugesView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_mode == _GaugesDisplayMode.gauges ? 'Gauges' : 'List'),
-        centerTitle: false,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: SegmentedButton<_GaugesDisplayMode>(
-              style: const ButtonStyle(
-                visualDensity: VisualDensity(horizontal: -2, vertical: -2),
+    return Consumer<GaugesViewModel>(
+      builder: (context, vm, _) {
+        final mode = vm.displayMode;
+        return Scaffold(
+          body: CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                floating: true,
+                toolbarHeight: 0,
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(56),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: SegmentedButton<GaugesDisplayMode>(
+                      segments: const [
+                        ButtonSegment(
+                          value: GaugesDisplayMode.gauges,
+                          label: Text('Gauges', softWrap: false),
+                        ),
+                        ButtonSegment(
+                          value: GaugesDisplayMode.list,
+                          label: Text('List', softWrap: false),
+                        ),
+                      ],
+                      selected: {mode},
+                      onSelectionChanged: (s) => vm.setDisplayMode(s.first),
+                    ),
+                  ),
+                ),
               ),
-              segments: const [
-                ButtonSegment(
-                  value: _GaugesDisplayMode.gauges,
-                  label: Text('Gauges'),
-                ),
-                ButtonSegment(
-                  value: _GaugesDisplayMode.list,
-                  label: Text('List'),
-                ),
-              ],
-              selected: {_mode},
-              onSelectionChanged: (s) => _setMode(s.first),
-            ),
+              if (vm.isEmpty)
+                SliverFillRemaining(child: _emptyState())
+              else if (mode == GaugesDisplayMode.gauges)
+                _GaugesGrid(vm: vm)
+              else
+                _GaugesList(vm: vm),
+            ],
           ),
-        ),
-      ),
-      body: Consumer<GaugesViewModel>(
-        builder: (context, vm, _) {
-          if (vm.isEmpty) {
-            return _emptyState();
-          }
-          return _mode == _GaugesDisplayMode.gauges
-              ? _GaugesGrid(vm: vm)
-              : _GaugesList(vm: vm);
-        },
-      ),
+        );
+      },
     );
   }
 
@@ -144,37 +120,122 @@ class _GaugesViewState extends State<GaugesView> {
 // Grid mode
 // ─────────────────────────────────────────────
 
-class _GaugesGrid extends StatelessWidget {
+class _GaugesGrid extends StatefulWidget {
   final GaugesViewModel vm;
 
   const _GaugesGrid({required this.vm});
 
   @override
-  Widget build(BuildContext context) {
-    final isMetric =
-        context.watch<ConfigData>().units == MeasurementUnit.metric;
+  State<_GaugesGrid> createState() => _GaugesGridState();
+}
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(12),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 200,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.0,
+class _GaugesGridState extends State<_GaugesGrid> {
+  int? _draggingIndex;
+  int? _hoverIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    final isMetric = widget.vm.isMetric;
+    final tiles = widget.vm.tiles;
+
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 200,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 1.0,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            return _buildDragTarget(context, index, tiles[index], isMetric);
+          },
+          childCount: tiles.length,
+        ),
       ),
-      itemCount: vm.tiles.length,
-      itemBuilder: (context, index) {
-        final tile = vm.tiles[index];
-        return GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => GaugeDetailView(pid: tile.pid),
-            ),
-          ),
-          child: _GaugeTile(tile: tile, isMetric: isMetric),
-        );
+    );
+  }
+
+  Widget _buildDragTarget(BuildContext context, int index, GaugeTile tile, bool isMetric) {
+    final isDragging = _draggingIndex == index;
+    final isTargeted = _hoverIndex == index &&
+        _draggingIndex != null &&
+        _draggingIndex != index;
+
+    return DragTarget<int>(
+      onWillAcceptWithDetails: (d) => d.data != index,
+      onAcceptWithDetails: (d) {
+        final from = d.data;
+        final to = index;
+        setState(() { _draggingIndex = null; _hoverIndex = null; });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) widget.vm.moveEnabled(from, to);
+        });
       },
+      onMove: (_) {
+        if (_hoverIndex != index) setState(() => _hoverIndex = index);
+      },
+      onLeave: (_) {
+        if (_hoverIndex == index) setState(() => _hoverIndex = null);
+      },
+      builder: (context, candidate, _) {
+        return _buildDraggable(context, index, tile, isMetric, isDragging, isTargeted);
+      },
+    );
+  }
+
+  Widget _buildDraggable(BuildContext context, int index, GaugeTile tile, bool isMetric, bool isDragging, bool isTargeted) {
+    return AnimatedScale(
+      scale: isTargeted ? 1.05 : 1.0,
+      duration: const Duration(milliseconds: 150),
+      child: LongPressDraggable<int>(
+        data: index,
+        delay: const Duration(milliseconds: 400),
+        onDragStarted: () => setState(() => _draggingIndex = index),
+        onDragEnd: (_) {
+          if (mounted) {
+            setState(() {
+              _draggingIndex = null;
+              _hoverIndex = null;
+            });
+          }
+        },
+        onDraggableCanceled: (velocity, offset) {
+          if (mounted) {
+            setState(() {
+              _draggingIndex = null;
+              _hoverIndex = null;
+            });
+          }
+        },
+        feedback: SizedBox(
+          width: 160,
+          height: 160,
+          child: Material(
+            elevation: 12,
+            shadowColor: Colors.black.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(12),
+            child: _GaugeTile(tile: tile, isMetric: isMetric),
+          ),
+        ),
+        childWhenDragging: Opacity(
+          opacity: 0.25,
+          child: _GaugeTile(tile: tile, isMetric: isMetric),
+        ),
+        child: _GaugeTile(
+          tile: tile,
+          isMetric: isMetric,
+          onTap: isDragging
+              ? null
+              : () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => GaugeDetailView(pid: tile.pid),
+                  ),
+                ),
+        ),
+      ),
     );
   }
 }
@@ -186,12 +247,14 @@ class _GaugesGrid extends StatelessWidget {
 class _GaugeTile extends StatelessWidget {
   final GaugeTile tile;
   final bool isMetric;
+  final VoidCallback? onTap;
 
-  const _GaugeTile({required this.tile, required this.isMetric});
+  const _GaugeTile({required this.tile, required this.isMetric, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return AnimatedTapCard(
+      onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.all(8),
         child: LayoutBuilder(
@@ -208,17 +271,19 @@ class _GaugeTile extends StatelessWidget {
                     isMetric: isMetric,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  tile.pid.label,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      tile.pid.label,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
               ],
             );
           },
@@ -239,30 +304,25 @@ class _GaugesList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMetric =
-        context.watch<ConfigData>().units == MeasurementUnit.metric;
+    final isMetric = vm.isMetric;
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: vm.tiles.length + 1, // +1 for section header
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 8, top: 4),
-            child: Text(
-              'GAUGES',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-                letterSpacing: 0.8,
-              ),
-            ),
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+      sliver: SliverReorderableList(
+        onReorder: (oldIndex, newIndex) {
+          if (newIndex > oldIndex) newIndex -= 1;
+          vm.moveEnabled(oldIndex, newIndex);
+        },
+        itemCount: vm.tiles.length,
+        itemBuilder: (context, index) {
+          final tile = vm.tiles[index];
+          return ReorderableDelayedDragStartListener(
+            key: ValueKey(tile.id),
+            index: index,
+            child: _GaugeListRow(tile: tile, isMetric: isMetric),
           );
-        }
-        final tile = vm.tiles[index - 1];
-        return _GaugeListRow(tile: tile, isMetric: isMetric);
-      },
+        },
+      ),
     );
   }
 }
@@ -277,6 +337,7 @@ class _GaugeListRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final pid = tile.pid;
     final stats = tile.stats;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final valueText = stats != null
         ? pid.formattedValue(stats.latest.value, isMetric, includeUnits: true)
@@ -288,7 +349,15 @@ class _GaugeListRow extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 1),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero,
+        side: BorderSide(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.black.withValues(alpha: 0.08),
+          width: 0.5,
+        ),
+      ),
       elevation: 0,
       child: InkWell(
         onTap: () => Navigator.push(
@@ -330,8 +399,7 @@ class _GaugeListRow extends StatelessWidget {
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  Icon(Icons.chevron_right, color: Colors.grey.shade600, size: 20),
+                  const SizedBox(width: 8),
                 ],
               ),
             ],

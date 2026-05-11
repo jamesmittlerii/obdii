@@ -1,0 +1,29 @@
+name: Swift IOS Fastlane Workflow
+
+permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+
+on:
+  workflow_dispatch:
+#   push:
+#     branches: [ "main" ]
+#     paths-ignore:
+#       - "kotlin_obdii/**"
+#       - "flutter_obdii/**"
+#       - ".github/workflows/caller_flutter.yml"
+#       - ".github/workflows/caller_kotlin.yml"
+#       - ".github/workflows/sonarcloud.yml"
+#  pull_request:
+#    branches: [ "main" ]
+
+
+concurrency:
+  group: ${{ github.repository }}-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  call-reusable-workflow:
+    uses: jamesmittlerii/workflows/.github/workflows/iosnotest_bw.yml@main # Or a specific commit SHA or tag
+    secrets: inherit

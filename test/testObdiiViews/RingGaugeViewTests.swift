@@ -53,23 +53,52 @@ final class RingGaugeViewTests: XCTestCase {
         testPID = nil
     }
 
+    private func makeModel(
+        pid: OBDPID? = nil,
+        measurement: MeasurementResult? = nil
+    ) -> GaugesViewModel.RingDisplayData {
+        let pid = pid ?? testPID
+        let displayText =
+            measurement.map { pid!.formatted(measurement: $0, includeUnits: true) }
+            ?? "— \(pid!.units ?? "")"
+        let progress = measurement.map { _ in 0.5 }
+        let progressColor =
+            measurement.map { pid!.color(for: $0.value, unit: .metric) }
+            ?? .secondary
+
+        return GaugesViewModel.RingDisplayData(
+            displayText: displayText,
+            progress: progress,
+            progressColor: progressColor,
+            accessibilityLabel: pid!.name,
+            accessibilityValue: displayText
+        )
+    }
+
+    private func makeView(
+        pid: OBDPID? = nil,
+        measurement: MeasurementResult? = nil
+    ) -> RingGaugeView {
+        RingGaugeView(model: makeModel(pid: pid, measurement: measurement))
+    }
+
     
     func testHasGeometryReader() throws {
-        let view = RingGaugeView(pid: testPID, measurement: nil)
+        let view = makeView()
         
         let geometryReader = try view.inspect().find(ViewType.GeometryReader.self)
         XCTAssertNotNil(geometryReader, "RingGaugeView should use GeometryReader")
     }
     
     func testHasZStack() throws {
-        let view = RingGaugeView(pid: testPID, measurement: nil)
+        let view = makeView()
         
         let zStack = try view.inspect().find(ViewType.ZStack.self)
         XCTAssertNotNil(zStack, "RingGaugeView should contain ZStack for layering")
     }
     
     func testHasVStackForText() throws {
-        let view = RingGaugeView(pid: testPID, measurement: nil)
+        let view = makeView()
         
         let vStack = try view.inspect().find(ViewType.VStack.self)
         XCTAssertNotNil(vStack, "Should have VStack for text display")
@@ -77,7 +106,7 @@ final class RingGaugeViewTests: XCTestCase {
 
     
     func testDisplaysTextWhenNoMeasurement() throws {
-        let view = RingGaugeView(pid: testPID, measurement: nil)
+        let view = makeView()
         
         let texts = try view.inspect().findAll(ViewType.Text.self)
         XCTAssertGreaterThan(texts.count, 0, "Should display text even without measurement")
@@ -86,7 +115,7 @@ final class RingGaugeViewTests: XCTestCase {
     func testDisplaysTextWithMeasurement() throws {
         let unit = Unit(symbol: "rpm")
         let measurement = MeasurementResult(value: 2500.0, unit: unit)
-        let view = RingGaugeView(pid: testPID, measurement: measurement)
+        let view = makeView(measurement: measurement)
         
         let texts = try view.inspect().findAll(ViewType.Text.self)
         XCTAssertGreaterThanOrEqual(texts.count, 2, "Should display value and unit text")
@@ -95,7 +124,7 @@ final class RingGaugeViewTests: XCTestCase {
     func testTextContent() throws {
         let unit = Unit(symbol: "rpm")
         let measurement = MeasurementResult(value: 2500.0, unit: unit)
-        let view = RingGaugeView(pid: testPID, measurement: measurement)
+        let view = makeView(measurement: measurement)
         
         let texts = try view.inspect().findAll(ViewType.Text.self)
         
@@ -123,7 +152,7 @@ final class RingGaugeViewTests: XCTestCase {
             kind: .gauge
         )
         
-        let view = RingGaugeView(pid: pid, measurement: nil)
+        let view = makeView(pid: pid)
         XCTAssertNotNil(view, "Should initialize with only typical range")
     }
     
@@ -143,7 +172,7 @@ final class RingGaugeViewTests: XCTestCase {
             kind: .gauge
         )
         
-        let view = RingGaugeView(pid: pid, measurement: nil)
+        let view = makeView(pid: pid)
         XCTAssertNotNil(view, "Should initialize with all ranges defined")
     }
     
@@ -163,7 +192,7 @@ final class RingGaugeViewTests: XCTestCase {
             kind: .gauge
         )
         
-        let view = RingGaugeView(pid: pid, measurement: nil)
+        let view = makeView(pid: pid)
         XCTAssertNotNil(view, "Should initialize without ranges defined")
     }
 
@@ -189,7 +218,7 @@ final class RingGaugeViewTests: XCTestCase {
             kind: .gauge
         )
         
-        let view = RingGaugeView(pid: speedPID, measurement: measurement)
+        let view = makeView(pid: speedPID, measurement: measurement)
         let texts = try view.inspect().findAll(ViewType.Text.self)
         
         XCTAssertGreaterThan(texts.count, 0, "Should display with metric units")
@@ -216,7 +245,7 @@ final class RingGaugeViewTests: XCTestCase {
             kind: .gauge
         )
         
-        let view = RingGaugeView(pid: speedPID, measurement: measurement)
+        let view = makeView(pid: speedPID, measurement: measurement)
         let texts = try view.inspect().findAll(ViewType.Text.self)
         
         XCTAssertGreaterThan(texts.count, 0, "Should display with imperial units")
@@ -226,7 +255,7 @@ final class RingGaugeViewTests: XCTestCase {
     func testZeroValue() throws {
         let unit = Unit(symbol: "rpm")
         let measurement = MeasurementResult(value: 0.0, unit: unit)
-        let view = RingGaugeView(pid: testPID, measurement: measurement)
+        let view = makeView(measurement: measurement)
         
         let texts = try view.inspect().findAll(ViewType.Text.self)
         XCTAssertGreaterThan(texts.count, 0, "Should display zero value")
@@ -250,7 +279,7 @@ final class RingGaugeViewTests: XCTestCase {
         
         let unit = Unit(symbol: "°C")
         let measurement = MeasurementResult(value: -10.0, unit: unit)
-        let view = RingGaugeView(pid: tempPID, measurement: measurement)
+        let view = makeView(pid: tempPID, measurement: measurement)
         
         let texts = try view.inspect().findAll(ViewType.Text.self)
         XCTAssertGreaterThan(texts.count, 0, "Should display negative value")
@@ -259,7 +288,7 @@ final class RingGaugeViewTests: XCTestCase {
     func testMaxValue() throws {
         let unit = Unit(symbol: "rpm")
         let measurement = MeasurementResult(value: 8000.0, unit: unit)
-        let view = RingGaugeView(pid: testPID, measurement: measurement)
+        let view = makeView(measurement: measurement)
         
         let texts = try view.inspect().findAll(ViewType.Text.self)
         XCTAssertGreaterThan(texts.count, 0, "Should display max value")
@@ -283,7 +312,7 @@ final class RingGaugeViewTests: XCTestCase {
 
     
     func testRPMGauge() throws {
-        let view = RingGaugeView(pid: testPID, measurement: nil)
+        let view = makeView()
         XCTAssertNoThrow(try view.inspect(), "Should render RPM gauge")
     }
     
@@ -305,7 +334,7 @@ final class RingGaugeViewTests: XCTestCase {
         
         let unit = Unit(symbol: "°C")
         let measurement = MeasurementResult(value: 90.0, unit: unit)
-        let view = RingGaugeView(pid: tempPID, measurement: measurement)
+        let view = makeView(pid: tempPID, measurement: measurement)
         
         XCTAssertNoThrow(try view.inspect(), "Should render temperature gauge")
     }
@@ -328,7 +357,7 @@ final class RingGaugeViewTests: XCTestCase {
         
         let unit = Unit(symbol: "km/h")
         let measurement = MeasurementResult(value: 60.0, unit: unit)
-        let view = RingGaugeView(pid: speedPID, measurement: measurement)
+        let view = makeView(pid: speedPID, measurement: measurement)
         
         XCTAssertNoThrow(try view.inspect(), "Should render speed gauge")
     }

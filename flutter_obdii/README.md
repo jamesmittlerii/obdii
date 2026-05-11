@@ -2,6 +2,8 @@
 
 Flutter handset app for the OBDII project.
 
+Coverage improvement work is tracked in `docs/code-coverage-todos.md`.
+
 ## Architecture: Swift CarPlay + Flutter Handset
 
 This app keeps CarPlay native in Swift and uses Flutter for the handset UI.

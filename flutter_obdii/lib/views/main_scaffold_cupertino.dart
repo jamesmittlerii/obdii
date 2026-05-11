@@ -1,5 +1,9 @@
-import 'package:flutter/cupertino.dart';
+import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../widgets/check_engine_svg_icon.dart';
 import 'dashboard_view.dart';
 import 'diagnostics_view.dart';
 import 'fuel_status_view.dart';
@@ -14,16 +18,36 @@ class MainScaffoldCupertino extends StatefulWidget {
 }
 
 class _MainScaffoldCupertinoState extends State<MainScaffoldCupertino> {
+  static const _kSelectedTabKey = 'ui.selectedTab';
   late final CupertinoTabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _tabController = CupertinoTabController(initialIndex: 0);
+    _tabController.addListener(_onTabChanged);
+    _loadSelectedTab();
+  }
+
+  Future<void> _loadSelectedTab() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getInt(_kSelectedTabKey);
+    if (!mounted || saved == null) return;
+    _tabController.index = saved.clamp(0, 4);
+  }
+
+  Future<void> _persistSelectedTab(int index) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_kSelectedTabKey, index);
+  }
+
+  void _onTabChanged() {
+    unawaited(_persistSelectedTab(_tabController.index));
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }
@@ -33,45 +57,73 @@ class _MainScaffoldCupertinoState extends State<MainScaffoldCupertino> {
     return CupertinoTabScaffold(
       controller: _tabController,
       tabBar: CupertinoTabBar(
-        items: const [
-          BottomNavigationBarItem(
+        // Default is 50; a bit taller gives breathing room above/below icons+labels
+        // (especially on Windows where the bar can feel tight).
+        height: 58,
+        items: [
+          const BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.settings),
             label: 'Settings',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.speedometer),
             label: 'Gauges',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.drop),
             label: 'Fuel',
           ),
           BottomNavigationBarItem(
-            icon: Icon(CupertinoIcons.shield),
+            icon: CheckEngineSvgIcon(
+              size: 25,
+              color: CupertinoDynamicColor.resolve(CupertinoColors.inactiveGray, context),
+            ),
+            activeIcon: CheckEngineSvgIcon(
+              size: 27,
+              color: CupertinoTheme.of(context).primaryColor,
+            ),
             label: 'MIL',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.wrench),
             label: 'DTCs',
           ),
         ],
       ),
       tabBuilder: (context, index) {
-        final isActive = _tabController.index == index;
-        switch (index) {
-          case 0:
-            return const SettingsView();
-          case 1:
-            return GaugesView(isActive: isActive);
-          case 2:
-            return FuelStatusView(isActive: isActive);
-          case 3:
-            return MilStatusView(isActive: isActive);
-          case 4:
-            return DiagnosticsView(isActive: isActive);
-          default:
-            return const SettingsView();
-        }
+        return AnimatedBuilder(
+          animation: _tabController,
+          builder: (context, _) {
+            final isActive = _tabController.index == index;
+            
+            Widget view;
+            switch (index) {
+              case 0:
+                view = const SettingsView();
+                break;
+              case 1:
+                view = GaugesView(isActive: isActive);
+                break;
+              case 2:
+                view = FuelStatusView(isActive: isActive);
+                break;
+              case 3:
+                view = MilStatusView(isActive: isActive);
+                break;
+              case 4:
+                view = DiagnosticsView(isActive: isActive);
+                break;
+              default:
+                view = const SettingsView();
+                break;
+            }
+            
+            return SafeArea(
+              bottom: false,
+              child: view,
+            );
+          },
+        );
       },
     );
   }

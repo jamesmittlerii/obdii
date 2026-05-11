@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'config_data.dart';
@@ -9,10 +10,19 @@ import 'config_data.dart';
 class CarPlayBridge {
   CarPlayBridge._();
 
-  static const MethodChannel _channel =
-      MethodChannel('com.jamesmittlerii.obdii/carplay_bridge');
+  static const MethodChannel _channel = MethodChannel(
+    'com.jamesmittlerii.obdii/carplay_bridge',
+  );
 
-  static bool get _isSupportedPlatform => Platform.isIOS;
+  static bool? _debugIsSupportedPlatformOverride;
+
+  @visibleForTesting
+  static set debugIsSupportedPlatformOverride(bool? value) {
+    _debugIsSupportedPlatformOverride = value;
+  }
+
+  static bool get _isSupportedPlatform =>
+      _debugIsSupportedPlatformOverride ?? Platform.isIOS;
 
   static Future<void> settingsChanged({
     required MeasurementUnit units,
@@ -37,7 +47,10 @@ class CarPlayBridge {
     await _invoke('gaugePreferencesChanged');
   }
 
-  static Future<void> _invoke(String method, [Map<String, Object>? arguments]) async {
+  static Future<void> _invoke(
+    String method, [
+    Map<String, Object>? arguments,
+  ]) async {
     try {
       await _channel.invokeMethod<void>(method, arguments);
     } on PlatformException {

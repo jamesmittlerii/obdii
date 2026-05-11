@@ -3,7 +3,7 @@ import 'package:flutter_obd2/flutter_obd2.dart' as obd2lib;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_obdii/core/obd_connection_manager.dart';
-import 'package:flutter_obdii/models/obdii_pid.dart';
+import 'package:flutter_obdii/core/obdiipid.dart';
 import 'package:flutter_obdii/views/ring_gauge_widget.dart';
 
 ObdiiPid _testPid({

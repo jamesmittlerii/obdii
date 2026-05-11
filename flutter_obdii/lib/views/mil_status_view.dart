@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../viewmodels/mil_status_viewmodel.dart';
+import '../widgets/check_engine_svg_icon.dart';
 
 class MilStatusView extends StatefulWidget {
   final bool isActive;
@@ -43,14 +44,10 @@ class _MilStatusViewState extends State<MilStatusView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('MIL Status'),
-        centerTitle: false,
-      ),
       body: Consumer<MilStatusViewModel>(
         builder: (context, vm, _) {
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
             children: [
               // ── Malfunction Indicator Lamp ───────────────
               _sectionHeader(context, 'Malfunction Indicator Lamp'),
@@ -99,10 +96,9 @@ class _MilStatusViewState extends State<MilStatusView> {
     } else if (vm.hasStatus) {
       final milOn = vm.status!.milOn;
       return ListTile(
-        leading: Icon(
-          Icons.build,
-          color: milOn ? Colors.orange : Colors.blue,
+        leading: CheckEngineSvgIcon(
           size: 28,
+          color: milOn ? Colors.orange : Colors.blue,
         ),
         title: Text(
           vm.headerText,

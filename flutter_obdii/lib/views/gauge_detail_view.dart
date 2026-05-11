@@ -5,9 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../core/config_data.dart';
-import '../core/pid_interest_registry.dart';
-import '../models/obdii_pid.dart';
+import '../core/obdiipid.dart';
 import '../viewmodels/gauge_detail_viewmodel.dart';
 
 class GaugeDetailView extends StatelessWidget {
@@ -31,45 +29,20 @@ class _GaugeDetailBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _GaugeDetailInterestScope(pid: pid);
-  }
-}
-
-class _GaugeDetailInterestScope extends StatefulWidget {
-  final ObdiiPid pid;
-
-  const _GaugeDetailInterestScope({required this.pid});
-
-  @override
-  State<_GaugeDetailInterestScope> createState() =>
-      _GaugeDetailInterestScopeState();
-}
-
-class _GaugeDetailInterestScopeState extends State<_GaugeDetailInterestScope> {
-  late final String _interestToken;
-
-  @override
-  void initState() {
-    super.initState();
-    final registry = PidInterestRegistry.instance;
-    _interestToken = registry.makeToken();
-    registry.replace({widget.pid.pidCommand}, _interestToken);
-  }
-
-  @override
-  void dispose() {
-    PidInterestRegistry.instance.clear(_interestToken);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
     final vm = context.watch<GaugeDetailViewModel>();
-    final isMetric = context.watch<ConfigData>().units == MeasurementUnit.metric;
-    final pid = widget.pid;
+    final isMetric = vm.isMetric;
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(
+            Icons.chevron_left,
+            color: Theme.of(context).colorScheme.primary,
+            size: 28,
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        titleSpacing: 0,
         title: Text(pid.name),
       ),
       body: ListView(

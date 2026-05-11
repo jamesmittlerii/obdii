@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_obdii/core/config_data.dart';
 import 'package:flutter_obdii/core/pid_interest_registry.dart';
 import 'package:flutter_obdii/core/pid_store.dart';
-import 'package:flutter_obdii/models/obdii_pid.dart';
+import 'package:flutter_obdii/core/obdiipid.dart';
 
 class _SeededPidStore extends ChangeNotifier implements PidStore {
   final List<ObdiiPid> _pids;
@@ -209,7 +209,7 @@ void main() {
     final r = PidInterestRegistry();
     final t = r.makeToken();
     r.replace({'010C'}, t);
-    await r.clear(t);
+    r.clear(t);
     await Future<void>.delayed(const Duration(milliseconds: 110));
     expect(r.interested.contains('010C'), isFalse);
   });
@@ -220,7 +220,7 @@ void main() {
     final t2 = r.makeToken();
     r.replace({'010C'}, t1);
     r.replace({'010C'}, t2);
-    await r.clear(t1);
+    r.clear(t1);
     await Future<void>.delayed(const Duration(milliseconds: 110));
     expect(r.interested.contains('010C'), isTrue);
   });

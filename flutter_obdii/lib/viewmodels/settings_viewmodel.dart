@@ -4,10 +4,13 @@
 // unit switching, and the connect/disconnect button action.
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/services.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../core/config_data.dart';
+import '../core/logger.dart';
 import '../core/obd_connection_manager.dart';
 import 'base_view_model.dart';
 
@@ -23,6 +26,9 @@ class SettingsViewModel extends BaseViewModel {
   MeasurementUnit units;
 
   OBDConnectionState connectionState;
+
+  String _appVersion = '';
+  String get appVersion => _appVersion;
 
   // Debounce timers for WiFi host/port (mirrors Swift Combine debounce .seconds(0.5))
   Timer? _hostDebounce;
@@ -45,6 +51,13 @@ class SettingsViewModel extends BaseViewModel {
         connectionState = (connection ?? OBDConnectionManager.instance).connectionState {
     _bindConnectionState();
     _bindExternalPublishers();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    _appVersion = '${info.appName} v${info.version} build:${info.buildNumber}';
+    notifyListeners();
   }
 
   // ── Binding ─────────────────────────────────────
@@ -128,7 +141,9 @@ class SettingsViewModel extends BaseViewModel {
   // ── Connect button ───────────────────────────────
 
   bool get isConnectButtonDisabled =>
-      connectionState == OBDConnectionState.connecting;
+      connectionState == OBDConnectionState.connecting ||
+      connectionState == OBDConnectionState.connectedToAdapter ||
+      connectionState == OBDConnectionState.settingUpVehicle;
 
   void handleConnectionButtonTap() {
     switch (connectionState) {
@@ -140,9 +155,38 @@ class SettingsViewModel extends BaseViewModel {
         _connection.disconnect();
         break;
       case OBDConnectionState.connecting:
+      case OBDConnectionState.connectedToAdapter:
+      case OBDConnectionState.settingUpVehicle:
         // Do nothing while connecting
         break;
     }
+  }
+
+  // ── Diagnostics ──────────────────────────────────
+
+  Future<({String fileName, List<int> bytes})> prepareLogExport() async {
+    final info = await PackageInfo.fromPlatform();
+    final history = ObdLogger.instance.getHistory().map((e) => e.toJson()).toList();
+
+    final logs = {
+      'metadata': {
+        'timestamp': DateTime.now().toIso8601String(),
+        'appVersion': '${info.version}+${info.buildNumber}',
+        'connectionType': _config.connectionType.toString(),
+        'units': _config.units.toString(),
+        'connectionState': _connection.connectionState.toString(),
+        'wifiHost': _config.wifiHost,
+        'wifiPort': _config.wifiPort,
+      },
+      'entries': history,
+    };
+
+    final jsonStr = const JsonEncoder.withIndent('  ').convert(logs);
+    final bytes = utf8.encode(jsonStr);
+    final fileName =
+        '${info.appName.replaceAll(' ', '_')}-v${info.version}-logs.json';
+
+    return (fileName: fileName, bytes: bytes);
   }
 
   // ── Number formatter (for port text field) ───────

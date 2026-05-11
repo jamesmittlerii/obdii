@@ -7,16 +7,21 @@ import 'dart:async';
 
 import '../core/config_data.dart';
 import '../core/obd_connection_manager.dart';
-import '../models/obdii_pid.dart';
+import '../core/pid_interest_registry.dart';
+import '../core/obdiipid.dart';
 import 'base_view_model.dart';
 
 class GaugeDetailViewModel extends BaseViewModel {
   final ObdiiPid pid;
   final PidStatsProviding _statsProvider;
   final UnitsProviding _unitsProvider;
+  final PidInterestRegistry _interestRegistry;
+  final String _interestToken;
 
   PIDStats? _stats;
   PIDStats? get stats => _stats;
+
+  bool get isMetric => _unitsProvider.units == MeasurementUnit.metric;
 
   StreamSubscription? _statsSub;
   StreamSubscription? _unitsSub;
@@ -25,8 +30,14 @@ class GaugeDetailViewModel extends BaseViewModel {
     required this.pid,
     PidStatsProviding? statsProvider,
     UnitsProviding? unitsProvider,
+    PidInterestRegistry? interestRegistry,
   })  : _statsProvider = statsProvider ?? OBDConnectionManager.instance,
-        _unitsProvider = unitsProvider ?? ConfigData.instance {
+        _unitsProvider = unitsProvider ?? ConfigData.instance,
+        _interestRegistry = interestRegistry ?? PidInterestRegistry.instance,
+        _interestToken = (interestRegistry ?? PidInterestRegistry.instance).makeToken() {
+    // Register interest for this PID
+    _interestRegistry.replace({pid.pidCommand}, _interestToken);
+
     // Seed with current value immediately
     _stats = _statsProvider.statsFor(pid.pidCommand);
     _bindPidStats();
@@ -65,6 +76,7 @@ class GaugeDetailViewModel extends BaseViewModel {
   void dispose() {
     _statsSub?.cancel();
     _unitsSub?.cancel();
+    _interestRegistry.clear(_interestToken);
     super.dispose();
   }
 }

@@ -6,8 +6,11 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:flutter_obdii/core/config_data.dart';
+import 'package:flutter_obdii/core/constants.dart';
+import 'package:flutter_obdii/core/logger.dart';
 import 'package:flutter_obdii/core/obd_connection_manager.dart';
 import 'package:flutter_obdii/viewmodels/settings_viewmodel.dart';
 
@@ -17,7 +20,7 @@ import 'package:flutter_obdii/viewmodels/settings_viewmodel.dart';
 
 class MockSettingsConfig implements SettingsConfigProviding {
   @override
-  String wifiHost = '192.168.0.10';
+  String wifiHost = defaultWifiHost;
   @override
   int wifiPort = 35000;
   @override
@@ -86,17 +89,27 @@ class MockOBDConnection implements OBDConnectionControlling {
 // ─────────────────────────────────────────────
 
 void main() {
+  ObdLogger.instance.mutesConsole = true;
   late MockSettingsConfig mockConfig;
   late MockOBDConnection mockConn;
   late SettingsViewModel viewModel;
 
   setUp(() {
+    PackageInfo.setMockInitialValues(
+      appName: 'OBDII',
+      packageName: 'com.rheosoft.obdii',
+      version: '1.0.0',
+      buildNumber: '1',
+      buildSignature: '',
+    );
     mockConfig = MockSettingsConfig();
     mockConn = MockOBDConnection();
     viewModel = SettingsViewModel(config: mockConfig, connection: mockConn);
   });
 
-  tearDown(() {
+  tearDown(() async {
+    // Wait a microtask to allow async constructor work (_loadAppVersion) to finish
+    await Future.delayed(Duration.zero);
     viewModel.dispose();
     mockConfig.dispose();
     mockConn.dispose();
@@ -106,7 +119,7 @@ void main() {
 
   test('testInitializationSeedsFromConfigAndConnection', () {
     expect(viewModel, isNotNull);
-    expect(viewModel.wifiHost, '192.168.0.10');
+    expect(viewModel.wifiHost, defaultWifiHost);
     expect(viewModel.wifiPort, 35000);
     expect(viewModel.autoConnectToOBD, false);
     expect(viewModel.connectionType, ConnectionType.bluetooth);
@@ -213,12 +226,13 @@ void main() {
     expect(viewModel.isConnectButtonDisabled, isFalse);
   });
 
-  test('testIsconnectbuttondisabledTrueWhenConnecting', () {
+  test('testIsconnectbuttondisabledTrueWhenConnecting', () async {
     final vm2 = SettingsViewModel(
       config: MockSettingsConfig(),
       connection: MockOBDConnection()..connectionState = OBDConnectionState.connecting,
     );
     expect(vm2.isConnectButtonDisabled, isTrue);
+    await Future.delayed(Duration.zero);
     vm2.dispose();
   });
 
