@@ -342,7 +342,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Android UI & Kotlin Coverage
-        if: needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true'
+        # if: needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true'
         uses: reactivecircus/android-emulator-runner@v2
         env:
           KOTLINOBD2_DIR: ${{ github.workspace }}/SwiftOBD2/kotlinobd2
@@ -354,7 +354,7 @@ jobs:
           script: cd kotlin_obdii && chmod +x gradlew && ./gradlew :coreApp:test :coreApp:jacocoTestReport :androidApp:createDebugCoverageReport
 
       - name: Flutter Coverage
-        if: needs.filter.outputs.flutter == 'true' || needs.filter.outputs.pipeline == 'true'
+        # if: needs.filter.outputs.flutter == 'true' || needs.filter.outputs.pipeline == 'true'
         run: |
           cd flutter_obdii
           flutter pub get
