@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../widgets/check_engine_icon.dart';
 import 'dashboard_view.dart';
@@ -15,16 +18,36 @@ class MainScaffoldCupertino extends StatefulWidget {
 }
 
 class _MainScaffoldCupertinoState extends State<MainScaffoldCupertino> {
+  static const _kSelectedTabKey = 'ui.selectedTab';
   late final CupertinoTabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _tabController = CupertinoTabController(initialIndex: 0);
+    _tabController.addListener(_onTabChanged);
+    _loadSelectedTab();
+  }
+
+  Future<void> _loadSelectedTab() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getInt(_kSelectedTabKey);
+    if (!mounted || saved == null) return;
+    _tabController.index = saved.clamp(0, 4);
+  }
+
+  Future<void> _persistSelectedTab(int index) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_kSelectedTabKey, index);
+  }
+
+  void _onTabChanged() {
+    unawaited(_persistSelectedTab(_tabController.index));
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }
