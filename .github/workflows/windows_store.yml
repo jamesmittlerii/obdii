@@ -30,6 +30,10 @@ jobs:
           submodules: recursive
           token: ${{ secrets.PAT_TOKEN }}
 
+      # Single source: release-version.txt (see scripts/sync_release_version.py). workflow_dispatch only.
+      - name: Sync release marketing version
+        run: python scripts/sync_release_version.py
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -61,10 +65,9 @@ jobs:
             throw "Could not parse pubspec version from $pubspecPath"
           }
 
-          # MSIX needs a.b.c.d (each 0–65535). Map pubspec major.minor.patch+build → a.b.c.d (build = revision).
-          $build = [int]$versionMatch.Groups[4].Value
-          if ($build -gt 65535) { throw "pubspec +build ($build) exceeds MSIX max revision 65535" }
-          $msixVersion = "$($versionMatch.Groups[1].Value).$($versionMatch.Groups[2].Value).$($versionMatch.Groups[3].Value).$build"
+          # MSIX uses a.b.c.d. Partner Center rejects non-zero revision (fourth segment); must be *.0.
+          # Store monotonicity comes from bumping major/minor/patch in pubspec before release — not +build.
+          $msixVersion = "$($versionMatch.Groups[1].Value).$($versionMatch.Groups[2].Value).$($versionMatch.Groups[3].Value).0"
           $updated = [regex]::Replace($content, '(?m)^(\s*)msix_version:\s*.*$', "`${1}msix_version: $msixVersion", 1)
           if ($updated -eq $content) {
             throw "Could not find msix_version in $pubspecPath"

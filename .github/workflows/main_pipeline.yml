@@ -40,6 +40,7 @@ jobs:
             pipeline:
               - '.github/workflows/main_pipeline.yml'
               - 'scripts/**'
+              - 'release-version.txt'
               - 'sonar-project.properties'
 
   version_bump:
@@ -54,6 +55,17 @@ jobs:
           token: ${{ secrets.PAT_TOKEN }}
           fetch-depth: 0
 
+      # Marketing line: bump patch when a product tree changed (so a later manual Windows Store run matches
+      # what TestFlight/Play already shipped). Pipeline-only changes sync without bumping. [skip ci] on the
+      # version commit avoids a retrigger loop from flutter_obdii/pubspec.yaml edits.
+      - name: Sync release marketing version
+        run: |
+          ARGS=""
+          if [ "${{ needs.filter.outputs.kotlin }}" = "true" ] || [ "${{ needs.filter.outputs.flutter }}" = "true" ] || [ "${{ needs.filter.outputs.swift }}" = "true" ]; then
+            ARGS="--bump-release-patch"
+          fi
+          python3 scripts/sync_release_version.py $ARGS
+
       - name: Version Kotlin
         if: needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true'
         working-directory: kotlin_obdii
@@ -66,7 +78,7 @@ jobs:
           if not m_code: sys.exit(1)
           new_code = int(m_code.group(1)) + 1
           text = re.sub(r"(^\s*versionCode\s*=\s*)\d+(\s*$)", r"\g<1>" + str(new_code) + r"\g<2>", text, count=1, flags=re.MULTILINE)
-          # versionName (marketing semver) is bumped manually on release; Play requires versionCode only.
+          # versionName comes from release-version.txt via sync; Play requires versionCode bump only.
           path.write_text(text, encoding="utf-8")
           PY
 
@@ -81,7 +93,7 @@ jobs:
           m = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$", text, re.MULTILINE)
           if not m: sys.exit(1)
           major, minor, patch, build = map(int, m.groups())
-          # Bump +build only for store monotonicity; patch is bumped manually on release.
+          # Bump +build only for store monotonicity; marketing patch comes from release-version.txt (CI bumps file when a product changes).
           new_version = f"{major}.{minor}.{patch}+{build + 1}"
           updated = re.sub(r"^version:\s*.*$", f"version: {new_version}", text, count=1, flags=re.MULTILINE)
           path.write_text(updated, encoding="utf-8")

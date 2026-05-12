@@ -48,6 +48,10 @@ jobs:
           git checkout "${{ github.ref_name }}"
           git reset --hard "origin/${{ github.ref_name }}"
 
+      - name: Sync release marketing version
+        if: github.event_name == 'push'
+        run: python3 scripts/sync_release_version.py
+
       - name: Bump Flutter version
         if: github.event_name == 'push'
         working-directory: flutter_obdii
@@ -60,7 +64,8 @@ jobs:
           if not m:
               sys.exit(1)
           major, minor, patch, build = map(int, m.groups())
-          new_version = f"{major}.{minor}.{patch + 1}+{build + 1}"
+          # +build only for store monotonicity; marketing patch comes from release-version.txt via sync.
+          new_version = f"{major}.{minor}.{patch}+{build + 1}"
           updated = re.sub(
               r"^version:\s*.*$",
               f"version: {new_version}",
@@ -76,7 +81,7 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add flutter_obdii/pubspec.yaml
+          git add flutter_obdii/pubspec.yaml kotlin_obdii/androidApp/build.gradle.kts obdii.xcodeproj/project.pbxproj
           git commit -m "ci: bump version [skip ci]" || echo "No changes"
           git push origin HEAD:${{ github.ref_name }}
 
@@ -109,6 +114,9 @@ jobs:
           ref: ${{ needs.prepare.outputs.commit_sha }}
           submodules: recursive
           token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Sync release marketing version
+        run: python3 scripts/sync_release_version.py
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -184,6 +192,9 @@ jobs:
           submodules: recursive
           token: ${{ secrets.PAT_TOKEN }}
 
+      - name: Sync release marketing version
+        run: python scripts/sync_release_version.py
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -211,10 +222,9 @@ jobs:
             throw "Could not parse pubspec version from $pubspecPath"
           }
 
-          # MSIX needs a.b.c.d (each 0–65535). Map pubspec major.minor.patch+build → a.b.c.d (build = revision).
-          $build = [int]$versionMatch.Groups[4].Value
-          if ($build -gt 65535) { throw "pubspec +build ($build) exceeds MSIX max revision 65535" }
-          $msixVersion = "$($versionMatch.Groups[1].Value).$($versionMatch.Groups[2].Value).$($versionMatch.Groups[3].Value).$build"
+          # MSIX uses a.b.c.d. Partner Center rejects non-zero revision (fourth segment); must be *.0.
+          # Store monotonicity comes from bumping major/minor/patch in pubspec before release — not +build.
+          $msixVersion = "$($versionMatch.Groups[1].Value).$($versionMatch.Groups[2].Value).$($versionMatch.Groups[3].Value).0"
           $updated = [regex]::Replace($content, '(?m)^(\s*)msix_version:\s*.*$', "`${1}msix_version: $msixVersion", 1)
           if ($updated -eq $content) {
             throw "Could not find msix_version in $pubspecPath"
@@ -320,6 +330,9 @@ jobs:
           ref: ${{ needs.prepare.outputs.commit_sha }}
           submodules: recursive
           token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Sync release marketing version
+        run: python3 scripts/sync_release_version.py
 
       - name: Set up Java
         uses: actions/setup-java@v5

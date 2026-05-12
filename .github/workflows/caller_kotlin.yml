@@ -38,6 +38,9 @@ jobs:
           git checkout "${{ github.ref_name }}"
           git reset --hard "origin/${{ github.ref_name }}"
 
+      - name: Sync release marketing version
+        run: python3 scripts/sync_release_version.py
+
       - name: Bump Kotlin version
         if: github.event_name == 'push'
         working-directory: kotlin_obdii
@@ -46,19 +49,13 @@ jobs:
           import pathlib, re, sys
           path = pathlib.Path("androidApp/build.gradle.kts")
           text = path.read_text(encoding="utf-8")
-          
+
           m_code = re.search(r"^\s*versionCode\s*=\s*(\d+)\s*$", text, re.MULTILINE)
           if not m_code:
               sys.exit(1)
           new_code = int(m_code.group(1)) + 1
           text = re.sub(r"(^\s*versionCode\s*=\s*)\d+(\s*$)", r"\g<1>" + str(new_code) + r"\g<2>", text, count=1, flags=re.MULTILINE)
-          
-          m_name = re.search(r"^\s*versionName\s*=\s*\"(\d+)\.(\d+)\.(\d+)\"\s*$", text, re.MULTILINE)
-          if m_name:
-              major, minor, patch = map(int, m_name.groups())
-              new_name = f"{major}.{minor}.{patch + 1}"
-              text = re.sub(r"(^\s*versionName\s*=\s*\")\d+\.\d+\.\d+(\"\s*$)", r"\g<1>" + new_name + r"\g<2>", text, count=1, flags=re.MULTILINE)
-          
+
           path.write_text(text, encoding="utf-8")
           PY
 
@@ -67,7 +64,7 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add kotlin_obdii/androidApp/build.gradle.kts
+          git add kotlin_obdii/androidApp/build.gradle.kts flutter_obdii/pubspec.yaml obdii.xcodeproj/project.pbxproj
           git commit -m "ci: bump kotlin version [skip ci]" || echo "No changes"
           git push origin HEAD:${{ github.ref_name }}
 
@@ -89,6 +86,9 @@ jobs:
           ref: ${{ needs.prepare.outputs.commit_sha }}
           submodules: recursive
           token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Sync release marketing version
+        run: python3 scripts/sync_release_version.py
 
       - name: Checkout SwiftOBD2
         uses: actions/checkout@v5
