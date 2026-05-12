@@ -61,7 +61,10 @@ jobs:
             throw "Could not parse pubspec version from $pubspecPath"
           }
 
-          $msixVersion = "$($versionMatch.Groups[1].Value).$($versionMatch.Groups[2].Value).$($versionMatch.Groups[3].Value).0"
+          # MSIX needs a.b.c.d (each 0–65535). Map pubspec major.minor.patch+build → a.b.c.d (build = revision).
+          $build = [int]$versionMatch.Groups[4].Value
+          if ($build -gt 65535) { throw "pubspec +build ($build) exceeds MSIX max revision 65535" }
+          $msixVersion = "$($versionMatch.Groups[1].Value).$($versionMatch.Groups[2].Value).$($versionMatch.Groups[3].Value).$build"
           $updated = [regex]::Replace($content, '(?m)^(\s*)msix_version:\s*.*$', "`${1}msix_version: $msixVersion", 1)
           if ($updated -eq $content) {
             throw "Could not find msix_version in $pubspecPath"
