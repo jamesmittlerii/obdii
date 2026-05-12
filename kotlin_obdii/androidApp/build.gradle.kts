@@ -20,8 +20,8 @@ android {
         applicationId = "com.rheosoft.obdiik"
         minSdk = 29
         targetSdk = 36
-        versionCode = 212
-        versionName = "0.4.17"
+        versionCode = 213
+        versionName = "0.4.18"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
