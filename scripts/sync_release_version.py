@@ -28,7 +28,8 @@ GRADLE = ROOT / "kotlin_obdii" / "androidApp" / "build.gradle.kts"
 PBXPROJ = ROOT / "obdii.xcodeproj" / "project.pbxproj"
 
 VERSION_LINE = re.compile(
-    r"^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)[ \t]*$",
+    # Allow \r before $ so pubspec matches on Windows (CRLF) checkouts.
+    r"^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)[ \t\r]*$",
     re.MULTILINE,
 )
 MARKETING_OBDII = re.compile(
@@ -36,7 +37,7 @@ MARKETING_OBDII = re.compile(
     re.MULTILINE,
 )
 VERSION_NAME = re.compile(
-    r"(^\s*versionName\s*=\s*\")(\d+\.\d+\.\d+)(\"\s*$)",
+    r"(^\s*versionName\s*=\s*\")(\d+\.\d+\.\d+)(\"[ \t\r]*$)",
     re.MULTILINE,
 )
 
