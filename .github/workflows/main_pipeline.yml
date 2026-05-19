@@ -353,6 +353,12 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Increase ADB Timeouts
+        run: |
+          echo "ADB_SERVER_SOCKET=tcp:localhost:5037" >> $GITHUB_ENV
+          # Give ADB more room to process larger file syncs
+          adb shell settings put global activity_manager_constants max_cached_processes=20
+          
       - name: Android UI & Kotlin Coverage
         # if: needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true'
         uses: reactivecircus/android-emulator-runner@v2
@@ -363,6 +369,7 @@ jobs:
           target: google_apis
           arch: x86_64
           disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-audio -no-boot-anim
           script: cd kotlin_obdii && chmod +x gradlew && ./gradlew :coreApp:test :coreApp:jacocoTestReport :androidApp:createDebugCoverageReport
 
       - name: Flutter Coverage
