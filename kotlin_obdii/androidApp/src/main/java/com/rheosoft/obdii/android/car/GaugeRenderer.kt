@@ -43,15 +43,17 @@ object GaugeRenderer {
 
         // Draw Value
         textPaint.color = Color.WHITE
-        textPaint.textSize = size * 0.28f
+        textPaint.textSize = size * 0.36f
         // Center text vertically
         val valueY = (size / 2f) - ((textPaint.descent() + textPaint.ascent()) / 2f)
         canvas.drawText(gauge.valueLine, size / 2f, valueY - (size * 0.05f), textPaint)
         
         // Draw Unit
-        textPaint.color = Color.LTGRAY
-        textPaint.textSize = size * 0.12f
-        canvas.drawText(gauge.unitLine, size / 2f, valueY + (size * 0.15f), textPaint)
+        if (gauge.unitLine.isNotEmpty() && !gauge.unitLine.equals(gauge.pid.label, ignoreCase = true)) {
+            textPaint.color = Color.LTGRAY
+            textPaint.textSize = size * 0.12f
+            canvas.drawText(gauge.unitLine, size / 2f, valueY + (size * 0.15f), textPaint)
+        }
 
         return CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build()
     }

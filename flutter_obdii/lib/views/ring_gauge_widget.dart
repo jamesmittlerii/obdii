@@ -77,12 +77,12 @@ class RingGaugeWidget extends StatelessWidget {
                       Text(
                         valueLine,
                         style: const TextStyle(
-                          fontSize: 18,
+                          fontSize: 26,
                           fontWeight: FontWeight.bold,
                           height: 1.0,
                         ),
                       ),
-                      if (unitLine.isNotEmpty)
+                      if (unitLine.isNotEmpty && unitLine.toLowerCase() != pid.label.toLowerCase())
                         Text(
                           unitLine,
                           style: TextStyle(

@@ -1,4 +1,4 @@
-package com.rheosoft.obdii.android.ui.screens
+package com.rheosoft.obdii.windows.ui.screens
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
