@@ -438,8 +438,6 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
             return Parser.parseMessages(frames).firstOrNull()?.data ?: emptyList()
         }
 
-        val singleFrame = frames.firstOrNull { it.type == FrameType.SingleFrame } ?: return emptyList()
-        val hasCanHeader = singleFrame.raw.substringBefore(' ').length == 3
-        return if (hasCanHeader) singleFrame.data.drop(1) else singleFrame.data
+        return Parser.parseMessages(frames).firstOrNull()?.data ?: emptyList()
     }
 }

@@ -70,7 +70,7 @@ dependencies {
     if (findProject(":kotlinobd2") != null) {
         implementation(project(":kotlinobd2"))
     } else {
-        implementation("com.github.jamesmittlerii:SwiftOBD2:0.1.3")
+        implementation("com.github.jamesmittlerii:SwiftOBD2:0.1.6")
     }
     implementation("androidx.core:core-ktx:1.18.0")
     implementation("androidx.activity:activity-compose:1.13.0")
@@ -94,7 +94,28 @@ dependencies {
 
 tasks.register<Exec>("runDebug") {
     group = "application"
-    description = "Installs and launches the debug app."
+    description =
+        "Installs and launches the debug app. With multiple devices, set ANDROID_SERIAL or -PandroidSerial=<id>."
     dependsOn("installDebug")
-    commandLine("adb", "shell", "am", "start", "-n", "com.rheosoft.obdiik/com.rheosoft.obdii.android.MainActivity")
+    val serial =
+        (findProperty("androidSerial") as String?)?.takeIf { it.isNotBlank() }
+            ?: System.getenv("ANDROID_SERIAL")?.takeIf { it.isNotBlank() }
+    commandLine(
+        buildList {
+            add("adb")
+            if (serial != null) {
+                add("-s")
+                add(serial)
+            }
+            addAll(
+                listOf(
+                    "shell",
+                    "am",
+                    "start",
+                    "-n",
+                    "com.rheosoft.obdiik/com.rheosoft.obdii.android.MainActivity",
+                ),
+            )
+        },
+    )
 }
