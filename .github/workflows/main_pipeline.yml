@@ -3,6 +3,9 @@ name: Main CI/CD Pipeline
 on:
   push:
     branches: ["main"]
+    # Manual Windows Store deploy config only — do not run full CI/version bump.
+    paths-ignore:
+      - ".github/workflows/windows_store.yml"
   workflow_dispatch:
 
 concurrency:

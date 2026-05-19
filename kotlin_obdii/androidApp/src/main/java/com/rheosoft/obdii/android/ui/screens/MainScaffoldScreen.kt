@@ -2,7 +2,11 @@ package com.rheosoft.obdii.android.ui.screens
 
 import android.content.Context
 import androidx.core.content.edit
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.LocalGasStation
@@ -28,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.rheosoft.obdii.android.R
 import com.rheosoft.obdii.bootstrap.AppBootstrap
 import com.rheosoft.obdii.core.ConfigData
@@ -177,9 +182,12 @@ fun KotlinObdiiApp(permissionsReady: Boolean = true) {
 @Composable
 private fun ObdiiBottomNavigation(selected: Int, onSelectedChange: (Int) -> Unit) {
     NavigationBar(
+        modifier = Modifier
+            .navigationBarsPadding()
+            .height(56.dp),
         containerColor = Color(0xFFF1F3F8),
         tonalElevation = 8.dp,
-        windowInsets = NavigationBarDefaults.windowInsets,
+        windowInsets = WindowInsets(0, 0, 0, 0),
     ) {
         MainScaffoldScreenModel.destinations.forEachIndexed { idx, label ->
             NavigationBarItem(
@@ -190,7 +198,7 @@ private fun ObdiiBottomNavigation(selected: Int, onSelectedChange: (Int) -> Unit
                         Icon(
                             painter = painterResource(id = R.drawable.ic_check_engine),
                             contentDescription = label,
-                            modifier = Modifier.padding(top = 2.dp) // Optical alignment
+                            modifier = Modifier.padding(top = 2.dp).size(28.dp) // Optical alignment
                         )
                     } else {
                         Icon(
@@ -201,10 +209,11 @@ private fun ObdiiBottomNavigation(selected: Int, onSelectedChange: (Int) -> Unit
                                 else -> Icons.Outlined.Build
                             },
                             contentDescription = label,
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                 },
-                label = { Text(label) },
+                label = { Text(label, fontSize = 11.sp) },
             )
         }
     }
