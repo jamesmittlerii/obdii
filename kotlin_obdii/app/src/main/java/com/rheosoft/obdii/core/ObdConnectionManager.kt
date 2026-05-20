@@ -346,11 +346,8 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
 
     private fun startContinuousUpdatesInternal(pids: Set<String>) {
         val enabledNow = filterSupportedPids(pids)
-        if (enabledNow.isEmpty()) {
-            streamJob?.cancel()
-            streamJob = null
-            lastStreamingPids = emptySet()
-            obdInfo("No interested PIDs to monitor.", LogCategory.Service)
+        if (shouldStopContinuousUpdates(enabledNow)) {
+            stopContinuousUpdates()
             return
         }
         if (enabledNow == lastStreamingPids) return
@@ -359,36 +356,51 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
         lastStreamingPids = enabledNow
         obdInfo("Starting continuous updates for ${enabledNow.size} PIDs.", LogCategory.Service)
         streamJob = managerScope.launch {
-            val statsAccumulator = _pidStats.toMutableMap()
-            var cycleDelayMs = 1_000L
-            var consecutiveFailures = 0
-            while (isActive && _connectionState == OBDConnectionState.connected) {
-                var hadFailure = false
-                for (pid in enabledNow) {
-                    val lines = runCatching { service.sendCommand(pid) }.getOrNull()
-                    if (lines == null) {
-                        hadFailure = true
-                        consecutiveFailures++
-                        if (consecutiveFailures >= MAX_CONSECUTIVE_STREAM_FAILURES) {
-                            handleContinuousUpdateFailure(consecutiveFailures)
-                            return@launch
-                        }
-                        delay(PID_INTER_COMMAND_SETTLE_MS)
-                        continue
-                    }
-                    consecutiveFailures = 0
-                    handlePidResponse(pid, lines, statsAccumulator)
-                    delay(PID_INTER_COMMAND_SETTLE_MS)
-                }
-                cycleDelayMs = if (hadFailure) {
-                    minOf(4_000L, (cycleDelayMs * 1.5).toLong())
-                } else {
-                    maxOf(1_000L, (cycleDelayMs * 0.9).toLong())
-                }
-                delay(cycleDelayMs)
-            }
+            runContinuousUpdateLoop(enabledNow)
         }
     }
+
+    private fun shouldStopContinuousUpdates(enabledNow: Set<String>) = enabledNow.isEmpty()
+
+    private fun stopContinuousUpdates() {
+        streamJob?.cancel()
+        streamJob = null
+        lastStreamingPids = emptySet()
+        obdInfo("No interested PIDs to monitor.", LogCategory.Service)
+    }
+
+    private suspend fun CoroutineScope.runContinuousUpdateLoop(enabledNow: Set<String>) {
+        val statsAccumulator = _pidStats.toMutableMap()
+        var cycleDelayMs = 1_000L
+        var consecutiveFailures = 0
+        while (isActive && _connectionState == OBDConnectionState.connected) {
+            var cycleHadFailure = false
+            for (pid in enabledNow) {
+                val lines: List<String>? = runCatching { service.sendCommand(pid) }.getOrNull()
+                if (lines == null) {
+                    cycleHadFailure = true
+                    consecutiveFailures++
+                    if (consecutiveFailures >= MAX_CONSECUTIVE_STREAM_FAILURES) {
+                        handleContinuousUpdateFailure(consecutiveFailures)
+                        return
+                    }
+                } else {
+                    consecutiveFailures = 0
+                    handlePidResponse(pid, lines, statsAccumulator)
+                }
+                delay(PID_INTER_COMMAND_SETTLE_MS)
+            }
+            cycleDelayMs = calculateNextCycleDelay(cycleHadFailure, cycleDelayMs)
+            delay(cycleDelayMs)
+        }
+    }
+
+    private fun calculateNextCycleDelay(hadFailure: Boolean, currentDelay: Long): Long =
+        if (hadFailure) {
+            minOf(4_000L, (currentDelay * 1.5).toLong())
+        } else {
+            maxOf(1_000L, (currentDelay * 0.9).toLong())
+        }
 
     private fun handleContinuousUpdateFailure(consecutiveFailures: Int) {
         obdError(
@@ -424,29 +436,42 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
 
     private suspend fun querySupportedMode1Pids(): Set<String> {
         val supported = mutableSetOf<String>()
-        val getterCommands = CommandCatalog.pidGetterCommands
-            .map(::normalizeCommandId)
-            .filter { it.startsWith("01") && it.length == 4 }
-            .sorted()
+        val getterCommands = getSupportedPidGetters()
 
         for (command in getterCommands) {
-            obdInfo("Getting supported PIDs for $command", LogCategory.Communication)
-            val bytes = runCatching { responseBytes(service.sendCommand(command)) }.getOrNull() ?: continue
-            val serviceIndex = bytes.indexOf(0x41)
-            if (serviceIndex < 0 || bytes.getOrNull(serviceIndex + 1) != command.takeLast(2).toInt(16)) continue
-            val bitmap = bytes.drop(serviceIndex + 2).take(4)
-            if (bitmap.size < 4) continue
+            val bitmap = fetchSupportedPidsBitmap(command) ?: continue
+            parseSupportedPidsFromBitmap(command, bitmap, supported)
+        }
+        return supported
+    }
 
-            val base = command.takeLast(2).toInt(16)
-            bitmap.forEachIndexed { byteIndex, value ->
-                for (bitIndex in 0 until 8) {
-                    if (value and (1 shl (7 - bitIndex)) != 0) {
-                        supported += "01%02X".format(base + byteIndex * 8 + bitIndex + 1)
-                    }
+    private fun getSupportedPidGetters() = CommandCatalog.pidGetterCommands
+        .map(::normalizeCommandId)
+        .filter { it.startsWith("01") && it.length == 4 }
+        .sorted()
+
+    private suspend fun fetchSupportedPidsBitmap(command: String): List<Int>? {
+        obdInfo("Getting supported PIDs for $command", LogCategory.Communication)
+        val bytes = runCatching { responseBytes(service.sendCommand(command)) }.getOrNull() ?: return null
+
+        val serviceIndex = bytes.indexOf(0x41)
+        val expectedPidByte = command.takeLast(2).toInt(16)
+
+        if (serviceIndex < 0 || bytes.getOrNull(serviceIndex + 1) != expectedPidByte) return null
+
+        val bitmap = bytes.drop(serviceIndex + 2).take(4)
+        return if (bitmap.size >= 4) bitmap else null
+    }
+
+    private fun parseSupportedPidsFromBitmap(command: String, bitmap: List<Int>, supported: MutableSet<String>) {
+        val base = command.takeLast(2).toInt(16)
+        bitmap.forEachIndexed { byteIndex, value ->
+            for (bitIndex in 0 until 8) {
+                if (value and (1 shl (7 - bitIndex)) != 0) {
+                    supported += "01%02X".format(base + byteIndex * 8 + bitIndex + 1)
                 }
             }
         }
-        return supported
     }
 
     private fun handlePidResponse(

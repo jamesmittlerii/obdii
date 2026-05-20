@@ -309,8 +309,7 @@ class _GaugesList extends StatelessWidget {
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
       sliver: SliverReorderableList(
-        onReorder: (oldIndex, newIndex) {
-          if (newIndex > oldIndex) newIndex -= 1;
+        onReorderItem: (oldIndex, newIndex) {
           vm.moveEnabled(oldIndex, newIndex);
         },
         itemCount: vm.tiles.length,

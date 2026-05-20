@@ -114,7 +114,7 @@ class _PidToggleListViewState extends State<PidToggleListView> {
       padding: const EdgeInsets.symmetric(vertical: 8),
       proxyDecorator: (child, _, _) =>
           Material(type: MaterialType.transparency, child: child),
-      onReorder: (oldIndex, newIndex) =>
+      onReorderItem: (oldIndex, newIndex) =>
           _handleReorder(oldIndex, newIndex, vm, enabled.length),
       itemCount: itemCount,
       buildDefaultDragHandles: false,
@@ -126,16 +126,12 @@ class _PidToggleListViewState extends State<PidToggleListView> {
   void _handleReorder(
       int oldIndex, int newIndex, PidToggleListViewModel vm, int enabledLength) {
     // Index 0 is the Enabled header; enabled rows are [1..enabled.length].
-    // Flutter reports newIndex as insertion index in visual list.
     final isFromEnabledRow = oldIndex > 0 && oldIndex <= enabledLength;
-    final isToEnabledRegion = newIndex > 0 && newIndex <= enabledLength + 1;
+    final isToEnabledRegion = newIndex > 0 && newIndex <= enabledLength;
     if (!isFromEnabledRow || !isToEnabledRegion) return;
 
     final from = oldIndex - 1;
-    var to = newIndex - 1;
-    if (to > from) to -= 1;
-    if (to < 0) to = 0;
-    if (to >= enabledLength) to = enabledLength - 1;
+    final to = newIndex - 1;
     if (to == from) return;
 
     vm.moveEnabled(from, to);
