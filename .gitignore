@@ -115,3 +115,11 @@ iOSInjectionProject/
 
 # Kotlin build output
 kotlin_obdii/app/bin/
+kotlin_obdii/windowsApp/bin/
+kotlin_obdii/windowsApp/libs/
+# Windows BLE library + probe harness (sources tracked; artifacts below)
+kotlin_obdii/windowsBle/bin/
+kotlin_obdii/windowsBle/libs/
+kotlin_obdii/windowsBleProbe/bin/
+# Ad-hoc probe stdout/stderr from manual redirected runs
+kotlin_obdii/probe_*.txt
