@@ -87,7 +87,18 @@ fun SettingsScreen(
     val connectButtonLabel = view.connectButtonLabel
 
     LaunchedEffect(Unit) {
-        vm.setAppVersion("Windows ${System.getProperty("app.version", "1.0.0")}")
+        val appVersion = System.getProperty("app.version", "0.4.18")
+        val buildNum = try {
+            val parts = appVersion.split('.')
+            if (parts.size >= 3) {
+                parts[2].toInt() * 10
+            } else {
+                180
+            }
+        } catch (e: Exception) {
+            180
+        }
+        vm.setAppVersion("Rheosoft OBDII v$appVersion build:$buildNum")
     }
     LazyColumn(modifier = modifier.fillMaxSize().padding(16.dp)) {
         item {

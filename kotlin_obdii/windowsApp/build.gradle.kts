@@ -33,7 +33,10 @@ compose.desktop {
         mainClass = "com.rheosoft.obdii.windows.MainKt"
         jvmArgs += listOf(
             "-Dapp.version=${project.version}",
-            "--enable-native-access=ALL-UNNAMED"
+            "--enable-native-access=ALL-UNNAMED",
+            "-Dfile.encoding=UTF-8",
+            "-Dsun.stdout.encoding=UTF-8",
+            "-Dsun.stderr.encoding=UTF-8"
         )
 
 
@@ -41,6 +44,9 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "OBDII_Windows"
             packageVersion = "1.0.0"
+            windows {
+                iconFile.set(project.file("src/main/resources/app_icon.ico"))
+            }
         }
     }
 }
@@ -54,5 +60,11 @@ java {
 sourceSets {
     main {
         resources.srcDirs("../../flutter_obdii/assets")
+    }
+}
+
+tasks.register("testEmoji") {
+    doLast {
+        println("🔵 ⚪ 🟡 🔴 Test Emoji")
     }
 }
