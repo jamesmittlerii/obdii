@@ -446,7 +446,7 @@ private fun RingGaugeMini(tile: GaugeTile, isMetric: Boolean, modifier: Modifier
                 .align(Alignment.Center)
                 .offset(y = 17.dp),
         ) {
-            Text(gauge.valueLine, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold, fontSize = 38.sp)
+            Text(gauge.valueLine, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold, fontSize = 28.sp)
             if (gauge.unitLine.isNotEmpty() && !gauge.unitLine.equals(tile.pid.label, ignoreCase = true)) {
                 Text(gauge.unitLine, textAlign = TextAlign.Center, color = Color(0xFFB1B1B6))
             }
