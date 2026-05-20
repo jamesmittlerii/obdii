@@ -290,7 +290,7 @@ void main() {
     final listFinder = find.byType(ReorderableListView);
     final ReorderableListView list = tester.widget(listFinder);
     
-    list.onReorder(1, 3);
+    list.onReorder!(1, 3);
     await tester.pumpAndSettle();
 
     // In our _TestPidStore, we can check the order.
@@ -308,12 +308,12 @@ void main() {
     final ReorderableListView list = tester.widget(find.byType(ReorderableListView));
     
     // Attempt to move Header (index 0)
-    list.onReorder(0, 2);
+    list.onReorder!(0, 2);
     await tester.pump();
     expect(store.pids.where((p) => p.enabled).first.id, 'rpm');
 
     // Attempt to move from disabled section (e.g. index 4)
-    list.onReorder(4, 1);
+    list.onReorder!(4, 1);
     await tester.pump();
     expect(store.pids.where((p) => p.enabled).first.id, 'rpm');
   });
@@ -323,7 +323,7 @@ void main() {
     await tester.pump();
 
     final ReorderableListView list = tester.widget(find.byType(ReorderableListView));
-    list.onReorder(1, 2); // From enabled row 0 to same effective index.
+    list.onReorder!(1, 2); // From enabled row 0 to same effective index.
     await tester.pump();
 
     final enabledPids = store.pids.where((p) => p.enabled).toList();

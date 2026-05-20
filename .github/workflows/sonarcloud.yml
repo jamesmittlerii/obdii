@@ -180,11 +180,14 @@ jobs:
         env:
           KOTLINOBD2_DIR: ${{ github.workspace }}/SwiftOBD2/kotlinobd2
         with:
-          api-level: 35
+          api-level: 34
           target: google_apis
           arch: x86_64
+          ram-size: 4096M
+          disk-size: 6144M
           disable-animations: true
-          script: cd kotlin_obdii && ./gradlew :androidApp:createDebugCoverageReport
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot-save -noaudio -no-boot-anim -camera-back none -memory 4096
+          script: bash scripts/ci-android-ui-coverage.sh
 
       - name: Download Swift coverage artifact
         uses: actions/download-artifact@v4

@@ -430,6 +430,14 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
         CommandCatalog.resolveCommandId(command).trim().uppercase()
 
     private fun responseBytes(lines: List<String>): List<Int> {
-        return Parser.parseHexBytes(lines)
+        val frames = Parser.parseFrames(lines)
+        if (frames.isEmpty()) return emptyList()
+
+        val firstFrame = frames.firstOrNull { it.type == FrameType.FirstFrame }
+        if (firstFrame != null) {
+            return Parser.parseMessages(frames).firstOrNull()?.data ?: emptyList()
+        }
+
+        return Parser.parseMessages(frames).firstOrNull()?.data ?: emptyList()
     }
 }

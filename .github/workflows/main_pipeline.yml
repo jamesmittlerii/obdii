@@ -341,11 +341,24 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
+          cache: gradle
+
+      - name: Setup Gradle cache
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+
+      - name: Kotlin unit test coverage
+        # if: needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true'
+        working-directory: kotlin_obdii
+        env:
+          KOTLINOBD2_DIR: ${{ github.workspace }}/SwiftOBD2/kotlinobd2
+        run: |
+          chmod +x gradlew
+          ./gradlew :coreApp:test :coreApp:jacocoTestReport
 
       - name: Enable KVM
         run: |
@@ -353,17 +366,20 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Android UI & Kotlin Coverage
+      - name: Android UI instrumented coverage
         # if: needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true'
         uses: reactivecircus/android-emulator-runner@v2
         env:
           KOTLINOBD2_DIR: ${{ github.workspace }}/SwiftOBD2/kotlinobd2
         with:
-          api-level: 35
+          api-level: 34
           target: google_apis
           arch: x86_64
+          ram-size: 4096M
+          disk-size: 6144M
           disable-animations: true
-          script: cd kotlin_obdii && chmod +x gradlew && ./gradlew :coreApp:test :coreApp:jacocoTestReport :androidApp:createDebugCoverageReport
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot-save -noaudio -no-boot-anim -camera-back none -memory 4096
+          script: bash scripts/ci-android-ui-coverage.sh
 
       - name: Flutter Coverage
         # if: needs.filter.outputs.flutter == 'true' || needs.filter.outputs.pipeline == 'true'
