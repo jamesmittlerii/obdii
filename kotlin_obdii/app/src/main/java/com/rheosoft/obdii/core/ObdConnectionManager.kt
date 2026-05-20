@@ -5,9 +5,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,8 +25,12 @@ import kotlinx.coroutines.launch
  * projections while transport/decode primitives live in kotlinobd2.
  */
 object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatusProviding, MilStatusProviding, OBDConnectionControlling {
-    private val managerScope = CoroutineScope(Dispatchers.Default + Job())
+    private val managerJob = SupervisorJob()
+    private val managerScope = CoroutineScope(Dispatchers.Default + managerJob)
     private val querySupportedPids = true
+    private const val PID_INTER_COMMAND_SETTLE_MS = 50L
+    private const val MAX_CONSECUTIVE_STREAM_FAILURES = 3
+    private const val STREAM_RECONNECT_DELAY_MS = 2_000L
 
     private var service = ObdService(ConfigData.connectionType.toLibraryConnectionType(), ConfigData.wifiHost, ConfigData.wifiPort)
     private var serviceMirrorJob: Job? = null
@@ -132,6 +139,10 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
             _connectionState = OBDConnectionState.settingUpVehicle
             obdDebug("Initializing vehicle connection...", LogCategory.Connection)
 
+            if (service.currentConnectionType.value == LibraryConnectionType.bluetooth) {
+                // Flutter: 1s after ATSP0 before first 0100; ELM may still be finishing protocol search.
+                delay(1_000)
+            }
             supportedMode1Pids = if (querySupportedPids) querySupportedMode1Pids() else emptySet()
             _connectionState = OBDConnectionState.connected
             _connectedPeripheralName = service.connectedPeripheral?.name
@@ -159,8 +170,16 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
     override fun disconnect() {
         connectionJob?.cancel()
         connectionJob = null
-        streamJob?.cancel()
+        val activeStream = streamJob
         streamJob = null
+        activeStream?.cancel()
+        runCatching {
+            runBlocking {
+                withTimeout(2_000) {
+                    activeStream?.cancelAndJoin()
+                }
+            }
+        }
         service.stopConnection()
         clearForTerminalState()
         _connectionState = OBDConnectionState.disconnected
@@ -281,7 +300,7 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
             }
         }
         if (oldState != _connectionState) {
-            obdInfo("Connection state changed: $oldState → $_connectionState", LogCategory.Connection)
+            obdInfo("Connection state changed: $oldState -> $_connectionState", LogCategory.Connection)
         }
         _connectedPeripheralName = service.connectedPeripheral?.name
     }
@@ -341,12 +360,57 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
         obdInfo("Starting continuous updates for ${enabledNow.size} PIDs.", LogCategory.Service)
         streamJob = managerScope.launch {
             val statsAccumulator = _pidStats.toMutableMap()
+            var cycleDelayMs = 1_000L
+            var consecutiveFailures = 0
             while (isActive && _connectionState == OBDConnectionState.connected) {
+                var hadFailure = false
                 for (pid in enabledNow) {
-                    val lines = runCatching { service.sendCommand(pid) }.getOrNull() ?: continue
+                    val lines = runCatching { service.sendCommand(pid) }.getOrNull()
+                    if (lines == null) {
+                        hadFailure = true
+                        consecutiveFailures++
+                        if (consecutiveFailures >= MAX_CONSECUTIVE_STREAM_FAILURES) {
+                            handleContinuousUpdateFailure(consecutiveFailures)
+                            return@launch
+                        }
+                        delay(PID_INTER_COMMAND_SETTLE_MS)
+                        continue
+                    }
+                    consecutiveFailures = 0
                     handlePidResponse(pid, lines, statsAccumulator)
+                    delay(PID_INTER_COMMAND_SETTLE_MS)
                 }
-                delay(1_000)
+                cycleDelayMs = if (hadFailure) {
+                    minOf(4_000L, (cycleDelayMs * 1.5).toLong())
+                } else {
+                    maxOf(1_000L, (cycleDelayMs * 0.9).toLong())
+                }
+                delay(cycleDelayMs)
+            }
+        }
+    }
+
+    private fun handleContinuousUpdateFailure(consecutiveFailures: Int) {
+        obdError(
+            "Stopping continuous updates after $consecutiveFailures consecutive PID timeouts.",
+            LogCategory.Service,
+        )
+        service.stopConnection()
+        clearForTerminalState()
+        _connectionState = OBDConnectionState.failed
+        if (!ConfigData.autoConnectToOBD) return
+
+        managerScope.launch {
+            delay(STREAM_RECONNECT_DELAY_MS)
+            if (_connectionState != OBDConnectionState.failed) return@launch
+            runCatching {
+                obdInfo("Attempting reconnect after BLE polling failure.", LogCategory.Connection)
+                connect()
+            }.onFailure { error ->
+                obdError(
+                    "Reconnect after BLE polling failure failed: ${error.message}",
+                    LogCategory.Connection,
+                )
             }
         }
     }

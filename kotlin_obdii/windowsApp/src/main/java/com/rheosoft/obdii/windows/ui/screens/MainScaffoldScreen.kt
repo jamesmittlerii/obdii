@@ -33,6 +33,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rheosoft.obdii.bootstrap.AppBootstrap
+import com.rheosoft.obdii.windows.bootstrap.WindowsAppInitializer
 import com.rheosoft.obdii.core.ConfigData
 import com.rheosoft.obdii.core.DefaultPidStore
 import com.rheosoft.obdii.core.MeasurementUnit
@@ -58,7 +59,13 @@ import kotlinx.coroutines.launch
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 fun KotlinObdiiApp(permissionsReady: Boolean = true) {
-    val uiPrefs = remember { DesktopPreferencesKeyValueStore() }
+    val uiPrefs = remember {
+        DesktopPreferencesKeyValueStore().also { persistentStore ->
+            ConfigData.store = persistentStore
+            ConfigData.load()
+            DefaultPidStore.store = persistentStore
+        }
+    }
     var selected by remember { mutableIntStateOf(uiPrefs.getInt("ui.selectedTab") ?: 0) }
     var ready by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -82,15 +89,11 @@ fun KotlinObdiiApp(permissionsReady: Boolean = true) {
     val selectedDtcDetail = remember { mutableStateOf<DtcDetailScreenModel?>(null) }
 
     LaunchedEffect(Unit) {
-        val persistentStore = DesktopPreferencesKeyValueStore()
-        ConfigData.store = persistentStore
-        ConfigData.load()
-        DefaultPidStore.store = persistentStore
-
         if (DefaultPidStore.pids.isEmpty()) {
             val pidsFromJson = loadPidsFromJson()
             DefaultPidStore.seededPidsProvider = { pidsFromJson.ifEmpty { defaultGaugeSeedPids() } }
         }
+        runCatching { WindowsAppInitializer.initialize() }
         runCatching { AppBootstrap.initialize() }
         fuelView.setActive(selected == 2)
         milView.setActive(selected == 3)

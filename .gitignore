@@ -116,3 +116,4 @@ iOSInjectionProject/
 # Kotlin build output
 kotlin_obdii/app/bin/
 kotlin_obdii/windowsApp/bin/
+kotlin_obdii/windowsApp/libs/
