@@ -24,6 +24,8 @@ rootProject.name = "kotlin_obdii"
 include(":coreApp")
 include(":androidApp")
 include(":windowsApp")
+include(":windowsBle")
+include(":windowsBleProbe")
 project(":coreApp").projectDir = file("app")
 
 val kotlinObd2DirEnv = System.getenv("KOTLINOBD2_DIR")

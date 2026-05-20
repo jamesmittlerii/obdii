@@ -7,6 +7,7 @@ import androidx.compose.ui.window.rememberWindowState
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.rheosoft.obdii.core.OBDConnectionManager
+import com.rheosoft.obdii.windows.ble.forceWindowsProcessExit
 import com.rheosoft.obdii.windows.bootstrap.WindowsAppInitializer
 import com.rheosoft.obdii.windows.ui.screens.KotlinObdiiApp
 
@@ -18,6 +19,7 @@ fun main() = application {
             runCatching { OBDConnectionManager.disconnect() }
             runCatching { WindowsAppInitializer.shutdown() }
             exitApplication()
+            forceWindowsProcessExit()
         },
         title = "OBDII Windows",
         icon = appIcon,

@@ -1,4 +1,5 @@
 import org.gradle.api.file.DuplicatesStrategy
+import org.gradle.api.tasks.JavaExec
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import java.io.File
 import java.net.URI
@@ -11,29 +12,8 @@ plugins {
 
 version = "0.4.18"
 
-val simpleBleVersion = "0.14.0"
-val simpleBleJarName = "simplejavable-v$simpleBleVersion.jar"
-
-tasks.register("downloadSimpleBle") {
-    val jarFile = layout.projectDirectory.file("libs/$simpleBleJarName")
-    val downloadUrl = "https://github.com/simpleble/simpleble/releases/download/v$simpleBleVersion/$simpleBleJarName"
-    outputs.file(jarFile)
-    onlyIf { !jarFile.asFile.exists() }
-    doLast {
-        val target = jarFile.asFile
-        target.parentFile.mkdirs()
-        URI(downloadUrl).toURL().openStream().use { input ->
-            target.outputStream().use { output -> input.copyTo(output) }
-        }
-        logger.lifecycle("Downloaded SimpleJavaBLE to ${target.absolutePath}")
-    }
-}
-
-tasks.named("compileKotlin") {
-    dependsOn("downloadSimpleBle")
-}
-
 dependencies {
+    implementation(project(":windowsBle"))
     implementation(project(":coreApp"))
     if (findProject(":kotlinobd2") != null) {
         implementation(project(":kotlinobd2"))
@@ -51,7 +31,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
     implementation("com.google.code.gson:gson:2.14.0")
-    implementation(files("libs/$simpleBleJarName"))
 }
 
 compose.desktop {
@@ -80,6 +59,14 @@ compose.desktop {
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
+// forceWindowsProcessExit() uses taskkill on Windows; that exits the JVM with code 1.
+afterEvaluate {
+    val runTasks = setOf("run", "runDistributable", "runRelease", "runReleaseDistributable")
+    tasks.withType<JavaExec>().matching { it.name in runTasks }.configureEach {
+        isIgnoreExitValue = true
     }
 }
 

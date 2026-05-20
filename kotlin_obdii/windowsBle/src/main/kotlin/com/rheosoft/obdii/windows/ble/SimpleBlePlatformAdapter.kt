@@ -27,6 +27,9 @@ import kotlin.coroutines.resumeWithException
 private const val ERR_NOT_CONNECTED = "BLE session not connected"
 private const val SCAN_RESULTS_POLL_MS = 350L
 
+private val noopAdapterListener = object : Adapter.EventListener {}
+private val noopPeripheralListener = object : Peripheral.EventListener {}
+
 /**
  * Windows desktop BLE transport via SimpleJavaBLE (WinRT backend).
  * Maps [BlePlatformAdapter] onto org.simplejavable APIs.
@@ -78,7 +81,7 @@ class SimpleBlePlatformAdapter : BlePlatformAdapter {
                     if (!completed.compareAndSet(false, true)) return
                     timeoutTaskRef[0]?.cancel(false)
                     pollTaskRef[0]?.cancel(false)
-                    runCatching { bt.scanStop() }
+                    endScan(bt)
                     obdDebug(
                         "scan:early-stop elapsedMs=${elapsedMs(scanStartedAt)} reason=$reason " +
                             formatPeripheralSummary(found.values),
@@ -98,6 +101,7 @@ class SimpleBlePlatformAdapter : BlePlatformAdapter {
 
                 runCatching { bt.scanStart() }
                     .onFailure { error ->
+                        endScan(bt)
                         obdDebug(
                             "scan:start-failed elapsedMs=${elapsedMs(scanStartedAt)} error=${error.message}",
                             LogCategory.Bluetooth,
@@ -120,7 +124,7 @@ class SimpleBlePlatformAdapter : BlePlatformAdapter {
                 timeoutTaskRef[0] = timeoutExecutor.schedule({
                     if (!completed.compareAndSet(false, true)) return@schedule
                     pollTaskRef[0]?.cancel(false)
-                    runCatching { bt.scanStop() }
+                    endScan(bt)
                     mergeScanResults(bt, found, scanStartedAt)
                     obdDebug(
                         "scan:timeout elapsedMs=${elapsedMs(scanStartedAt)} total=${found.size} " +
@@ -136,7 +140,7 @@ class SimpleBlePlatformAdapter : BlePlatformAdapter {
                     completed.set(true)
                     timeoutTaskRef[0]?.cancel(false)
                     pollTaskRef[0]?.cancel(false)
-                    runCatching { bt.scanStop() }
+                    endScan(bt)
                     obdDebug("scan:cancelled elapsedMs=${elapsedMs(scanStartedAt)}", LogCategory.Bluetooth)
                 }
             }
@@ -196,8 +200,6 @@ class SimpleBlePlatformAdapter : BlePlatformAdapter {
                 characteristicUuid = location.characteristicUuid,
             )
             val ch = location.characteristic
-            // Prefer notify (Flutter setNotifyValue / CoreBluetooth notify path). WinRT often
-            // reports both properties; indicate-first drops data on some ELM adapters (e.g. IOS-Vlink).
             when {
                 ch.canNotify() -> {
                     obdDebug(
@@ -306,7 +308,6 @@ class SimpleBlePlatformAdapter : BlePlatformAdapter {
     private fun peripheralAdvertisedName(peripheral: Peripheral): String? =
         peripheral.getIdentifier().takeIf { it.isNotBlank() }
 
-    /** WinRT fills GAP names in [Adapter.scanGetResults], not always in [Adapter.EventListener.onScanFound]. */
     private fun mergeScanResults(
         bt: Adapter,
         found: LinkedHashMap<String, BlePeripheral>,
@@ -380,15 +381,24 @@ class SimpleBlePlatformAdapter : BlePlatformAdapter {
     }
 
     fun shutdown() {
-        runCatching {
-            val bt = adapter
-            if (bt != null && bt.scanIsActive) {
-                bt.scanStop()
+        val bt = adapter
+        if (bt != null) {
+            runCatching {
+                if (bt.scanIsActive) {
+                    bt.scanStop()
+                }
             }
+            endScan(bt)
         }
         runBlocking(bleDispatcher) {
-            connected.toList().forEach { id ->
-                runCatching { tearDownPeripheral(id, disconnectTimeoutSec = 2) }
+            val ids = LinkedHashSet<String>()
+            ids.addAll(connected)
+            activeSubscriptions.values.forEach { ids.add(it.peripheralId) }
+            peripherals.forEach { (id, peripheral) ->
+                if (peripheral.isConnected) ids.add(id)
+            }
+            ids.forEach { id ->
+                runCatching { tearDownPeripheral(id, disconnectTimeoutSec = 5) }
             }
         }
         connected.clear()
@@ -397,10 +407,15 @@ class SimpleBlePlatformAdapter : BlePlatformAdapter {
         notificationCallbacks.clear()
         activeSubscriptions.clear()
         adapter = null
-        timeoutExecutor.shutdownNow()
+        timeoutExecutor.shutdown()
+        timeoutExecutor.awaitTermination(2, TimeUnit.SECONDS)
     }
 
-    /** Unsubscribe notify/indicate, then disconnect. WinRT keeps native callbacks until unsubscribe. */
+    private fun endScan(bt: Adapter) {
+        runCatching { bt.scanStop() }
+        runCatching { bt.setEventListener(noopAdapterListener) }
+    }
+
     private fun tearDownPeripheral(peripheralId: String, disconnectTimeoutSec: Long) {
         val peripheral = peripherals[peripheralId] ?: return
         val keys = activeSubscriptions.entries
@@ -410,14 +425,24 @@ class SimpleBlePlatformAdapter : BlePlatformAdapter {
             val sub = activeSubscriptions.remove(key) ?: return@forEach
             listeners.remove(key)
             notificationCallbacks.remove(key)
-            runCatching {
+            val timeoutSec = disconnectTimeoutSec.coerceAtMost(5)
+            val unsubscribed = runCatching {
                 peripheral.unsubscribeAsync(sub.serviceUuid, sub.characteristicUuid)
-                    .get(disconnectTimeoutSec.coerceAtMost(3), TimeUnit.SECONDS)
+                    .get(timeoutSec, TimeUnit.SECONDS)
+            }.isSuccess
+            if (!unsubscribed) {
+                runCatching {
+                    peripheral.unsubscribe(sub.serviceUuid, sub.characteristicUuid)
+                }
             }
         }
+        runCatching { peripheral.setEventListener(noopPeripheralListener) }
         if (peripheral.isConnected) {
-            runCatching {
+            val disconnected = runCatching {
                 peripheral.disconnectAsync().get(disconnectTimeoutSec, TimeUnit.SECONDS)
+            }.isSuccess
+            if (!disconnected) {
+                runCatching { peripheral.disconnect() }
             }
         }
         connected.remove(peripheralId)
