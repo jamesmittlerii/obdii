@@ -321,7 +321,7 @@ packages:
       path: "../../SwiftOBD2/flutterobd2"
       relative: true
     source: path
-    version: "0.1.8"
+    version: "0.1.9"
   flutter_svg:
     dependency: "direct main"
     description:

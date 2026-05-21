@@ -1018,7 +1018,7 @@
 			repositoryURL = "https://github.com/jamesmittlerii/SwiftOBD2";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 0.1.8;
+				minimumVersion = 0.1.9;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

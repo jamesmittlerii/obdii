@@ -42,7 +42,7 @@ dependencies:
   flutter_blue_plus_winrt: ^0.0.20
   share_plus: ^13.1.0
   package_info_plus: ^10.1.0
-  flutter_obd2: ^0.1.8
+  flutter_obd2: ^0.1.9
   file_selector: ^1.1.0
   permission_handler: ^12.0.1
   google_fonts: ^8.1.0
