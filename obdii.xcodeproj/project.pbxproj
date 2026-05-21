@@ -672,7 +672,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.4.27;
+				MARKETING_VERSION = 0.4.28;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rheosoft.obdii;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -704,7 +704,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.4.27;
+				MARKETING_VERSION = 0.4.28;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rheosoft.obdii;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1018,7 +1018,7 @@
 			repositoryURL = "https://github.com/jamesmittlerii/SwiftOBD2";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 0.1.9;
+				minimumVersion = 0.1.15;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

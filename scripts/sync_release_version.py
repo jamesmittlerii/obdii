@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parent.parent
 RELEASE_FILE = ROOT / "release-version.txt"
 PUBSPEC = ROOT / "flutter_obdii" / "pubspec.yaml"
 GRADLE = ROOT / "kotlin_obdii" / "androidApp" / "build.gradle.kts"
+GRADLE_WINDOWS = ROOT / "kotlin_obdii" / "windowsApp" / "build.gradle.kts"
 PBXPROJ = ROOT / "obdii.xcodeproj" / "project.pbxproj"
 
 VERSION_LINE = re.compile(
@@ -38,6 +39,10 @@ MARKETING_OBDII = re.compile(
 )
 VERSION_NAME = re.compile(
     r"(^\s*versionName\s*=\s*\")(\d+\.\d+\.\d+)(\"[ \t\r]*$)",
+    re.MULTILINE,
+)
+VERSION_GRADLE = re.compile(
+    r"(^version\s*=\s*\")(\d+\.\d+\.\d+)(\"[ \t\r]*$)",
     re.MULTILINE,
 )
 
@@ -129,6 +134,14 @@ def sync_gradle(marketing: str) -> str:
         sys.exit(1)
     updated = VERSION_NAME.sub(rf"\g<1>{marketing}\3", text, count=1)
     _write(GRADLE, updated)
+
+    if GRADLE_WINDOWS.is_file():
+        text_w = _read(GRADLE_WINDOWS)
+        if not VERSION_GRADLE.search(text_w):
+            print(f"error: could not find version in {GRADLE_WINDOWS}", file=sys.stderr)
+            sys.exit(1)
+        updated_w = VERSION_GRADLE.sub(rf"\g<1>{marketing}\3", text_w, count=1)
+        _write(GRADLE_WINDOWS, updated_w)
     return updated
 
 
@@ -159,7 +172,7 @@ def main() -> None:
     sync_pubspec(marketing)
     sync_gradle(marketing)
     sync_pbxproj(marketing)
-    print(f"synced marketing version {marketing} -> pubspec, kotlin androidApp, obdii.xcodeproj")
+    print(f"synced marketing version {marketing} -> pubspec, kotlin androidApp/windowsApp, obdii.xcodeproj")
 
 
 if __name__ == "__main__":

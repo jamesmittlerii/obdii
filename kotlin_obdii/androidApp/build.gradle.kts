@@ -21,7 +21,7 @@ android {
         minSdk = 29
         targetSdk = 36
         versionCode = 225
-        versionName = "0.4.27"
+        versionName = "0.4.28"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -70,7 +70,7 @@ dependencies {
     if (findProject(":kotlinobd2") != null) {
         implementation(project(":kotlinobd2"))
     } else {
-        implementation("com.github.jamesmittlerii:SwiftOBD2:0.1.9")
+        implementation("com.github.jamesmittlerii:SwiftOBD2:0.1.15")
     }
     implementation("androidx.core:core-ktx:1.18.0")
     implementation("androidx.activity:activity-compose:1.13.0")

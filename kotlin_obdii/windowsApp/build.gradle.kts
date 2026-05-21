@@ -10,7 +10,7 @@ plugins {
     id("org.jetbrains.compose")
 }
 
-version = "0.4.18"
+version = "0.4.28"
 
 dependencies {
     implementation(project(":windowsBle"))
@@ -18,7 +18,7 @@ dependencies {
     if (findProject(":kotlinobd2") != null) {
         implementation(project(":kotlinobd2"))
     } else {
-        implementation("com.github.jamesmittlerii:SwiftOBD2:0.1.9")
+        implementation("com.github.jamesmittlerii:SwiftOBD2:0.1.15")
     }
 
     // Compose Desktop dependencies
