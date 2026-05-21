@@ -196,7 +196,7 @@ final class GaugesViewTests: XCTestCase {
         let viewModel = makeViewModelWithMocks(pids: [rpm], stats: stats)
         await pumpMainRunLoop()
         XCTAssertEqual(viewModel.displayTiles.first?.ring.accessibilityLabel, "Engine RPM")
-        XCTAssertTrue(viewModel.displayTiles.first?.valueText.contains("rpm") == true || viewModel.displayTiles.first?.valueText.contains("RPM") == true)
+        XCTAssertEqual(viewModel.displayTiles.first?.valueText, "2500")
     }
     
     func testGaugeTileColorsBasedOnValues() {
