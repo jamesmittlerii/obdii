@@ -18,7 +18,7 @@ dependencies {
     if (findProject(":kotlinobd2") != null) {
         implementation(project(":kotlinobd2"))
     } else {
-        implementation("com.github.jamesmittlerii:SwiftOBD2:0.1.3")
+        implementation("com.github.jamesmittlerii:SwiftOBD2:0.1.9")
     }
 
     // Compose Desktop dependencies

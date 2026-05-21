@@ -30,7 +30,12 @@ object AndroidAppInitializer {
                 OBDConnectionManager.setSettingUpVehicle()
             }
 
-            val emoji = ObdLogger.getEmoji(level)
+            val emoji = when (level.lowercase()) {
+                "error" -> "🔴"
+                "warning" -> "🟡"
+                "info" -> "🔵"
+                else -> "⚪"
+            }
             val fullMessage = "[$emoji] $message"
             when (level.lowercase()) {
                 "error" -> Log.e(tag, fullMessage)
@@ -59,7 +64,7 @@ object AndroidAppInitializer {
             val p = context.packageManager.getPackageInfo(context.packageName, 0)
             val appName = context.applicationInfo.loadLabel(context.packageManager).toString()
             "$appName v${p.versionName} build:${PackageInfoCompat.getLongVersionCode(p)}"
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             "Unknown version"
         }
     }
