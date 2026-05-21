@@ -99,6 +99,7 @@ struct RingGaugeView: View {
             .minimumScaleFactor(0.6)
             .lineLimit(1)
         }
+        .offset(y: dim * 0.08)
       }
       .frame(width: dim, height: dim)
       .position(x: proxy.frame(in: .local).midX, y: dim / 2)

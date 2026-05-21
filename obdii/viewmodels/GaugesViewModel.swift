@@ -168,6 +168,20 @@ final class GaugesViewModel: BaseViewModel {
     reorder(fromOffsets: IndexSet(integer: sourceIndex), toOffset: destination)
   }
 
+  @MainActor
+  func reorderTile(withID sourceID: UUID, toIndex targetIndex: Int) {
+    guard
+      let sourceIndex = displayTiles.firstIndex(where: { $0.id == sourceID }),
+      (0...displayTiles.count).contains(targetIndex),
+      targetIndex != sourceIndex,
+      targetIndex != sourceIndex + 1
+    else {
+      return
+    }
+
+    reorder(fromOffsets: IndexSet(integer: sourceIndex), toOffset: targetIndex)
+  }
+
   private func bind() {
 
     // Combine pids + stats
@@ -215,9 +229,10 @@ final class GaugesViewModel: BaseViewModel {
   }
 
   private func makeDisplayTile(_ tile: Tile) -> DisplayTile {
+    let shouldIncludeUnits = shouldIncludeUnits(for: tile.pid)
     let valueText =
-      tile.measurement.map { tile.pid.formatted(measurement: $0, includeUnits: true) }
-      ?? "— \(tile.pid.unitLabel(for: currentUnits))"
+      tile.measurement.map { tile.pid.formatted(measurement: $0, includeUnits: shouldIncludeUnits) }
+      ?? placeholderValueText(for: tile.pid, includeUnits: shouldIncludeUnits)
     let valueColor =
       tile.measurement.map { tile.pid.color(for: $0.value, unit: currentUnits) }
       ?? .secondary
@@ -237,9 +252,10 @@ final class GaugesViewModel: BaseViewModel {
   }
 
   private func makeRingDisplay(for tile: Tile) -> RingDisplayData {
+    let shouldIncludeUnits = shouldIncludeUnits(for: tile.pid)
     let valueText =
-      tile.measurement.map { tile.pid.formatted(measurement: $0, includeUnits: true) }
-      ?? "— \(tile.pid.unitLabel(for: currentUnits))"
+      tile.measurement.map { tile.pid.formatted(measurement: $0, includeUnits: shouldIncludeUnits) }
+      ?? placeholderValueText(for: tile.pid, includeUnits: shouldIncludeUnits)
     let progress =
       tile.measurement.map { measurement in
         normalizedProgress(for: measurement.value, pid: tile.pid)
@@ -271,6 +287,24 @@ final class GaugesViewModel: BaseViewModel {
       }
 
     return max(0, min(1, combinedRange.normalizedPosition(for: value)))
+  }
+
+  private func shouldIncludeUnits(for pid: OBDPID) -> Bool {
+    let normalizedLabel = normalizeUnitComparisonText(pid.label)
+    let normalizedUnits = normalizeUnitComparisonText(pid.unitLabel(for: currentUnits))
+    return normalizedLabel.isEmpty || normalizedLabel != normalizedUnits
+  }
+
+  private func placeholderValueText(for pid: OBDPID, includeUnits: Bool) -> String {
+    let unitLabel = pid.unitLabel(for: currentUnits)
+    guard includeUnits, !unitLabel.isEmpty else { return "—" }
+    return "— \(unitLabel)"
+  }
+
+  private func normalizeUnitComparisonText(_ text: String) -> String {
+    text
+      .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+      .replacingOccurrences(of: "[^[:alnum:]]+", with: "", options: .regularExpression)
   }
 
   private func updateInterest() {

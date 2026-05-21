@@ -297,4 +297,12 @@ final class SettingsViewModelTests: XCTestCase {
         
         XCTAssertEqual(mockConnection.connectCallCount, 1, "Should call connect when failed")
     }
+
+    func testSetShareErrorUpdatesMessage() {
+        XCTAssertNil(viewModel.shareErrorMessage)
+
+        viewModel.setShareError("Save failed")
+
+        XCTAssertEqual(viewModel.shareErrorMessage, "Save failed")
+    }
 }

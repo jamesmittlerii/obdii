@@ -16,15 +16,18 @@ struct MILStatusView: View {
 
   // Stable view model instance
   @State private var viewModel: MILStatusViewModel
+  private let onSummaryTap: () -> Void
 
   // Default initializer preserves existing app behavior
-  init() {
+  init(onSummaryTap: @escaping () -> Void = {}) {
     _viewModel = State(initialValue: MILStatusViewModel())
+    self.onSummaryTap = onSummaryTap
   }
 
   // Injectable initializer for tests or previews
-  init(viewModel: MILStatusViewModel) {
+  init(viewModel: MILStatusViewModel, onSummaryTap: @escaping () -> Void = {}) {
     _viewModel = State(initialValue: viewModel)
+    self.onSummaryTap = onSummaryTap
   }
 
   var body: some View {
@@ -43,14 +46,21 @@ struct MILStatusView: View {
             .accessibilityLabel("Waiting for data")
 
           } else if let summary = viewModel.summaryRow {
-            HStack(spacing: 12) {
-              Image(systemName: summary.symbolName)
-                .foregroundStyle(summary.symbolColor == "orange" ? .orange : .blue)
-                .imageScale(.large)
+            Button(action: onSummaryTap) {
+              HStack(spacing: 12) {
+                Image(systemName: summary.symbolName)
+                  .foregroundStyle(summary.symbolColor == "orange" ? .orange : .blue)
+                  .imageScale(.large)
 
-              Text(summary.text)
-                .font(.headline)
+                Text(summary.text)
+                  .font(.headline)
+
+                Spacer(minLength: 0)
+              }
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             .accessibilityLabel(summary.text)
 
           } else {

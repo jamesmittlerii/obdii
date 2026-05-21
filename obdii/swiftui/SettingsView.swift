@@ -22,6 +22,7 @@ struct SettingsView: View {
 
   #if canImport(UIKit)
     @State private var isPresentingShare = false
+    @State private var isPresentingLogSave = false
     @State private var shareItems: [Any] = []
   #endif
 
@@ -95,9 +96,7 @@ struct SettingsView: View {
         Section(header: Text("Diagnostics")) {
           #if canImport(UIKit)
             Button {
-              if !runningOnMac {
-                Task { await viewModel.prepareLogShare() }
-              }
+              Task { await viewModel.prepareLogShare() }
             } label: {
               if viewModel.isGeneratingLogs {
                 HStack {
@@ -105,10 +104,10 @@ struct SettingsView: View {
                   Text("Preparing Logs…")
                 }
               } else {
-                Text("Share Logs")
+                Text(runningOnMac ? "Save Logs…" : "Share Logs")
               }
             }
-            .disabled(viewModel.isGeneratingLogs || runningOnMac)
+            .disabled(viewModel.isGeneratingLogs)
             .alert(
               "Could not prepare logs",
               isPresented: .constant(viewModel.shareErrorMessage != nil)
@@ -142,13 +141,28 @@ struct SettingsView: View {
             viewModel.clearShareURL()
           }
         }
+        .fileMover(
+          isPresented: $isPresentingLogSave,
+          file: viewModel.shareURL
+        ) { result in
+          switch result {
+          case .success:
+            viewModel.clearShareURL()
+          case let .failure(error):
+            viewModel.setShareError(error.localizedDescription)
+          }
+        }
       #endif
     }
     #if canImport(UIKit)
       .onChange(of: viewModel.shareURL) { _, url in
         guard let url else { return }
-        shareItems = [url]
-        isPresentingShare = true
+        if runningOnMac {
+          isPresentingLogSave = true
+        } else {
+          shareItems = [url]
+          isPresentingShare = true
+        }
       }
     #endif
   }

@@ -138,6 +138,22 @@ final class MILStatusViewTests: XCTestCase {
         XCTAssertTrue(hasReadinessText, "View should show Readiness Monitors section when status exists")
     }
 
+    func testSummaryRowTapInvokesAction() throws {
+        let mock = MockMILStatusProvider()
+        let viewModel = MILStatusViewModel(provider: mock)
+        var tapCount = 0
+        let view = MILStatusView(viewModel: viewModel) {
+            tapCount += 1
+        }
+
+        mock.subject.send(Status(milOn: true, dtcCount: 2, monitors: [], isDiesel: false))
+
+        let button = try view.inspect().find(ViewType.Button.self)
+        try button.tap()
+
+        XCTAssertEqual(tapCount, 1, "Tapping the MIL summary row should invoke the navigation action")
+    }
+
     
     func testViewModelInitializesWithNilStatus() throws {
         let mock = MockMILStatusProvider()

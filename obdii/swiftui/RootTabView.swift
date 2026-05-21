@@ -12,10 +12,21 @@
 import SwiftUI
 
 struct RootTabView: View {
+  private enum Tab: Hashable {
+    case settings
+    case gauges
+    case fuel
+    case mil
+    case diagnostics
+  }
+
+  @State private var selectedTab: Tab = .settings
+
   var body: some View {
-    TabView {
+    TabView(selection: $selectedTab) {
 
       SettingsView()
+        .tag(Tab.settings)
         .tabItem {
           Label("Settings", systemImage: "gear")
         }
@@ -23,6 +34,7 @@ struct RootTabView: View {
       NavigationStack {
         GaugesContainerView()
       }
+      .tag(Tab.gauges)
       .tabItem {
         Label("Gauges", systemImage: "gauge")
       }
@@ -30,13 +42,17 @@ struct RootTabView: View {
       NavigationStack {
         FuelStatusView()
       }
+      .tag(Tab.fuel)
       .tabItem {
         Label("Fuel", systemImage: "fuelpump.fill")
       }
 
       NavigationStack {
-        MILStatusView()
+        MILStatusView {
+          selectedTab = .diagnostics
+        }
       }
+      .tag(Tab.mil)
       .tabItem {
         Label("MIL", systemImage: "engine.combustion.fill")
       }
@@ -44,6 +60,7 @@ struct RootTabView: View {
       NavigationStack {
         DiagnosticsView()
       }
+      .tag(Tab.diagnostics)
       .tabItem {
         Label("DTCs", systemImage: "wrench.and.screwdriver")
       }

@@ -224,6 +224,7 @@ extension OBDPID {
     let label = unitLabel(for: unit)
     let formatter = NumberFormatter()
     formatter.numberStyle = .decimal
+    formatter.usesGroupingSeparator = usesGroupingSeparator(forUnits: label)
 
     let digits = preferredFractionDigits(forUnits: label)
     formatter.minimumFractionDigits = digits
@@ -244,20 +245,31 @@ extension OBDPID {
   }
 
   fileprivate func preferredFractionDigits(forUnits units: String) -> Int {
-    switch units {
-    case "RPM": return 0
-    case "°C", "°F": return 0
+    switch normalizedUnitFormattingKey(for: units) {
+    case "rpm": return 0
+    case "°c", "°f": return 0
     case "%": return 0
-    case "kPa", "psi": return 0
-    case "V": return 2
+    case "kpa", "psi": return 0
+    case "v": return 2
     case "g/s": return 2
     case "λ": return 2
     case "km/h", "mph": return 0
     case "km", "mi": return 0
-    case "L/h": return 1
+    case "l/h": return 1
     case "s", "count": return 0
     default: return 0
     }
+  }
+
+  fileprivate func usesGroupingSeparator(forUnits units: String) -> Bool {
+    switch normalizedUnitFormattingKey(for: units) {
+    case "rpm": return false
+    default: return true
+    }
+  }
+
+  fileprivate func normalizedUnitFormattingKey(for units: String) -> String {
+    units.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
   }
 }
 
@@ -276,6 +288,7 @@ extension OBDPID {
     let label = unitLabel(for: measurement.unit)
     let formatter = NumberFormatter()
     formatter.numberStyle = .decimal
+    formatter.usesGroupingSeparator = usesGroupingSeparator(forUnits: label)
 
     let digits = preferredFractionDigits(forUnits: label)
     formatter.minimumFractionDigits = digits

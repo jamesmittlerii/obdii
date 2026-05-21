@@ -9,6 +9,13 @@
 #flutter_obdii/
 
 
+flutter_obdii/ios/Podfile
+flutter_obdii/ios/fastlane/README.md
+flutter_obdii/ios/fastlane/report.xml
+flutter_obdii/macos/fastlane/Appfile
+flutter_obdii/macos/fastlane/Matchfile
+
+
 ## User settings
 xcuserdata/
 

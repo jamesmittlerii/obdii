@@ -17,12 +17,14 @@ import UniformTypeIdentifiers
 
 @MainActor
 struct GaugesView: View {
+  fileprivate static let gridCoordinateSpaceName = "GaugesGrid"
 
   // Stable observable view model instance
   @State private var viewModel: GaugesViewModel
   @State private var selectedDetailViewModel: GaugeDetailViewModel?
   @State private var isShowingDetail = false
   @State private var draggedTileID: UUID?
+  @State private var tileFrames: [UUID: CGRect] = [:]
 
   // Adaptive layout: 2–4 columns depending on device width
   private let columns = [
@@ -66,6 +68,21 @@ struct GaugesView: View {
           .accessibilityIdentifier(tile.tileAccessibilityIdentifier)
         }
       }
+      .coordinateSpace(name: Self.gridCoordinateSpaceName)
+      .onPreferenceChange(GaugeTileFramePreferenceKey.self) { tileFrames = $0 }
+      .background(
+        Rectangle()
+          .fill(Color.black.opacity(0.001))
+          .onDrop(
+            of: [UTType.plainText],
+            delegate: GaugeGridDropDelegate(
+              viewModel: viewModel,
+              draggedTileID: $draggedTileID,
+              tileOrder: viewModel.displayTiles.map(\.id),
+              tileFrames: tileFrames
+            )
+          )
+      )
       .padding()
     }
     .navigationDestination(isPresented: $isShowingDetail) {
@@ -103,7 +120,23 @@ private struct GaugeTile: View {
       RoundedRectangle(cornerRadius: 12)
         .fill(Color(UIColor.secondarySystemBackground))
     )
+    .background(
+      GeometryReader { proxy in
+        Color.clear.preference(
+          key: GaugeTileFramePreferenceKey.self,
+          value: [tile.id: proxy.frame(in: .named(GaugesView.gridCoordinateSpaceName))]
+        )
+      }
+    )
     .opacity(isBeingDragged ? 0.7 : 1)
+  }
+}
+
+private struct GaugeTileFramePreferenceKey: PreferenceKey {
+  static var defaultValue: [UUID: CGRect] = [:]
+
+  static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
+    value.merge(nextValue(), uniquingKeysWith: { _, new in new })
   }
 }
 
@@ -113,11 +146,7 @@ private struct GaugeTileDropDelegate: DropDelegate {
   @Binding var draggedTileID: UUID?
 
   func dropEntered(_: DropInfo) {
-    guard let draggedTileID, draggedTileID != tile.id else { return }
-
-    withAnimation {
-      viewModel.reorderTile(withID: draggedTileID, to: tile.id)
-    }
+    /* Reorder on drop completion so a successful drop always commits the move. */
   }
 
   func dropUpdated(_: DropInfo) -> DropProposal? {
@@ -125,12 +154,101 @@ private struct GaugeTileDropDelegate: DropDelegate {
   }
 
   func performDrop(info _: DropInfo) -> Bool {
+    if let draggedTileID, draggedTileID != tile.id {
+      withAnimation {
+        viewModel.reorderTile(withID: draggedTileID, to: tile.id)
+      }
+    }
     draggedTileID = nil
     return true
   }
 
   func dropExited(_: DropInfo) {
     /* Drag lifecycle hook not needed; reorder happens in dropEntered. */
+  }
+}
+
+private struct GaugeGridDropDelegate: DropDelegate {
+  let viewModel: GaugesViewModel
+  @Binding var draggedTileID: UUID?
+  let tileOrder: [UUID]
+  let tileFrames: [UUID: CGRect]
+
+  func dropUpdated(_: DropInfo) -> DropProposal? {
+    DropProposal(operation: .move)
+  }
+
+  func performDrop(info: DropInfo) -> Bool {
+    defer { draggedTileID = nil }
+
+    guard let draggedTileID else { return false }
+    guard let targetIndex = insertionIndex(for: info.location, excluding: draggedTileID) else {
+      return false
+    }
+
+    withAnimation {
+      viewModel.reorderTile(withID: draggedTileID, toIndex: targetIndex)
+    }
+    return true
+  }
+
+  private func insertionIndex(for location: CGPoint, excluding draggedID: UUID) -> Int? {
+    let orderedFrames = tileOrder.compactMap { id -> (UUID, CGRect)? in
+      guard id != draggedID, let frame = tileFrames[id] else { return nil }
+      return (id, frame)
+    }
+
+    guard !orderedFrames.isEmpty else { return 0 }
+
+    let slotAnchors = makeSlotAnchors(for: orderedFrames)
+    guard let bestMatch = slotAnchors.min(by: {
+      location.distanceSquared(to: $0.point) < location.distanceSquared(to: $1.point)
+    }) else {
+      return nil
+    }
+
+    return bestMatch.index
+  }
+
+  private func makeSlotAnchors(for orderedFrames: [(UUID, CGRect)]) -> [(index: Int, point: CGPoint)] {
+    let centers = orderedFrames.map { $0.1.center }
+    var anchors: [(index: Int, point: CGPoint)] = []
+
+    if let firstFrame = orderedFrames.first?.1 {
+      anchors.append((0, CGPoint(x: firstFrame.minX - 24, y: firstFrame.midY)))
+    }
+
+    for index in 1..<centers.count {
+      let previous = centers[index - 1]
+      let current = centers[index]
+      anchors.append((
+        index,
+        CGPoint(
+          x: (previous.x + current.x) / 2,
+          y: (previous.y + current.y) / 2
+        )
+      ))
+    }
+
+    if let lastFrame = orderedFrames.last?.1 {
+      anchors.append((orderedFrames.count, CGPoint(x: lastFrame.maxX + 24, y: lastFrame.midY)))
+    }
+
+    return anchors
+  }
+}
+
+private extension CGRect {
+  var center: CGPoint {
+    CGPoint(x: midX, y: midY)
+  }
+}
+
+private extension CGPoint {
+  func distanceSquared(to other: CGPoint) -> CGFloat {
+    let dx = x - other.x
+    let dy = y - other.y
+    return (dx * dx) + (dy * dy)
   }
 }
 

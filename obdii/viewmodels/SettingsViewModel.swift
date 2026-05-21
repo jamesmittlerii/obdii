@@ -323,4 +323,8 @@ final class SettingsViewModel: BaseViewModel {
   func clearShareError() {
     shareErrorMessage = nil
   }
+
+  func setShareError(_ message: String) {
+    shareErrorMessage = message
+  }
 }

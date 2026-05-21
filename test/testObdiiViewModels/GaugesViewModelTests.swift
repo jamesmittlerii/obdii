@@ -219,4 +219,55 @@ final class GaugesViewModelTests: XCTestCase {
         XCTAssertEqual(recordedMove?.source, IndexSet(integer: 2))
         XCTAssertEqual(recordedMove?.destination, 0)
     }
+
+    func testReorderTileToInsertionIndexUsesExpectedDestination() async throws {
+        let rpm = makeGaugePID(command: .mode1(.rpm))
+        let speed = makeGaugePID(label: "Speed", name: "Vehicle Speed", command: .mode1(.speed), units: "km/h")
+        let coolant = makeGaugePID(label: "Coolant", name: "Coolant Temp", command: .mode1(.coolantTemp), units: "°C")
+        pidProvider.subject.send([rpm, speed, coolant])
+
+        try await Task.sleep(nanoseconds: 1_200_000_000)
+
+        viewModel.reorderTile(withID: rpm.id, toIndex: 2)
+
+        XCTAssertEqual(recordedMove?.source, IndexSet(integer: 0))
+        XCTAssertEqual(recordedMove?.destination, 2)
+    }
+
+    func testReorderTileToAdjacentInsertionIndexIsNoOp() async throws {
+        let rpm = makeGaugePID(command: .mode1(.rpm))
+        let speed = makeGaugePID(label: "Speed", name: "Vehicle Speed", command: .mode1(.speed), units: "km/h")
+        let coolant = makeGaugePID(label: "Coolant", name: "Coolant Temp", command: .mode1(.coolantTemp), units: "°C")
+        pidProvider.subject.send([rpm, speed, coolant])
+
+        try await Task.sleep(nanoseconds: 1_200_000_000)
+
+        viewModel.reorderTile(withID: speed.id, toIndex: 2)
+
+        XCTAssertNil(recordedMove)
+    }
+
+    func testDisplayTileOmitsUnitsWhenLabelMatchesUnit() async throws {
+        let rpm = makeGaugePID(label: "RPM", name: "Engine RPM", command: .mode1(.rpm), units: "RPM")
+        pidProvider.subject.send([rpm])
+
+        let measurement = MeasurementResult(value: 2500.0, unit: Unit(symbol: "rpm"))
+        let stats = OBDConnectionManager.PIDStats(pid: .mode1(.rpm), measurement: measurement)
+        statsProvider.subject.send([.mode1(.rpm): stats])
+
+        try await Task.sleep(nanoseconds: 1_200_000_000)
+
+        XCTAssertEqual(viewModel.displayTiles.first?.valueText, "2500")
+        XCTAssertEqual(viewModel.displayTiles.first?.ring.displayText, "2500")
+    }
+
+    func testPlaceholderOmitsUnitsWhenLabelMatchesUnit() async throws {
+        let rpm = makeGaugePID(label: "RPM", name: "Engine RPM", command: .mode1(.rpm), units: "RPM")
+        pidProvider.subject.send([rpm])
+
+        try await Task.sleep(nanoseconds: 1_200_000_000)
+
+        XCTAssertEqual(viewModel.displayTiles.first?.valueText, "—")
+        XCTAssertEqual(viewModel.displayTiles.first?.ring.displayText, "—")
+    }
 }
