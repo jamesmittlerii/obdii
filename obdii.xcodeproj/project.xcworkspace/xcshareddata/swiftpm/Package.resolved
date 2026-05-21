@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/jamesmittlerii/SwiftOBD2",
       "state" : {
-        "revision" : "d48e0944c61335d50521633368a1d79a47642fb4",
-        "version" : "0.1.4"
+        "revision" : "e543c5106bb57dca9baea93fa10233d30184d0a7",
+        "version" : "0.1.8"
       }
     },
     {

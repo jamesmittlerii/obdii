@@ -29,11 +29,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rheosoft.obdii.bootstrap.AppBootstrap
-import com.rheosoft.obdii.windows.bootstrap.WindowsAppInitializer
 import com.rheosoft.obdii.core.ConfigData
 import com.rheosoft.obdii.core.DefaultPidStore
 import com.rheosoft.obdii.core.MeasurementUnit
@@ -54,7 +52,11 @@ import com.rheosoft.obdii.viewmodels.GaugesViewModel
 import com.rheosoft.obdii.viewmodels.MilStatusViewModel
 import com.rheosoft.obdii.viewmodels.PidToggleListViewModel
 import com.rheosoft.obdii.viewmodels.SettingsViewModel
+import com.rheosoft.obdii.windows.bootstrap.WindowsAppInitializer
+import com.rheosoft.obdii.windows.generated.resources.Res
+import com.rheosoft.obdii.windows.generated.resources.ic_check_engine
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.painterResource
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -201,7 +203,7 @@ private fun ObdiiBottomNavigation(selected: Int, onSelectedChange: (Int) -> Unit
                 icon = {
                     if (idx == 3) {
                         Icon(
-                            painter = painterResource("drawable/ic_check_engine.xml"),
+                            painter = painterResource(Res.drawable.ic_check_engine),
                             contentDescription = label,
                             modifier = Modifier.padding(top = 2.dp).size(28.dp) // Optical alignment
                         )

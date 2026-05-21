@@ -21,9 +21,11 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.rheosoft.obdii.screenmodels.MilStatusScreenModel
+import com.rheosoft.obdii.windows.generated.resources.Res
+import com.rheosoft.obdii.windows.generated.resources.ic_check_engine
+import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun MilStatusScreen(
@@ -53,7 +55,7 @@ fun MilStatusScreen(
                 ) {
                     val milOn = uiState.status?.milOn ?: false
                     Icon(
-                        painter = painterResource("drawable/ic_check_engine.xml"),
+                        painter = painterResource(Res.drawable.ic_check_engine),
                         contentDescription = "MIL",
                         tint = if (milOn) Color(0xFFFF9800) else Color(0xFF2196F3),
                         modifier = Modifier.size(28.dp),

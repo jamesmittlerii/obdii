@@ -70,7 +70,7 @@ dependencies {
     if (findProject(":kotlinobd2") != null) {
         implementation(project(":kotlinobd2"))
     } else {
-        implementation("com.github.jamesmittlerii:SwiftOBD2:0.1.6")
+        implementation("com.github.jamesmittlerii:SwiftOBD2:0.1.8")
     }
     implementation("androidx.core:core-ktx:1.18.0")
     implementation("androidx.activity:activity-compose:1.13.0")

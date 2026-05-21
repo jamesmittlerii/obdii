@@ -13,7 +13,7 @@ dependencies {
     if (findProject(":kotlinobd2") != null) {
         implementation(project(":kotlinobd2"))
     } else {
-        implementation("com.github.jamesmittlerii:SwiftOBD2:0.1.6")
+        implementation("com.github.jamesmittlerii:SwiftOBD2:0.1.8")
     }
     implementation(kotlin("stdlib"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")

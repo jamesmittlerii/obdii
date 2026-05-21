@@ -27,10 +27,15 @@ dependencies {
     implementation(compose.ui)
     implementation(compose.foundation)
     implementation(compose.materialIconsExtended)
+    implementation(compose.components.resources)
     // Coroutines & Data
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
     implementation("com.google.code.gson:gson:2.14.0")
+}
+
+compose.resources {
+    packageOfResClass = "com.rheosoft.obdii.windows.generated.resources"
 }
 
 compose.desktop {
