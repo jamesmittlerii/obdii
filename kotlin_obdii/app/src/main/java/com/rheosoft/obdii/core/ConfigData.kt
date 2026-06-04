@@ -63,8 +63,16 @@ object ConfigData : SettingsConfigProviding, UnitsProviding {
     private const val K_CONNECTION_TYPE = "connectionType"
     private const val K_UNITS = "units"
     private const val K_GAUGES_MODE = "gaugesDisplayMode"
+    private const val K_HAS_COMPLETED_ONBOARDING = "hasCompletedOnboarding"
 
     var store: KeyValueStore = InMemoryKeyValueStore()
+
+    var hasCompletedOnboarding: Boolean = false
+        set(value) {
+            if (field == value) return
+            field = value
+            store.putBoolean(K_HAS_COMPLETED_ONBOARDING, value)
+        }
 
     override var wifiHost: String = DEFAULT_WIFI_HOST
         set(value) {
@@ -123,6 +131,7 @@ object ConfigData : SettingsConfigProviding, UnitsProviding {
             ?: MeasurementUnit.Metric
         gaugesDisplayMode = GaugesDisplayMode.entries.firstOrNull { it.name == (store.getString(K_GAUGES_MODE) ?: "gauges") }
             ?: GaugesDisplayMode.gauges
+        hasCompletedOnboarding = store.getBoolean(K_HAS_COMPLETED_ONBOARDING) ?: false
         _unitsFlow.value = units
         _connectionTypeFlow.value = connectionType
         _gaugesModeFlow.value = gaugesDisplayMode
@@ -140,6 +149,7 @@ object ConfigData : SettingsConfigProviding, UnitsProviding {
         wifiPort = 35000
         autoConnectToOBD = true
         connectionType = ConnectionType.bluetooth
+        hasCompletedOnboarding = false
         setUnits(MeasurementUnit.Metric)
     }
 }

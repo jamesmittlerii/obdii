@@ -137,5 +137,6 @@ class SettingsViewTest {
         )
         assertEquals(listOf("Metric", "Imperial"), view.unitsLabels)
         assertEquals("Share Logs", view.diagnosticsActionLabel)
+        assertEquals("Show intro again", view.showIntroAgainLabel)
     }
 }

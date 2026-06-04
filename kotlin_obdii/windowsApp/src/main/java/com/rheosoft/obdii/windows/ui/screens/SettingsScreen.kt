@@ -73,6 +73,7 @@ fun SettingsScreen(
     view: SettingsScreenModel,
     modifier: Modifier,
     onOpenGaugePicker: () -> Unit,
+    onShowIntroAgain: () -> Unit,
 ) {
     val vm = view.viewModel
     val uiState by vm.uiStateStream.collectAsState()
@@ -191,6 +192,18 @@ fun SettingsScreen(
             Spacer(Modifier.height(8.dp))
             SectionLabel("About")
             PremiumCard(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onShowIntroAgain)
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(view.showIntroAgainLabel)
+                    Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = Color.Gray)
+                }
+                HorizontalDivider()
                 Text(uiState.appVersion.ifEmpty { "Loading version…" }, modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp))
             }
         }

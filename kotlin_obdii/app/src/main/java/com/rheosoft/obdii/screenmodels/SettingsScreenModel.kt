@@ -19,6 +19,7 @@ class SettingsScreenModel(val viewModel: SettingsViewModel) {
     val hasGaugesNavigationRow: Boolean = true
     val hasAutoConnectRow: Boolean = true
     val diagnosticsActionLabel: String = "Share Logs"
+    val showIntroAgainLabel: String = "Show intro again"
 
     val connectButtonLabel: String
         get() = when (viewModel.connectionState) {

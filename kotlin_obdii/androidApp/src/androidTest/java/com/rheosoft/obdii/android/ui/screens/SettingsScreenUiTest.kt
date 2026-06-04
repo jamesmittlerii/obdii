@@ -65,7 +65,8 @@ class SettingsScreenUiTest {
             SettingsScreen(
                 view = screenModel,
                 modifier = Modifier,
-                onOpenGaugePicker = {}
+                onOpenGaugePicker = {},
+                onShowIntroAgain = {},
             )
         }
         return vm

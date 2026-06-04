@@ -18,6 +18,7 @@ class ConfigDataTest {
         assertEquals(DEFAULT_WIFI_HOST, ConfigData.wifiHost)
         assertEquals(35000, ConfigData.wifiPort)
         assertTrue(ConfigData.autoConnectToOBD)
+        assertFalse(ConfigData.hasCompletedOnboarding)
         assertEquals(ConnectionType.bluetooth, ConfigData.connectionType)
         assertEquals(MeasurementUnit.Metric, ConfigData.units)
     }
@@ -39,5 +40,14 @@ class ConfigDataTest {
         assertEquals("10.0.0.1", store.getString("wifiHost"))
         assertFalse(store.getBoolean("autoConnectToOBD") ?: true)
         assertEquals("Imperial", store.getString("units"))
+    }
+
+    @Test
+    fun `onboarding completion persists in backing store`() {
+        ConfigData.hasCompletedOnboarding = true
+        val store = ConfigData.store as InMemoryKeyValueStore
+        assertTrue(store.getBoolean("hasCompletedOnboarding") ?: false)
+        ConfigData.load()
+        assertTrue(ConfigData.hasCompletedOnboarding)
     }
 }
