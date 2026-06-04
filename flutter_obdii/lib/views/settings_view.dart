@@ -22,7 +22,14 @@ import '../viewmodels/settings_viewmodel.dart';
 import 'pid_toggle_list_view.dart';
 
 class SettingsView extends StatefulWidget {
-  const SettingsView({super.key});
+  final VoidCallback? onOpenGaugePicker;
+  final VoidCallback? onShowIntroAgain;
+
+  const SettingsView({
+    super.key,
+    this.onOpenGaugePicker,
+    this.onShowIntroAgain,
+  });
 
   @override
   State<SettingsView> createState() => _SettingsViewState();
@@ -93,11 +100,17 @@ class _SettingsViewState extends State<SettingsView> {
           Icons.chevron_right,
           color: Theme.of(context).colorScheme.primary,
         ),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) => const PidToggleListView()),
-        ),
+        onTap: () {
+          final open = widget.onOpenGaugePicker;
+          if (open != null) {
+            open();
+          } else {
+            Navigator.push<void>(
+              context,
+              MaterialPageRoute(builder: (_) => const PidToggleListView()),
+            );
+          }
+        },
       ),
     );
   }
@@ -355,8 +368,24 @@ class _SettingsViewState extends State<SettingsView> {
       children: [
         _sectionHeader(context, 'About'),
         Card(
-          child: ListTile(
-            title: Text(vm.appVersion.isNotEmpty ? vm.appVersion : 'Loading version…'),
+          child: Column(
+            children: [
+              if (widget.onShowIntroAgain != null)
+                ListTile(
+                  title: const Text('Show intro again'),
+                  trailing: Icon(
+                    Icons.chevron_right,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  onTap: widget.onShowIntroAgain,
+                ),
+              if (widget.onShowIntroAgain != null) const Divider(height: 1),
+              ListTile(
+                title: Text(
+                  vm.appVersion.isNotEmpty ? vm.appVersion : 'Loading version…',
+                ),
+              ),
+            ],
           ),
         ),
       ],

@@ -22,8 +22,13 @@ import 'ring_gauge_widget.dart';
 
 class GaugesView extends StatefulWidget {
   final bool isActive;
+  final bool enableGaugeDetail;
 
-  const GaugesView({super.key, this.isActive = true});
+  const GaugesView({
+    super.key,
+    this.isActive = true,
+    this.enableGaugeDetail = true,
+  });
 
   @override
   State<GaugesView> createState() => _GaugesViewState();
@@ -88,9 +93,12 @@ class _GaugesViewState extends State<GaugesView> {
               if (vm.isEmpty)
                 SliverFillRemaining(child: _emptyState())
               else if (mode == GaugesDisplayMode.gauges)
-                _GaugesGrid(vm: vm)
+                _GaugesGrid(vm: vm, enableGaugeDetail: widget.enableGaugeDetail)
               else
-                _GaugesList(vm: vm),
+                _GaugesList(
+                  vm: vm,
+                  enableGaugeDetail: widget.enableGaugeDetail,
+                ),
             ],
           ),
         );
@@ -122,8 +130,12 @@ class _GaugesViewState extends State<GaugesView> {
 
 class _GaugesGrid extends StatefulWidget {
   final GaugesViewModel vm;
+  final bool enableGaugeDetail;
 
-  const _GaugesGrid({required this.vm});
+  const _GaugesGrid({
+    required this.vm,
+    required this.enableGaugeDetail,
+  });
 
   @override
   State<_GaugesGrid> createState() => _GaugesGridState();
@@ -226,9 +238,9 @@ class _GaugesGridState extends State<_GaugesGrid> {
         child: _GaugeTile(
           tile: tile,
           isMetric: isMetric,
-          onTap: isDragging
+          onTap: isDragging || !widget.enableGaugeDetail
               ? null
-              : () => Navigator.push(
+              : () => Navigator.push<void>(
                   context,
                   MaterialPageRoute(
                     builder: (_) => GaugeDetailView(pid: tile.pid),
@@ -299,8 +311,12 @@ class _GaugeTile extends StatelessWidget {
 
 class _GaugesList extends StatelessWidget {
   final GaugesViewModel vm;
+  final bool enableGaugeDetail;
 
-  const _GaugesList({required this.vm});
+  const _GaugesList({
+    required this.vm,
+    required this.enableGaugeDetail,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -318,7 +334,11 @@ class _GaugesList extends StatelessWidget {
           return ReorderableDelayedDragStartListener(
             key: ValueKey(tile.id),
             index: index,
-            child: _GaugeListRow(tile: tile, isMetric: isMetric),
+            child: _GaugeListRow(
+              tile: tile,
+              isMetric: isMetric,
+              enableGaugeDetail: enableGaugeDetail,
+            ),
           );
         },
       ),
@@ -329,8 +349,13 @@ class _GaugesList extends StatelessWidget {
 class _GaugeListRow extends StatelessWidget {
   final GaugeTile tile;
   final bool isMetric;
+  final bool enableGaugeDetail;
 
-  const _GaugeListRow({required this.tile, required this.isMetric});
+  const _GaugeListRow({
+    required this.tile,
+    required this.isMetric,
+    required this.enableGaugeDetail,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -359,10 +384,12 @@ class _GaugeListRow extends StatelessWidget {
       ),
       elevation: 0,
       child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => GaugeDetailView(pid: pid)),
-        ),
+        onTap: enableGaugeDetail
+            ? () => Navigator.push<void>(
+                context,
+                MaterialPageRoute(builder: (_) => GaugeDetailView(pid: pid)),
+              )
+            : null,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(

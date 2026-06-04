@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_obdii/app_bootstrap.dart';
+import 'package:flutter_obdii/core/config_data.dart';
 import 'package:flutter_obdii/views/main_scaffold_cupertino.dart';
 
 Widget _buildApp() {
@@ -31,6 +32,7 @@ void _useDesktopSurface(WidgetTester tester) {
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+    ConfigData.instance.hasCompletedOnboarding = true;
   });
 
   testWidgets('restores saved selected tab', (WidgetTester tester) async {

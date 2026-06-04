@@ -467,6 +467,9 @@ class OBDConnectionManager extends ChangeNotifier
   void _handleServiceState(obd2lib.ConnectionState serviceState) {
     switch (serviceState) {
       case obd2lib.ConnectionState.disconnected:
+        if (connectionState == OBDConnectionState.disconnected) {
+          return;
+        }
         obdDebug('Mirrored service disconnect to manager state and cleared data.',
             category: LogCategory.service);
         _clearForTerminalState();

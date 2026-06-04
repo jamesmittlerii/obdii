@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_obdii/core/config_data.dart';
 import 'package:flutter_obdii/core/obd_connection_manager.dart';
@@ -37,6 +38,11 @@ Widget _buildApp() {
 }
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    ConfigData.instance.hasCompletedOnboarding = true;
+  });
+
   testWidgets('testHasTabView', (tester) async {
     await tester.pumpWidget(_buildApp());
     expect(find.byType(NavigationBar), findsOneWidget);
@@ -54,9 +60,11 @@ void main() {
 
   testWidgets('testGaugesTabHasNavigationStack', (tester) async {
     await tester.pumpWidget(_buildApp());
-    await tester.tap(find.text('Gauges').first);
+    await tester.pump();
+    await tester.tap(find.byType(NavigationDestination).at(1));
     await tester.pump(const Duration(milliseconds: 200));
-    expect(find.text('Gauges'), findsWidgets);
+    final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
+    expect(bar.selectedIndex, 1);
   });
 
   testWidgets('testTabsHaveAccessibilityIdentifiers', (tester) async {

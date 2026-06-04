@@ -40,6 +40,7 @@ Widget _buildApp() {
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+    ConfigData.instance.hasCompletedOnboarding = true;
   });
   testWidgets('testShowsAllFiveBottomNavigationDestinations', (
     WidgetTester tester,

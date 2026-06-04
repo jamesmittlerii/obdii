@@ -20,6 +20,7 @@ void main() {
     cd.autoConnectToOBD = true;
     cd.connectionType = ConnectionType.bluetooth;
     cd.setUnits(MeasurementUnit.metric);
+    cd.hasCompletedOnboarding = false;
   });
 
   test('testSingletonInstanceExists', () {
@@ -170,5 +171,13 @@ void main() {
     await Future.delayed(const Duration(milliseconds: 100));
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getBool('autoConnectToOBD'), isFalse);
+  });
+
+  test('onboarding completion persists in backing store', () async {
+    ConfigData.instance.hasCompletedOnboarding = true;
+    await Future.delayed(const Duration(milliseconds: 100));
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('hasCompletedOnboarding'), isTrue);
+    expect(ConfigData.instance.hasCompletedOnboarding, isTrue);
   });
 }

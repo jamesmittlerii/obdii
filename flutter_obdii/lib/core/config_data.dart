@@ -84,6 +84,7 @@ class ConfigData extends ChangeNotifier
   static const _kAutoConnect = 'autoConnectToOBD';
   static const _kConnectionType = 'connectionType';
   static const _kUnits = 'units';
+  static const _kHasCompletedOnboarding = 'hasCompletedOnboarding';
 
   // In-memory state
   String _wifiHost = defaultWifiHost;
@@ -91,6 +92,7 @@ class ConfigData extends ChangeNotifier
   bool _autoConnectToOBD = true;
   ConnectionType _connectionType = ConnectionType.bluetooth;
   MeasurementUnit _units = MeasurementUnit.metric;
+  bool _hasCompletedOnboarding = false;
 
   bool _loaded = false;
 
@@ -166,6 +168,15 @@ class ConfigData extends ChangeNotifier
   @override
   MeasurementUnit get units => _units;
 
+  bool get hasCompletedOnboarding => _hasCompletedOnboarding;
+
+  set hasCompletedOnboarding(bool v) {
+    if (v == _hasCompletedOnboarding) return;
+    _hasCompletedOnboarding = v;
+    _persist(_kHasCompletedOnboarding, v);
+    notifyListeners();
+  }
+
   @override
   void setUnits(MeasurementUnit newUnits) {
     if (newUnits == _units) return;
@@ -193,6 +204,9 @@ class ConfigData extends ChangeNotifier
     final rawUnits = prefs.getString(_kUnits) ?? 'metric';
     _units = MeasurementUnit.values
         .firstWhere((e) => e.name == rawUnits, orElse: () => MeasurementUnit.metric);
+
+    _hasCompletedOnboarding =
+        prefs.getBool(_kHasCompletedOnboarding) ?? false;
 
     _unitsController.value = _units;
     _connectionTypeController.value = _connectionType;

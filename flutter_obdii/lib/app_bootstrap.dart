@@ -20,7 +20,8 @@ Future<void> bootstrapObdApp() async {
   await ConfigData.instance.load();
   await PidStore.instance.load();
   OBDConnectionManager.instance.initialize();
-  if (ConfigData.instance.autoConnectToOBD) {
+  if (ConfigData.instance.autoConnectToOBD &&
+      ConfigData.instance.hasCompletedOnboarding) {
     unawaited(OBDConnectionManager.instance.connect());
   }
 }

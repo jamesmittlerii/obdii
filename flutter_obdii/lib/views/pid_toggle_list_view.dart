@@ -10,8 +10,9 @@ import '../viewmodels/pid_toggle_list_viewmodel.dart';
 
 class PidToggleListView extends StatefulWidget {
   final PidToggleListViewModel? viewModel;
+  final VoidCallback? onClose;
 
-  const PidToggleListView({super.key, this.viewModel});
+  const PidToggleListView({super.key, this.viewModel, this.onClose});
 
   @override
   State<PidToggleListView> createState() => _PidToggleListViewState();
@@ -41,7 +42,14 @@ class _PidToggleListViewState extends State<PidToggleListView> {
                 color: Theme.of(context).colorScheme.primary,
                 size: 28,
               ),
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                final close = widget.onClose;
+                if (close != null) {
+                  close();
+                } else {
+                  Navigator.of(context).pop();
+                }
+              },
             ),
             title: _isSearching
                 ? TextField(
