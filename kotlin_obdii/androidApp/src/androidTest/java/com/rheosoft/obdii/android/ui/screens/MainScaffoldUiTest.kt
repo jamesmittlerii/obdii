@@ -2,12 +2,24 @@ package com.rheosoft.obdii.android.ui.screens
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
 class MainScaffoldUiTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Before
+    fun setUp() {
+        prepareObdiiUiTestConfig()
+    }
+
+    @After
+    fun tearDown() {
+        tearDownObdiiUiTestConfig()
+    }
 
     @Test
     fun testShowsAllFiveBottomNavigationDestinations() {

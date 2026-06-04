@@ -6,6 +6,19 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import com.rheosoft.obdii.core.ConfigData
+import com.rheosoft.obdii.core.OBDConnectionManager
+
+/** Match Flutter widget tests: skip intro overlay so scaffold navigation is interactive. */
+fun prepareObdiiUiTestConfig() {
+    ConfigData.autoConnectToOBD = false
+    ConfigData.hasCompletedOnboarding = true
+}
+
+/** Stop background connect started by [KotlinObdiiApp] so later compose tests can tear down cleanly. */
+fun tearDownObdiiUiTestConfig() {
+    OBDConnectionManager.disconnect()
+}
 
 fun SemanticsNodeInteractionsProvider.onText(
     text: String,

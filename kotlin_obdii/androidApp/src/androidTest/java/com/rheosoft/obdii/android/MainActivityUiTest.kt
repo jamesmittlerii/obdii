@@ -12,7 +12,10 @@ import com.rheosoft.obdii.android.ui.screens.assertTextVisibleAfterScroll
 import com.rheosoft.obdii.android.ui.screens.clickFirstText
 import com.rheosoft.obdii.android.ui.screens.clickLastText
 import com.rheosoft.obdii.android.ui.screens.KotlinObdiiApp
+import com.rheosoft.obdii.android.ui.screens.prepareObdiiUiTestConfig
+import com.rheosoft.obdii.android.ui.screens.tearDownObdiiUiTestConfig
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -25,9 +28,15 @@ class MainActivityUiTest {
 
     @Before
     fun setUp() {
+        prepareObdiiUiTestConfig()
         composeRule.setContent {
             KotlinObdiiApp(permissionsReady = true)
         }
+    }
+
+    @After
+    fun tearDown() {
+        tearDownObdiiUiTestConfig()
     }
 
     @Test
