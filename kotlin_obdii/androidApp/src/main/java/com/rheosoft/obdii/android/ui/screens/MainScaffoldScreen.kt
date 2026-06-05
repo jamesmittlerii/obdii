@@ -1,6 +1,7 @@
 package com.rheosoft.obdii.android.ui.screens
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -63,6 +64,48 @@ import com.rheosoft.obdii.viewmodels.SettingsViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+private data class KotlinObdiiTabViews(
+    val settings: SettingsScreenModel,
+    val dashboard: DashboardScreenModel,
+    val fuel: FuelStatusScreenModel,
+    val mil: MilStatusScreenModel,
+    val dtc: DiagnosticsScreenModel,
+    val settingsVm: SettingsViewModel,
+    val scope: CoroutineScope,
+)
+
+private data class KotlinObdiiTabActions(
+    val onOpenGaugePicker: () -> Unit,
+    val onShowIntroAgain: () -> Unit,
+    val onGaugeTap: (ObdiiPid) -> Unit,
+    val onMilSummaryTap: () -> Unit,
+    val onDtcTap: (DtcDetailScreenModel) -> Unit,
+)
+
+private data class KotlinObdiiScaffoldUiState(
+    val ready: Boolean,
+    val selected: Int,
+    val showOnboarding: Boolean,
+    val onboardingNavHighlight: Int?,
+)
+
+private data class KotlinObdiiOverlayUiState(
+    val ready: Boolean,
+    val showOnboarding: Boolean,
+    val showGaugePicker: Boolean,
+    val onboardingPageIndex: Int,
+    val selectedGaugeDetail: GaugeDetailScreenModel?,
+    val selectedDtcDetail: DtcDetailScreenModel?,
+)
+
+private data class KotlinObdiiOverlayActions(
+    val onOnboardingPageIndexChange: (Int) -> Unit,
+    val onOnboardingComplete: (Boolean) -> Unit,
+    val onGaugePickerClose: () -> Unit,
+    val onGaugeDetailClose: () -> Unit,
+    val onDtcDetailClose: () -> Unit,
+)
+
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 fun KotlinObdiiApp(permissionsReady: Boolean = true) {
@@ -92,81 +135,16 @@ fun KotlinObdiiApp(permissionsReady: Boolean = true) {
     val selectedGaugeDetail = remember { mutableStateOf<GaugeDetailScreenModel?>(null) }
     val selectedDtcDetail = remember { mutableStateOf<DtcDetailScreenModel?>(null) }
 
-    LaunchedEffect(Unit) {
-        if (DefaultPidStore.pids.isEmpty()) {
-            val pidsFromJson = loadPidsFromJson(context)
-            DefaultPidStore.seededPidsProvider = { pidsFromJson.ifEmpty { defaultGaugeSeedPids() } }
-        }
-        runCatching { AppBootstrap.initialize() }
-        fuelView.setActive(selected == 2)
-        milView.setActive(selected == 3)
-        dtcView.setActive(selected == 4)
-        gaugesVm.setVisible(selected == 1)
-        ready = true
-    }
-
-    LaunchedEffect(ready, permissionsReady) {
-        // Keep first paint responsive: auto-connect runs in background once Android BLE permissions are ready.
-        if (ready && permissionsReady && ConfigData.autoConnectToOBD &&
-            ConfigData.hasCompletedOnboarding && !attemptedAutoConnect
-        ) {
-            attemptedAutoConnect = true
-            scope.launch {
-                runCatching {
-                    OBDConnectionManager.connect()
-                }
-            }
-        }
-    }
-
-    LaunchedEffect(selected) {
-        uiPrefs.edit { putInt("ui.selectedTab", selected) }
-    }
-    LaunchedEffect(selected, ready) {
-        if (ready) {
-            fuelView.setActive(selected == 2)
-            milView.setActive(selected == 3)
-            dtcView.setActive(selected == 4)
-            gaugesVm.setVisible(selected == 1)
-        }
-    }
-
-    LaunchedEffect(showOnboarding, onboardingPageIndex) {
-        if (!showOnboarding) {
-            showGaugePicker.value = false
-            return@LaunchedEffect
-        }
-        if (OnboardingScreenModel.showGaugePicker(onboardingPageIndex)) {
-            selected = OnboardingScreenModel.SETTINGS_TAB_INDEX
-            showGaugePicker.value = true
-        } else {
-            showGaugePicker.value = false
-            OnboardingScreenModel.previewTabIndex(onboardingPageIndex)?.let { selected = it }
-        }
-    }
-
-    ObserveChanges(settingsVm)
-    ObservePidChanges(gaugePickerVm)
-
-    val onboardingNavHighlight = if (showOnboarding) {
-        OnboardingScreenModel.highlightedNavTab(onboardingPageIndex)
-    } else {
-        null
-    }
-
-    KotlinObdiiAppScaffold(
-        ready = ready,
-        selected = selected,
-        showOnboarding = showOnboarding,
-        onboardingNavHighlight = onboardingNavHighlight,
-        onSelectedChange = { selected = it },
-        settingsView = settingsView,
-        dashboardView = dashboardView,
-        fuelView = fuelView,
-        milView = milView,
-        dtcView = dtcView,
+    val tabViews = KotlinObdiiTabViews(
+        settings = settingsView,
+        dashboard = dashboardView,
+        fuel = fuelView,
+        mil = milView,
+        dtc = dtcView,
         settingsVm = settingsVm,
         scope = scope,
+    )
+    val tabActions = KotlinObdiiTabActions(
         onOpenGaugePicker = { showGaugePicker.value = true },
         onShowIntroAgain = {
             onboardingPageIndex = 0
@@ -179,87 +157,225 @@ fun KotlinObdiiApp(permissionsReady: Boolean = true) {
         onDtcTap = { selectedDtcDetail.value = it },
     )
 
-    KotlinObdiiAppOverlays(
+    KotlinObdiiBootstrapEffect(
+        context = context,
+        selected = selected,
+        tabViews = tabViews,
+        gaugesVm = gaugesVm,
+        onReady = { ready = true },
+    )
+    KotlinObdiiAutoConnectEffect(
         ready = ready,
+        permissionsReady = permissionsReady,
+        attemptedAutoConnect = attemptedAutoConnect,
+        onAttemptedAutoConnect = { attemptedAutoConnect = true },
+        scope = scope,
+    )
+    KotlinObdiiSelectedTabEffects(
+        uiPrefs = uiPrefs,
+        selected = selected,
+        ready = ready,
+        tabViews = tabViews,
+        gaugesVm = gaugesVm,
+    )
+    KotlinObdiiOnboardingTabEffect(
         showOnboarding = showOnboarding,
-        showGaugePicker = showGaugePicker.value,
         onboardingPageIndex = onboardingPageIndex,
+        onShowGaugePickerChange = { showGaugePicker.value = it },
+        onSelectedChange = { selected = it },
+    )
+
+    ObserveChanges(settingsVm)
+    ObservePidChanges(gaugePickerVm)
+
+    KotlinObdiiAppScaffold(
+        uiState = KotlinObdiiScaffoldUiState(
+            ready = ready,
+            selected = selected,
+            showOnboarding = showOnboarding,
+            onboardingNavHighlight = if (showOnboarding) {
+                OnboardingScreenModel.highlightedNavTab(onboardingPageIndex)
+            } else {
+                null
+            },
+        ),
+        tabViews = tabViews,
+        tabActions = tabActions,
+        onSelectedChange = { selected = it },
+    )
+
+    KotlinObdiiAppOverlays(
+        uiState = KotlinObdiiOverlayUiState(
+            ready = ready,
+            showOnboarding = showOnboarding,
+            showGaugePicker = showGaugePicker.value,
+            onboardingPageIndex = onboardingPageIndex,
+            selectedGaugeDetail = selectedGaugeDetail.value,
+            selectedDtcDetail = selectedDtcDetail.value,
+        ),
         gaugePickerView = gaugePickerView,
         settingsVm = settingsVm,
         scope = scope,
-        selectedGaugeDetail = selectedGaugeDetail.value,
-        selectedDtcDetail = selectedDtcDetail.value,
-        onOnboardingPageIndexChange = { onboardingPageIndex = it },
-        onOnboardingComplete = { startDemo ->
-            ConfigData.hasCompletedOnboarding = true
-            showOnboarding = false
-            showGaugePicker.value = false
-            if (startDemo) {
-                settingsVm.onConnectionTypeChanged(ConnectionType.demo)
-                selected = OnboardingScreenModel.GAUGES_TAB_INDEX
-                scope.launch { runCatching { OBDConnectionManager.connect() } }
-            }
-        },
-        onGaugePickerClose = { showGaugePicker.value = false },
-        onGaugeDetailClose = { selectedGaugeDetail.value = null },
-        onDtcDetailClose = { selectedDtcDetail.value = null },
+        actions = KotlinObdiiOverlayActions(
+            onOnboardingPageIndexChange = { onboardingPageIndex = it },
+            onOnboardingComplete = { startDemo ->
+                completeKotlinObdiiOnboarding(
+                    startDemo = startDemo,
+                    settingsVm = settingsVm,
+                    scope = scope,
+                    onShowOnboardingChange = { showOnboarding = it },
+                    onShowGaugePickerChange = { showGaugePicker.value = it },
+                    onSelectedChange = { selected = it },
+                )
+            },
+            onGaugePickerClose = { showGaugePicker.value = false },
+            onGaugeDetailClose = { selectedGaugeDetail.value = null },
+            onDtcDetailClose = { selectedDtcDetail.value = null },
+        ),
     )
 }
 
 @Composable
-private fun KotlinObdiiAppScaffold(
-    ready: Boolean,
+private fun KotlinObdiiBootstrapEffect(
+    context: Context,
     selected: Int,
+    tabViews: KotlinObdiiTabViews,
+    gaugesVm: GaugesViewModel,
+    onReady: () -> Unit,
+) {
+    LaunchedEffect(Unit) {
+        if (DefaultPidStore.pids.isEmpty()) {
+            val pidsFromJson = loadPidsFromJson(context)
+            DefaultPidStore.seededPidsProvider = { pidsFromJson.ifEmpty { defaultGaugeSeedPids() } }
+        }
+        runCatching { AppBootstrap.initialize() }
+        syncKotlinObdiiTabVisibility(selected, tabViews, gaugesVm)
+        onReady()
+    }
+}
+
+@Composable
+private fun KotlinObdiiAutoConnectEffect(
+    ready: Boolean,
+    permissionsReady: Boolean,
+    attemptedAutoConnect: Boolean,
+    onAttemptedAutoConnect: () -> Unit,
+    scope: CoroutineScope,
+) {
+    LaunchedEffect(ready, permissionsReady) {
+        // Keep first paint responsive: auto-connect runs in background once Android BLE permissions are ready.
+        if (ready && permissionsReady && ConfigData.autoConnectToOBD &&
+            ConfigData.hasCompletedOnboarding && !attemptedAutoConnect
+        ) {
+            onAttemptedAutoConnect()
+            scope.launch {
+                runCatching {
+                    OBDConnectionManager.connect()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun KotlinObdiiSelectedTabEffects(
+    uiPrefs: SharedPreferences,
+    selected: Int,
+    ready: Boolean,
+    tabViews: KotlinObdiiTabViews,
+    gaugesVm: GaugesViewModel,
+) {
+    LaunchedEffect(selected) {
+        uiPrefs.edit { putInt("ui.selectedTab", selected) }
+    }
+    LaunchedEffect(selected, ready) {
+        if (ready) {
+            syncKotlinObdiiTabVisibility(selected, tabViews, gaugesVm)
+        }
+    }
+}
+
+@Composable
+private fun KotlinObdiiOnboardingTabEffect(
     showOnboarding: Boolean,
-    onboardingNavHighlight: Int?,
+    onboardingPageIndex: Int,
+    onShowGaugePickerChange: (Boolean) -> Unit,
     onSelectedChange: (Int) -> Unit,
-    settingsView: SettingsScreenModel,
-    dashboardView: DashboardScreenModel,
-    fuelView: FuelStatusScreenModel,
-    milView: MilStatusScreenModel,
-    dtcView: DiagnosticsScreenModel,
+) {
+    LaunchedEffect(showOnboarding, onboardingPageIndex) {
+        if (!showOnboarding) {
+            onShowGaugePickerChange(false)
+            return@LaunchedEffect
+        }
+        if (OnboardingScreenModel.showGaugePicker(onboardingPageIndex)) {
+            onSelectedChange(OnboardingScreenModel.SETTINGS_TAB_INDEX)
+            onShowGaugePickerChange(true)
+        } else {
+            onShowGaugePickerChange(false)
+            OnboardingScreenModel.previewTabIndex(onboardingPageIndex)?.let { onSelectedChange(it) }
+        }
+    }
+}
+
+private fun syncKotlinObdiiTabVisibility(
+    selected: Int,
+    tabViews: KotlinObdiiTabViews,
+    gaugesVm: GaugesViewModel,
+) {
+    tabViews.fuel.setActive(selected == 2)
+    tabViews.mil.setActive(selected == 3)
+    tabViews.dtc.setActive(selected == 4)
+    gaugesVm.setVisible(selected == 1)
+}
+
+private fun completeKotlinObdiiOnboarding(
+    startDemo: Boolean,
     settingsVm: SettingsViewModel,
     scope: CoroutineScope,
-    onOpenGaugePicker: () -> Unit,
-    onShowIntroAgain: () -> Unit,
-    onGaugeTap: (ObdiiPid) -> Unit,
-    onMilSummaryTap: () -> Unit,
-    onDtcTap: (DtcDetailScreenModel) -> Unit,
+    onShowOnboardingChange: (Boolean) -> Unit,
+    onShowGaugePickerChange: (Boolean) -> Unit,
+    onSelectedChange: (Int) -> Unit,
+) {
+    ConfigData.hasCompletedOnboarding = true
+    onShowOnboardingChange(false)
+    onShowGaugePickerChange(false)
+    if (!startDemo) return
+    settingsVm.onConnectionTypeChanged(ConnectionType.demo)
+    onSelectedChange(OnboardingScreenModel.GAUGES_TAB_INDEX)
+    scope.launch { runCatching { OBDConnectionManager.connect() } }
+}
+
+@Composable
+private fun KotlinObdiiAppScaffold(
+    uiState: KotlinObdiiScaffoldUiState,
+    tabViews: KotlinObdiiTabViews,
+    tabActions: KotlinObdiiTabActions,
+    onSelectedChange: (Int) -> Unit,
 ) {
     Scaffold(
         bottomBar = {
             Box {
                 ObdiiBottomNavigation(
-                    selected = selected,
-                    onSelectedChange = { if (!showOnboarding) onSelectedChange(it) },
+                    selected = uiState.selected,
+                    onSelectedChange = { if (!uiState.showOnboarding) onSelectedChange(it) },
                 )
-                if (showOnboarding) {
-                    OnboardingNavHighlight(onboardingNavHighlight)
+                if (uiState.showOnboarding) {
+                    OnboardingNavHighlight(uiState.onboardingNavHighlight)
                 }
             }
         },
         containerColor = AppBackground,
     ) { pad ->
-        if (!ready) {
+        if (!uiState.ready) {
             CenterText("Loading...", Modifier.padding(pad))
             return@Scaffold
         }
         Box(Modifier.padding(pad).fillMaxSize()) {
             MainScaffoldTabContent(
-                selected = selected,
-                showOnboarding = showOnboarding,
-                settingsView = settingsView,
-                dashboardView = dashboardView,
-                fuelView = fuelView,
-                milView = milView,
-                dtcView = dtcView,
-                settingsVm = settingsVm,
-                scope = scope,
-                onOpenGaugePicker = onOpenGaugePicker,
-                onShowIntroAgain = onShowIntroAgain,
-                onGaugeTap = onGaugeTap,
-                onMilSummaryTap = onMilSummaryTap,
-                onDtcTap = onDtcTap,
+                selected = uiState.selected,
+                showOnboarding = uiState.showOnboarding,
+                tabViews = tabViews,
+                tabActions = tabActions,
             )
         }
     }
@@ -269,91 +385,72 @@ private fun KotlinObdiiAppScaffold(
 private fun MainScaffoldTabContent(
     selected: Int,
     showOnboarding: Boolean,
-    settingsView: SettingsScreenModel,
-    dashboardView: DashboardScreenModel,
-    fuelView: FuelStatusScreenModel,
-    milView: MilStatusScreenModel,
-    dtcView: DiagnosticsScreenModel,
-    settingsVm: SettingsViewModel,
-    scope: CoroutineScope,
-    onOpenGaugePicker: () -> Unit,
-    onShowIntroAgain: () -> Unit,
-    onGaugeTap: (ObdiiPid) -> Unit,
-    onMilSummaryTap: () -> Unit,
-    onDtcTap: (DtcDetailScreenModel) -> Unit,
+    tabViews: KotlinObdiiTabViews,
+    tabActions: KotlinObdiiTabActions,
 ) {
     when (selected) {
         0 -> SettingsScreen(
-            view = settingsView,
+            view = tabViews.settings,
             modifier = Modifier.fillMaxSize(),
-            onOpenGaugePicker = { if (!showOnboarding) onOpenGaugePicker() },
-            onShowIntroAgain = onShowIntroAgain,
+            onOpenGaugePicker = { if (!showOnboarding) tabActions.onOpenGaugePicker() },
+            onShowIntroAgain = tabActions.onShowIntroAgain,
         )
         1 -> DashboardScreen(
-            view = dashboardView,
-            isMetric = settingsVm.units == MeasurementUnit.Metric,
+            view = tabViews.dashboard,
+            isMetric = tabViews.settingsVm.units == MeasurementUnit.Metric,
             modifier = Modifier.fillMaxSize(),
-            scope = scope,
-            onGaugeTap = { pid -> if (!showOnboarding) onGaugeTap(pid) },
+            scope = tabViews.scope,
+            onGaugeTap = { pid -> if (!showOnboarding) tabActions.onGaugeTap(pid) },
         )
-        2 -> FuelStatusScreen(fuelView, Modifier.fillMaxSize())
+        2 -> FuelStatusScreen(tabViews.fuel, Modifier.fillMaxSize())
         3 -> MilStatusScreen(
-            milView,
+            tabViews.mil,
             Modifier.fillMaxSize(),
-            onMilSummaryTap = { if (!showOnboarding) onMilSummaryTap() },
+            onMilSummaryTap = { if (!showOnboarding) tabActions.onMilSummaryTap() },
         )
         else -> DiagnosticsScreen(
-            view = dtcView,
+            view = tabViews.dtc,
             modifier = Modifier.fillMaxSize(),
-            onDtcTap = { if (!showOnboarding) onDtcTap(it) },
+            onDtcTap = { if (!showOnboarding) tabActions.onDtcTap(it) },
         )
     }
 }
 
 @Composable
 private fun KotlinObdiiAppOverlays(
-    ready: Boolean,
-    showOnboarding: Boolean,
-    showGaugePicker: Boolean,
-    onboardingPageIndex: Int,
+    uiState: KotlinObdiiOverlayUiState,
     gaugePickerView: PidToggleListScreenModel,
     settingsVm: SettingsViewModel,
     scope: CoroutineScope,
-    selectedGaugeDetail: GaugeDetailScreenModel?,
-    selectedDtcDetail: DtcDetailScreenModel?,
-    onOnboardingPageIndexChange: (Int) -> Unit,
-    onOnboardingComplete: (Boolean) -> Unit,
-    onGaugePickerClose: () -> Unit,
-    onGaugeDetailClose: () -> Unit,
-    onDtcDetailClose: () -> Unit,
+    actions: KotlinObdiiOverlayActions,
 ) {
-    if (showGaugePicker) {
+    if (uiState.showGaugePicker) {
         PidToggleListScreen(
             view = gaugePickerView,
             isMetric = settingsVm.units == MeasurementUnit.Metric,
-            onClose = { if (!showOnboarding) onGaugePickerClose() },
+            onClose = { if (!uiState.showOnboarding) actions.onGaugePickerClose() },
             scope = scope,
         )
     }
 
-    if (ready && showOnboarding) {
+    if (uiState.ready && uiState.showOnboarding) {
         OnboardingContentScrim(
-            pageIndex = onboardingPageIndex,
-            onPageIndexChange = onOnboardingPageIndexChange,
+            pageIndex = uiState.onboardingPageIndex,
+            onPageIndexChange = actions.onOnboardingPageIndexChange,
             bottomInset = 80.dp,
-            onComplete = onOnboardingComplete,
+            onComplete = actions.onOnboardingComplete,
         )
     }
 
-    selectedGaugeDetail?.let { detail ->
+    uiState.selectedGaugeDetail?.let { detail ->
         GaugeDetailScreen(
             detail = detail,
             isMetric = settingsVm.units == MeasurementUnit.Metric,
-            onClose = onGaugeDetailClose,
+            onClose = actions.onGaugeDetailClose,
         )
     }
-    selectedDtcDetail?.let { detail ->
-        DtcDetailScreen(detail = detail, onClose = onDtcDetailClose)
+    uiState.selectedDtcDetail?.let { detail ->
+        DtcDetailScreen(detail = detail, onClose = actions.onDtcDetailClose)
     }
 }
 
