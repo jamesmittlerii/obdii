@@ -35,7 +35,7 @@ val kotlinObd2Dir = if (!kotlinObd2DirEnv.isNullOrBlank()) {
     file("../../SwiftOBD2/kotlinobd2")
 }
 
-if (!isCi && kotlinObd2Dir.exists()) {
+if (kotlinObd2Dir.exists()) {
     include(":kotlinobd2")
     project(":kotlinobd2").projectDir = kotlinObd2Dir
 } else if (!isCi) {

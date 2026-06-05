@@ -128,8 +128,8 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
         connectionJob?.cancelAndJoin()
         connectionJob = currentCoroutineContext()[Job]
 
-        syncTransportConfigInternal()
         _connectionState = OBDConnectionState.connecting
+        syncTransportConfigInternal()
         obdInfo("Starting connection with timeout: 30s", LogCategory.Connection)
 
         try {
@@ -243,6 +243,7 @@ object OBDConnectionManager : PidStatsProviding, DiagnosticsProviding, FuelStatu
     private fun bindConnectionSettings() {
         managerScope.launch {
             ConfigData.connectionTypeStream.collectLatest {
+                if (_connectionState == OBDConnectionState.connecting) return@collectLatest
                 syncTransportConfigInternal()
             }
         }
