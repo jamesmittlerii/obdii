@@ -18,7 +18,13 @@ import SwiftUI
 
 struct SettingsView: View {
 
+  var onShowIntroAgain: (() -> Void)?
+
   @State private var viewModel = SettingsViewModel()
+
+  init(onShowIntroAgain: (() -> Void)? = nil) {
+    self.onShowIntroAgain = onShowIntroAgain
+  }
 
   #if canImport(UIKit)
     @State private var isPresentingShare = false
@@ -126,6 +132,16 @@ struct SettingsView: View {
           #endif
         }
         Section(header: Text("About")) {
+          if let onShowIntroAgain {
+            Button(action: onShowIntroAgain) {
+              HStack {
+                Text("Show intro again")
+                Spacer()
+                Image(systemName: "chevron.right")
+                  .foregroundStyle(.secondary)
+              }
+            }
+          }
           HStack {
             Text(viewModel.aboutText)
               .multilineTextAlignment(.trailing)

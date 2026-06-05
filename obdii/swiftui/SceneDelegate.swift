@@ -47,8 +47,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     #endif
     window.rootViewController = ViewController()
     self.window = window
-    // Honor auto-connect on app start for phone UI
-    if ConfigData.shared.autoConnectToOBD {
+    // Honor auto-connect on app start for phone UI (skip until intro is finished).
+    if ConfigData.shared.autoConnectToOBD, ConfigData.shared.hasCompletedOnboarding {
       Task { await OBDConnectionManager.shared.connect() }
     }
     window.makeKeyAndVisible()

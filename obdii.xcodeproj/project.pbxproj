@@ -76,6 +76,7 @@
 				testObdiiViewModels/GaugeDetailViewModelTests.swift,
 				testObdiiViewModels/GaugesViewModelTests.swift,
 				testObdiiViewModels/MILStatusViewModelTests.swift,
+				testObdiiViewModels/OnboardingScreenModelTests.swift,
 				testObdiiViewModels/PIDToggleListViewModelTests.swift,
 				testObdiiViewModels/SettingsViewModelTests.swift,
 				testObdiiViews/DiagnosticViewTests.swift,
@@ -119,6 +120,7 @@
 				testObdiiViewModels/GaugeDetailViewModelTests.swift,
 				testObdiiViewModels/GaugesViewModelTests.swift,
 				testObdiiViewModels/MILStatusViewModelTests.swift,
+				testObdiiViewModels/OnboardingScreenModelTests.swift,
 				testObdiiViewModels/PIDToggleListViewModelTests.swift,
 				testObdiiViewModels/SettingsViewModelTests.swift,
 			);

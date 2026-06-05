@@ -12,61 +12,175 @@
 import SwiftUI
 
 struct RootTabView: View {
-  private enum Tab: Hashable {
-    case settings
-    case gauges
-    case fuel
-    case mil
-    case diagnostics
+  private enum Tab: Int, Hashable, CaseIterable {
+    case settings = 0
+    case gauges = 1
+    case fuel = 2
+    case mil = 3
+    case diagnostics = 4
   }
 
+  @ObservedObject private var config = ConfigData.shared
   @State private var selectedTab: Tab = .settings
+  @State private var showOnboarding = !ConfigData.shared.hasCompletedOnboarding
+  @State private var onboardingPageIndex = 0
+  @State private var showGaugePicker = false
+
+  private var tabSelection: Binding<Tab> {
+    Binding(
+      get: { selectedTab },
+      set: { newTab in
+        guard !showOnboarding else { return }
+        selectedTab = newTab
+      }
+    )
+  }
+
+  private var interactionsEnabled: Bool { !showOnboarding }
+
+  private var onboardingNavHighlight: Int? {
+    showOnboarding ? OnboardingScreenModel.highlightedNavTab(onboardingPageIndex) : nil
+  }
 
   var body: some View {
-    TabView(selection: $selectedTab) {
+    ZStack {
+      TabView(selection: tabSelection) {
+        SettingsView(onShowIntroAgain: restartOnboarding)
+          .tag(Tab.settings)
+          .tabItem {
+            Label("Settings", systemImage: "gear")
+          }
 
-      SettingsView()
-        .tag(Tab.settings)
+        NavigationStack {
+          GaugesContainerView()
+        }
+        .tag(Tab.gauges)
         .tabItem {
-          Label("Settings", systemImage: "gear")
+          Label("Gauges", systemImage: "gauge")
         }
 
-      NavigationStack {
-        GaugesContainerView()
-      }
-      .tag(Tab.gauges)
-      .tabItem {
-        Label("Gauges", systemImage: "gauge")
-      }
+        NavigationStack {
+          FuelStatusView()
+        }
+        .tag(Tab.fuel)
+        .tabItem {
+          Label("Fuel", systemImage: "fuelpump.fill")
+        }
 
-      NavigationStack {
-        FuelStatusView()
-      }
-      .tag(Tab.fuel)
-      .tabItem {
-        Label("Fuel", systemImage: "fuelpump.fill")
-      }
+        NavigationStack {
+          MILStatusView {
+            guard interactionsEnabled else { return }
+            selectedTab = .diagnostics
+          }
+        }
+        .tag(Tab.mil)
+        .tabItem {
+          Label("MIL", systemImage: "engine.combustion.fill")
+        }
 
-      NavigationStack {
-        MILStatusView {
-          selectedTab = .diagnostics
+        NavigationStack {
+          DiagnosticsView()
+        }
+        .tag(Tab.diagnostics)
+        .tabItem {
+          Label("DTCs", systemImage: "wrench.and.screwdriver")
         }
       }
-      .tag(Tab.mil)
-      .tabItem {
-        Label("MIL", systemImage: "engine.combustion.fill")
+      .tabViewStyle(.automatic)
+
+      if showGaugePicker {
+        gaugePickerOverlay
       }
 
-      NavigationStack {
-        DiagnosticsView()
-      }
-      .tag(Tab.diagnostics)
-      .tabItem {
-        Label("DTCs", systemImage: "wrench.and.screwdriver")
+      if showOnboarding {
+        OnboardingContentScrim(
+          pageIndex: onboardingPageIndex,
+          onPageIndexChange: setOnboardingPageIndex,
+          onComplete: completeOnboarding
+        )
       }
     }
-    // Ensures icons appear on iPad just like iPhone
-    .tabViewStyle(.automatic)
+    .overlay(alignment: .bottom) {
+      if showOnboarding {
+        OnboardingNavHighlight(highlightedIndex: onboardingNavHighlight)
+      }
+    }
+    .onAppear {
+      syncOnboardingPreview()
+    }
+    .onChange(of: onboardingPageIndex) { _, _ in
+      syncOnboardingPreview()
+    }
+    .onChange(of: showOnboarding) { _, isShowing in
+      if isShowing {
+        syncOnboardingPreview()
+      } else {
+        showGaugePicker = false
+      }
+    }
+  }
+
+  private var gaugePickerOverlay: some View {
+    NavigationStack {
+      PIDToggleListView()
+        .navigationTitle("Gauges")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+          ToolbarItem(placement: .topBarLeading) {
+            Button {
+              if !showOnboarding {
+                showGaugePicker = false
+              }
+            } label: {
+              Image(systemName: "chevron.left")
+            }
+            .disabled(showOnboarding)
+          }
+        }
+    }
+    .background(Color(.systemGroupedBackground))
+  }
+
+  private func setOnboardingPageIndex(_ index: Int) {
+    onboardingPageIndex = index
+    syncOnboardingPreview()
+  }
+
+  private func syncOnboardingPreview() {
+    guard showOnboarding else {
+      showGaugePicker = false
+      return
+    }
+
+    if OnboardingScreenModel.showGaugePicker(onboardingPageIndex) {
+      selectedTab = .settings
+      showGaugePicker = true
+    } else {
+      showGaugePicker = false
+      if let tabIndex = OnboardingScreenModel.previewTabIndex(onboardingPageIndex),
+        let tab = Tab(rawValue: tabIndex)
+      {
+        selectedTab = tab
+      }
+    }
+  }
+
+  private func restartOnboarding() {
+    onboardingPageIndex = 0
+    showOnboarding = true
+    syncOnboardingPreview()
+  }
+
+  private func completeOnboarding(startDemo: Bool) {
+    config.hasCompletedOnboarding = true
+    showOnboarding = false
+    showGaugePicker = false
+
+    guard startDemo else { return }
+
+    config.connectionType = .demo
+    selectedTab = .gauges
+    Task { await OBDConnectionManager.shared.connect() }
   }
 }
 

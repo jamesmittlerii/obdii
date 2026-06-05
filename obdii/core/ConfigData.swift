@@ -23,6 +23,7 @@ final class ConfigData: ObservableObject {
   @AppStorage("wifiHost") var wifiHost: String = "192.168.0.10"
   @AppStorage("wifiPort") var wifiPort: Int = 35000
   @AppStorage("autoConnectToOBD") var autoConnectToOBD: Bool = true
+  @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
 
   @AppStorage("connectionType") private var storedConnectionType: String = ConnectionType.bluetooth
     .rawValue

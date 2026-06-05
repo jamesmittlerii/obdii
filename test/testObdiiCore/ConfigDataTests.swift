@@ -30,6 +30,7 @@ final class ConfigDataTests: XCTestCase {
         configData.autoConnectToOBD = true
         configData.connectionType = .bluetooth
         configData.setUnits(.metric)
+        configData.hasCompletedOnboarding = false
     }
 
     
@@ -139,5 +140,16 @@ final class ConfigDataTests: XCTestCase {
         // Should persist the raw value
         let savedUnits = UserDefaults.standard.string(forKey: "units")
         XCTAssertEqual(savedUnits, MeasurementUnit.imperial.rawValue, "Should persist units")
+    }
+
+    func testHasCompletedOnboardingDefaultsFalse() {
+        XCTAssertFalse(configData.hasCompletedOnboarding)
+    }
+
+    func testHasCompletedOnboardingPersistence() {
+        configData.hasCompletedOnboarding = true
+
+        XCTAssertTrue(configData.hasCompletedOnboarding)
+        XCTAssertTrue(UserDefaults.standard.bool(forKey: "hasCompletedOnboarding"))
     }
 }
