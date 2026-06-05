@@ -449,7 +449,7 @@ jobs:
         continue-on-error: true
         with:
           name: kotlin-sonar-coverage
-          path: .
+          path: kotlin_obdii
 
       - name: Download Flutter coverage
         uses: actions/download-artifact@v4

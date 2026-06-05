@@ -11,6 +11,23 @@ fi
 UNIT_REPORT="$ROOT/app/build/reports/jacoco/test/jacocoTestReport.xml"
 ANDROID_CANONICAL="$ROOT/androidApp/build/reports/coverage/androidTest/debug/connected/report.xml"
 
+restore_reports_from_artifact_layout() {
+  # upload-artifact uses kotlin_obdii as LCA, so a download to repo root
+  # lands at app/... instead of kotlin_obdii/app/...
+  local unit_alt="app/build/reports/jacoco/test/jacocoTestReport.xml"
+  local android_alt="androidApp/build/reports/coverage/androidTest/debug/connected/report.xml"
+
+  if [ ! -f "$UNIT_REPORT" ] && [ -f "$unit_alt" ]; then
+    mkdir -p "$(dirname "$UNIT_REPORT")"
+    cp "$unit_alt" "$UNIT_REPORT"
+  fi
+
+  if [ ! -f "$ANDROID_CANONICAL" ] && [ -f "$android_alt" ]; then
+    mkdir -p "$(dirname "$ANDROID_CANONICAL")"
+    cp "$android_alt" "$ANDROID_CANONICAL"
+  fi
+}
+
 fail() {
   echo "ERROR: $*" >&2
   exit 1
@@ -38,6 +55,7 @@ resolve_android_report() {
   echo "$ANDROID_CANONICAL"
 }
 
+restore_reports_from_artifact_layout
 assert_jacoco_report "Unit test" "$UNIT_REPORT"
 echo "Unit coverage report: $UNIT_REPORT ($(wc -c < "$UNIT_REPORT") bytes)"
 
