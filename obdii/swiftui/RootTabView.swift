@@ -26,6 +26,15 @@ struct RootTabView: View {
   @State private var onboardingPageIndex = 0
   @State private var showGaugePicker = false
 
+  init(testOnboardingState showOnboarding: Bool? = nil, pageIndex: Int = 0) {
+    _selectedTab = State(initialValue: .settings)
+    _showOnboarding = State(
+      initialValue: showOnboarding ?? !ConfigData.shared.hasCompletedOnboarding
+    )
+    _onboardingPageIndex = State(initialValue: pageIndex)
+    _showGaugePicker = State(initialValue: false)
+  }
+
   private var tabSelection: Binding<Tab> {
     Binding(
       get: { selectedTab },
