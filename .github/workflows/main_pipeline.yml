@@ -316,10 +316,10 @@ jobs:
           name: swift-sonar-coverage
           path: sonarqube-generic-coverage.xml
 
-  sonar_scan:
-    name: SonarCloud Scan
-    needs: [filter, version_bump, sonar_swift_support, kotlin_deploy, flutter_deploy, flutter_apple_deploy, swift_deploy]
-    if: always() && !cancelled()
+  sonar_kotlin_support:
+    name: Kotlin Coverage
+    needs: [filter, version_bump]
+    if: always() && !cancelled() && (needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -346,13 +346,7 @@ jobs:
       - name: Setup Gradle cache
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-
       - name: Kotlin unit test coverage
-        # if: needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true'
         working-directory: kotlin_obdii
         env:
           KOTLINOBD2_DIR: ${{ github.workspace }}/SwiftOBD2/kotlinobd2
@@ -367,7 +361,6 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Android UI instrumented coverage
-        # if: needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true'
         uses: reactivecircus/android-emulator-runner@v2
         env:
           KOTLINOBD2_DIR: ${{ github.workspace }}/SwiftOBD2/kotlinobd2
@@ -381,12 +374,57 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot-save -noaudio -no-boot-anim -camera-back none -memory 4096
           script: bash scripts/ci-android-ui-coverage.sh
 
-      - name: Flutter Coverage
-        # if: needs.filter.outputs.flutter == 'true' || needs.filter.outputs.pipeline == 'true'
+      - name: Upload Kotlin coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: kotlin-sonar-coverage
+          path: |
+            kotlin_obdii/app/build/reports/jacoco/test/jacocoTestReport.xml
+            kotlin_obdii/androidApp/build/reports/coverage/androidTest/debug/connected/report.xml
+
+  sonar_flutter_support:
+    name: Flutter Coverage
+    needs: [filter, version_bump]
+    if: always() && !cancelled() && (needs.filter.outputs.flutter == 'true' || needs.filter.outputs.pipeline == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.version_bump.outputs.new_sha }}
+          submodules: recursive
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter coverage
+        working-directory: flutter_obdii
         run: |
-          cd flutter_obdii
           flutter pub get
           flutter test --coverage
+
+      - name: Upload Flutter coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-sonar-coverage
+          path: flutter_obdii/coverage/lcov.info
+
+  sonar_scan:
+    name: SonarCloud Scan
+    needs: [filter, version_bump, sonar_swift_support, sonar_kotlin_support, sonar_flutter_support, kotlin_deploy, flutter_deploy, flutter_apple_deploy, swift_deploy]
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.version_bump.outputs.new_sha }}
+          submodules: recursive
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
 
       - name: Download Swift coverage
         uses: actions/download-artifact@v4
@@ -395,16 +433,38 @@ jobs:
           name: swift-sonar-coverage
           path: coverage-swift
 
+      - name: Download Kotlin coverage
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: kotlin-sonar-coverage
+          path: .
+
+      - name: Download Flutter coverage
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: flutter-sonar-coverage
+          path: flutter_obdii/coverage
+
       - name: Ensure Coverage Reports Exist
         run: |
           mkdir -p coverage-swift
           if [ ! -f coverage-swift/sonarqube-generic-coverage.xml ] || [ ! -s coverage-swift/sonarqube-generic-coverage.xml ]; then
             echo '<coverage version="1"></coverage>' > coverage-swift/sonarqube-generic-coverage.xml
           fi
-          # Ensure directories for other reports exist to avoid sonar warnings
           mkdir -p kotlin_obdii/app/build/reports/jacoco/test
+          if [ ! -f kotlin_obdii/app/build/reports/jacoco/test/jacocoTestReport.xml ]; then
+            echo '<?xml version="1.0" encoding="UTF-8"?><report name="jacocoTestReport"/>' > kotlin_obdii/app/build/reports/jacoco/test/jacocoTestReport.xml
+          fi
           mkdir -p kotlin_obdii/androidApp/build/reports/coverage/androidTest/debug/connected
+          if [ ! -f kotlin_obdii/androidApp/build/reports/coverage/androidTest/debug/connected/report.xml ]; then
+            echo '<?xml version="1.0" encoding="UTF-8"?><report name="androidTestCoverage"/>' > kotlin_obdii/androidApp/build/reports/coverage/androidTest/debug/connected/report.xml
+          fi
           mkdir -p flutter_obdii/coverage
+          if [ ! -f flutter_obdii/coverage/lcov.info ]; then
+            touch flutter_obdii/coverage/lcov.info
+          fi
 
       - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@v7
