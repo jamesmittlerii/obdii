@@ -201,13 +201,13 @@ jobs:
           name: swift-sonar-coverage
           path: coverage-swift
 
-      - name: Verify Kotlin coverage for Sonar
-        run: bash scripts/verify-kotlin-coverage-for-sonar.sh
-
-      - name: Verify Swift coverage for Sonar
-        run: bash scripts/verify-swift-coverage-for-sonar.sh
+      - name: Prepare Sonar coverage scanner args
+        id: sonar_coverage
+        run: bash scripts/prepare-sonar-scanner-args.sh --kotlin --flutter --swift
 
       - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@v7
+        with:
+          args: ${{ steps.sonar_coverage.outputs.args }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

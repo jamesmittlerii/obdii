@@ -462,37 +462,40 @@ jobs:
           token: ${{ secrets.PAT_TOKEN }}
 
       - name: Download Swift coverage
+        if: needs.filter.outputs.swift == 'true' || needs.filter.outputs.pipeline == 'true'
         uses: actions/download-artifact@v4
-        continue-on-error: true
         with:
           name: swift-sonar-coverage
           path: coverage-swift
 
       - name: Download Kotlin coverage
+        if: needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true'
         uses: actions/download-artifact@v4
-        continue-on-error: true
         with:
           name: kotlin-sonar-coverage
           path: kotlin_obdii
 
       - name: Download Flutter coverage
+        if: needs.filter.outputs.flutter == 'true' || needs.filter.outputs.pipeline == 'true'
         uses: actions/download-artifact@v4
-        continue-on-error: true
         with:
           name: flutter-sonar-coverage
           path: flutter_obdii/coverage
 
-      - name: Verify downloaded Swift coverage
-        if: needs.filter.outputs.swift == 'true' || needs.filter.outputs.pipeline == 'true'
-        run: bash scripts/verify-swift-coverage-for-sonar.sh
-
-      - name: Verify downloaded Kotlin coverage
-        if: needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true'
-        run: bash scripts/verify-kotlin-coverage-for-sonar.sh
-
-      - name: Verify downloaded Flutter coverage
-        if: needs.filter.outputs.flutter == 'true' || needs.filter.outputs.pipeline == 'true'
-        run: bash scripts/verify-flutter-coverage-for-sonar.sh
+      - name: Prepare Sonar coverage scanner args
+        id: sonar_coverage
+        run: |
+          ARGS=()
+          if [ "${{ needs.filter.outputs.kotlin }}" = "true" ] || [ "${{ needs.filter.outputs.pipeline }}" = "true" ]; then
+            ARGS+=(--kotlin)
+          fi
+          if [ "${{ needs.filter.outputs.flutter }}" = "true" ] || [ "${{ needs.filter.outputs.pipeline }}" = "true" ]; then
+            ARGS+=(--flutter)
+          fi
+          if [ "${{ needs.filter.outputs.swift }}" = "true" ] || [ "${{ needs.filter.outputs.pipeline }}" = "true" ]; then
+            ARGS+=(--swift)
+          fi
+          bash scripts/prepare-sonar-scanner-args.sh "${ARGS[@]}"
 
       # Sonar still analyzes flutter_obdii/lib every scan; pub get is required
       # so package: imports resolve (widgets.dart, provider.dart, etc.).
@@ -509,5 +512,7 @@ jobs:
 
       - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@v7
+        with:
+          args: ${{ steps.sonar_coverage.outputs.args }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
