@@ -33,3 +33,11 @@
 *   **Consistency:** Always match the existing style of the codebase.
 *   **Traceability:** Every changed line should trace directly back to the specific request.
 *   **Seniority Standard:** Write code that a senior engineer would consider clean and simple.
+
+## Sonar / Compose Maintainability
+Follow the workspace [Sonar rules](file:///c:/Users/chica/OneDrive/Documents/git/obdii/CLAUDE.md#5-sonar-maintainability-enforce-proactively). Kotlin-specific patterns:
+
+*   **Composable complexity:** Keep root app composables (`KotlinObdiiApp`, scaffold screens) thin. Extract `@Composable` effect helpers (`*Effect`, `*Overlays`, `*TabContent`) and plain functions for non-UI logic (`completeOnboarding`, `syncTabVisibility`).
+*   **Parameter grouping:** When a `@Composable` needs many screen models, VMs, or callbacks, bundle them into `private data class` holders at the bottom of the file — e.g. `KotlinObdiiTabViews`, `KotlinObdiiTabActions`, `KotlinObdiiScaffoldUiState`. Target ≤ 7 params per composable.
+*   **State + Actions split:** Mirror `ConnectionSectionState` / `ConnectionSectionActions` in `SettingsScreen.kt` and `GaugeGridItemActions` in `DashboardScreen.kt` — separate read-only snapshot data from callbacks.
+*   **Reference:** `androidApp/.../MainScaffoldScreen.kt` for the canonical scaffold refactor pattern.

@@ -3,9 +3,16 @@ name: Main CI/CD Pipeline
 on:
   push:
     branches: ["main"]
-    # Manual Windows Store deploy config only — do not run full CI/version bump.
+    # Skip full CI for doc-only pushes (README, CLAUDE.md, docs/, Cursor rules, etc.).
+    # Workflow still runs when any non-ignored path changes in the same commit.
     paths-ignore:
       - ".github/workflows/windows_store.yml"
+      - "**/*.md"
+      - "**/*.mdc"
+      - ".cursor/**"
+      - ".agent/**"
+      - "kotlin_obdii/docs/**"
+      - "flutter_obdii/docs/**"
   workflow_dispatch:
 
 concurrency:
@@ -26,6 +33,7 @@ jobs:
       flutter: ${{ steps.filter.outputs.flutter }}
       swift: ${{ steps.filter.outputs.swift }}
       pipeline: ${{ steps.filter.outputs.pipeline }}
+      product: ${{ steps.product.outputs.value }}
     steps:
       - uses: actions/checkout@v5
       - uses: dorny/paths-filter@v3
@@ -34,21 +42,37 @@ jobs:
           filters: |
             kotlin:
               - 'kotlin_obdii/**'
+              - '!kotlin_obdii/**/*.md'
+              - '!kotlin_obdii/docs/**'
             flutter:
               - 'flutter_obdii/**'
+              - '!flutter_obdii/**/*.md'
+              - '!flutter_obdii/docs/**'
             swift:
               - 'obdii/**'
               - 'test/**'
               - 'obdii.xcodeproj/**'
+              - '!**/*.md'
             pipeline:
               - '.github/workflows/main_pipeline.yml'
               - 'scripts/**'
               - 'release-version.txt'
               - 'sonar-project.properties'
+      - id: product
+        run: |
+          if [ "${{ steps.filter.outputs.kotlin }}" = "true" ] || \
+             [ "${{ steps.filter.outputs.flutter }}" = "true" ] || \
+             [ "${{ steps.filter.outputs.swift }}" = "true" ] || \
+             [ "${{ steps.filter.outputs.pipeline }}" = "true" ]; then
+            echo "value=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=false" >> "$GITHUB_OUTPUT"
+          fi
 
   version_bump:
     name: Prepare & Version
     needs: filter
+    if: needs.filter.outputs.product == 'true'
     runs-on: ubuntu-latest
     outputs:
       new_sha: ${{ steps.sha.outputs.sha }}
@@ -427,7 +451,7 @@ jobs:
   sonar_scan:
     name: SonarCloud Scan
     needs: [filter, version_bump, sonar_swift_support, sonar_kotlin_support, sonar_flutter_support, kotlin_deploy, flutter_deploy, flutter_apple_deploy, swift_deploy]
-    if: always() && !cancelled()
+    if: always() && !cancelled() && needs.filter.outputs.product == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5

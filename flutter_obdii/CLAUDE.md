@@ -26,3 +26,10 @@ Follow the 4 pillars (Think, Simplicity, Surgical, Goal-Driven) as defined in th
 *   **Architecture:** Provider for state management.
 *   **Navigation:** Material 3 tabbed navigation with `IndexedStack`.
 *   **Testing:** Use `WidgetTester` and mock ViewModels where appropriate.
+
+## Sonar / Widget Maintainability
+Follow the workspace [Sonar rules](file:///c:/Users/chica/OneDrive/Documents/git/obdii/CLAUDE.md#5-sonar-maintainability-enforce-proactively). Flutter-specific patterns:
+
+*   **Keep `build()` shallow:** Extract private `_build*()` helpers for tab content, overlay layers, and onboarding stacks when `build()` approaches Sonar's cognitive-complexity limit.
+*   **Document intentional no-ops:** Onboarding-disabled callbacks (e.g. gauge picker `onClose` during scrim) need an inline comment inside the closure body, not a bare `() {}`.
+*   **Reference:** `lib/views/main_scaffold_cupertino.dart` (`_buildTabView`, `_buildOnboardingLayers`).
