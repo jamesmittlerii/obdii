@@ -15,6 +15,12 @@ fun prepareObdiiUiTestConfig() {
     ConfigData.hasCompletedOnboarding = true
 }
 
+/** Match Flutter onboarding_overlay_test: first launch shows intro scrim. */
+fun prepareOnboardingUiTestConfig() {
+    ConfigData.autoConnectToOBD = false
+    ConfigData.hasCompletedOnboarding = false
+}
+
 /** Stop background connect started by [KotlinObdiiApp] so later compose tests can tear down cleanly. */
 fun tearDownObdiiUiTestConfig() {
     OBDConnectionManager.disconnect()
