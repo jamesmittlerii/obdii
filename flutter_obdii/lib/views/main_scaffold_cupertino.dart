@@ -101,6 +101,66 @@ class _MainScaffoldCupertinoState extends State<MainScaffoldCupertino> {
     return mq.viewPadding.bottom + _tabBarHeight + _onboardingNavGap;
   }
 
+  Widget _buildTabView(int index, bool isActive, bool interactionsEnabled) {
+    switch (index) {
+      case 0:
+        return SettingsView(
+          onOpenGaugePicker: interactionsEnabled
+              ? () => setState(() => _showGaugePicker = true)
+              : null,
+          onShowIntroAgain: _restartOnboarding,
+        );
+      case 1:
+        return GaugesView(
+          isActive: isActive,
+          enableGaugeDetail: interactionsEnabled,
+        );
+      case 2:
+        return FuelStatusView(isActive: isActive);
+      case 3:
+        return MilStatusView(
+          isActive: isActive,
+          onMilSummaryTap: interactionsEnabled ? _openDtcTab : null,
+        );
+      case 4:
+        return DiagnosticsView(isActive: isActive);
+      default:
+        return const SettingsView();
+    }
+  }
+
+  List<Widget> _buildOnboardingLayers(
+    BuildContext context,
+    int? onboardingNavHighlight,
+  ) {
+    return [
+      if (_showGaugePicker)
+        PidToggleListView(
+          onClose: _showOnboarding
+              ? () {
+                  // Keep picker open while onboarding controls the preview tab.
+                }
+              : () => setState(() => _showGaugePicker = false),
+        ),
+      if (_showOnboarding)
+        OnboardingContentScrim(
+          pageIndex: _onboardingPageIndex,
+          onPageIndexChange: _setOnboardingPageIndex,
+          onComplete: _completeOnboarding,
+          bottomInset: _onboardingBottomInset(context),
+        ),
+      if (_showOnboarding)
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: OnboardingNavHighlight(
+            highlightedIndex: onboardingNavHighlight,
+          ),
+        ),
+    ];
+  }
+
   Future<void> _completeOnboarding(bool startDemo) async {
     ConfigData.instance.hasCompletedOnboarding = true;
     setState(() {
@@ -181,71 +241,15 @@ class _MainScaffoldCupertinoState extends State<MainScaffoldCupertino> {
               animation: _tabController,
               builder: (context, _) {
                 final isActive = _tabController.index == index;
-
-                Widget view;
-                switch (index) {
-                  case 0:
-                    view = SettingsView(
-                      onOpenGaugePicker: interactionsEnabled
-                          ? () => setState(() => _showGaugePicker = true)
-                          : null,
-                      onShowIntroAgain: _restartOnboarding,
-                    );
-                    break;
-                  case 1:
-                    view = GaugesView(
-                      isActive: isActive,
-                      enableGaugeDetail: interactionsEnabled,
-                    );
-                    break;
-                  case 2:
-                    view = FuelStatusView(isActive: isActive);
-                    break;
-                  case 3:
-                    view = MilStatusView(
-                      isActive: isActive,
-                      onMilSummaryTap:
-                          interactionsEnabled ? _openDtcTab : null,
-                    );
-                    break;
-                  case 4:
-                    view = DiagnosticsView(isActive: isActive);
-                    break;
-                  default:
-                    view = const SettingsView();
-                    break;
-                }
-
                 return SafeArea(
                   bottom: false,
-                  child: view,
+                  child: _buildTabView(index, isActive, interactionsEnabled),
                 );
               },
             );
           },
         ),
-        if (_showGaugePicker)
-          PidToggleListView(
-            onClose: _showOnboarding
-                ? () {}
-                : () => setState(() => _showGaugePicker = false),
-          ),
-        if (_showOnboarding)
-          OnboardingContentScrim(
-            pageIndex: _onboardingPageIndex,
-            onPageIndexChange: _setOnboardingPageIndex,
-            onComplete: _completeOnboarding,
-            bottomInset: _onboardingBottomInset(context),
-          ),
-        if (_showOnboarding)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: OnboardingNavHighlight(
-              highlightedIndex: onboardingNavHighlight,
-            ),
-          ),
+        ..._buildOnboardingLayers(context, onboardingNavHighlight),
       ],
     );
   }

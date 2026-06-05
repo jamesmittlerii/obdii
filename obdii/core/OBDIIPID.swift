@@ -262,10 +262,10 @@ extension OBDPID {
   }
 
   fileprivate func usesGroupingSeparator(forUnits units: String) -> Bool {
-    switch normalizedUnitFormattingKey(for: units) {
-    case "rpm": return false
-    default: return true
+    if normalizedUnitFormattingKey(for: units) == "rpm" {
+      return false
     }
+    return true
   }
 
   fileprivate func normalizedUnitFormattingKey(for units: String) -> String {

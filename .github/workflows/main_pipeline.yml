@@ -470,6 +470,19 @@ jobs:
         if: needs.filter.outputs.flutter == 'true' || needs.filter.outputs.pipeline == 'true'
         run: bash scripts/verify-flutter-coverage-for-sonar.sh
 
+      # Sonar still analyzes flutter_obdii/lib every scan; pub get is required
+      # so package: imports resolve (widgets.dart, provider.dart, etc.).
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+          pub-cache: true
+
+      - name: Install Flutter dependencies
+        working-directory: flutter_obdii
+        run: flutter pub get
+
       - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@v7
         env:

@@ -19,13 +19,17 @@ struct MILStatusView: View {
   private let onSummaryTap: () -> Void
 
   // Default initializer preserves existing app behavior
-  init(onSummaryTap: @escaping () -> Void = {}) {
+  init(onSummaryTap: @escaping () -> Void = {
+    // Standalone MIL tab: scaffold wires summary navigation when embedded.
+  }) {
     _viewModel = State(initialValue: MILStatusViewModel())
     self.onSummaryTap = onSummaryTap
   }
 
   // Injectable initializer for tests or previews
-  init(viewModel: MILStatusViewModel, onSummaryTap: @escaping () -> Void = {}) {
+  init(viewModel: MILStatusViewModel, onSummaryTap: @escaping () -> Void = {
+    // Previews/tests omit navigation unless they inject a handler.
+  }) {
     _viewModel = State(initialValue: viewModel)
     self.onSummaryTap = onSummaryTap
   }
