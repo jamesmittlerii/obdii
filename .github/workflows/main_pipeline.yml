@@ -308,13 +308,15 @@ jobs:
           sim_udid=$(xcrun simctl create "obdii-ci" "com.apple.CoreSimulator.SimDeviceType.iPhone-16" "$RUNTIME_ID")
           xcrun simctl boot "$sim_udid" || true
           xcodebuild -project obdii.xcodeproj -scheme obdii -destination "id=$sim_udid" -enableCodeCoverage YES -resultBundlePath TestResults.xcresult test
-          python3 scripts/convert_xccov_to_sonar.py TestResults.xcresult sonarqube-generic-coverage.xml --workspace "$GITHUB_WORKSPACE"
+          python3 scripts/convert_xccov_to_sonar.py TestResults.xcresult coverage-swift/sonarqube-generic-coverage.xml --workspace "$GITHUB_WORKSPACE"
+          bash scripts/verify-swift-coverage-for-sonar.sh
 
       - name: Upload Swift coverage
         uses: actions/upload-artifact@v4
         with:
           name: swift-sonar-coverage
-          path: sonarqube-generic-coverage.xml
+          if-no-files-found: error
+          path: coverage-swift/sonarqube-generic-coverage.xml
 
   sonar_kotlin_support:
     name: Kotlin Coverage
@@ -353,6 +355,7 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew :coreApp:test :coreApp:jacocoTestReport
+          bash ../scripts/verify-kotlin-coverage-for-sonar.sh . --unit-only
 
       - name: Enable KVM
         run: |
@@ -374,10 +377,14 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot-save -noaudio -no-boot-anim -camera-back none -memory 4096
           script: bash scripts/ci-android-ui-coverage.sh
 
+      - name: Verify Kotlin coverage for Sonar
+        run: bash scripts/verify-kotlin-coverage-for-sonar.sh
+
       - name: Upload Kotlin coverage
         uses: actions/upload-artifact@v4
         with:
           name: kotlin-sonar-coverage
+          if-no-files-found: error
           path: |
             kotlin_obdii/app/build/reports/jacoco/test/jacocoTestReport.xml
             kotlin_obdii/androidApp/build/reports/coverage/androidTest/debug/connected/report.xml
@@ -407,10 +414,14 @@ jobs:
           flutter pub get
           flutter test --coverage
 
+      - name: Verify Flutter coverage for Sonar
+        run: bash scripts/verify-flutter-coverage-for-sonar.sh
+
       - name: Upload Flutter coverage
         uses: actions/upload-artifact@v4
         with:
           name: flutter-sonar-coverage
+          if-no-files-found: error
           path: flutter_obdii/coverage/lcov.info
 
   sonar_scan:
@@ -447,24 +458,17 @@ jobs:
           name: flutter-sonar-coverage
           path: flutter_obdii/coverage
 
-      - name: Ensure Coverage Reports Exist
-        run: |
-          mkdir -p coverage-swift
-          if [ ! -f coverage-swift/sonarqube-generic-coverage.xml ] || [ ! -s coverage-swift/sonarqube-generic-coverage.xml ]; then
-            echo '<coverage version="1"></coverage>' > coverage-swift/sonarqube-generic-coverage.xml
-          fi
-          mkdir -p kotlin_obdii/app/build/reports/jacoco/test
-          if [ ! -f kotlin_obdii/app/build/reports/jacoco/test/jacocoTestReport.xml ]; then
-            echo '<?xml version="1.0" encoding="UTF-8"?><report name="jacocoTestReport"/>' > kotlin_obdii/app/build/reports/jacoco/test/jacocoTestReport.xml
-          fi
-          mkdir -p kotlin_obdii/androidApp/build/reports/coverage/androidTest/debug/connected
-          if [ ! -f kotlin_obdii/androidApp/build/reports/coverage/androidTest/debug/connected/report.xml ]; then
-            echo '<?xml version="1.0" encoding="UTF-8"?><report name="androidTestCoverage"/>' > kotlin_obdii/androidApp/build/reports/coverage/androidTest/debug/connected/report.xml
-          fi
-          mkdir -p flutter_obdii/coverage
-          if [ ! -f flutter_obdii/coverage/lcov.info ]; then
-            touch flutter_obdii/coverage/lcov.info
-          fi
+      - name: Verify downloaded Swift coverage
+        if: needs.filter.outputs.swift == 'true' || needs.filter.outputs.pipeline == 'true'
+        run: bash scripts/verify-swift-coverage-for-sonar.sh
+
+      - name: Verify downloaded Kotlin coverage
+        if: needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true'
+        run: bash scripts/verify-kotlin-coverage-for-sonar.sh
+
+      - name: Verify downloaded Flutter coverage
+        if: needs.filter.outputs.flutter == 'true' || needs.filter.outputs.pipeline == 'true'
+        run: bash scripts/verify-flutter-coverage-for-sonar.sh
 
       - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@v7

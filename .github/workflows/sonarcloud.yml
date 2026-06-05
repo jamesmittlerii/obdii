@@ -103,6 +103,7 @@ jobs:
             TestResults.xcresult \
             coverage-swift/sonarqube-generic-coverage.xml \
             --workspace "$GITHUB_WORKSPACE"
+          bash scripts/verify-swift-coverage-for-sonar.sh
 
       - name: Upload Swift coverage artifact
         uses: actions/upload-artifact@v4
@@ -159,6 +160,9 @@ jobs:
         working-directory: flutter_obdii
         run: flutter test --coverage
 
+      - name: Verify Flutter coverage for Sonar
+        run: bash scripts/verify-flutter-coverage-for-sonar.sh
+
       - name: Make Kotlin Gradle wrapper executable
         working-directory: kotlin_obdii
         run: chmod +x gradlew
@@ -167,7 +171,9 @@ jobs:
         working-directory: kotlin_obdii
         env:
           KOTLINOBD2_DIR: ${{ github.workspace }}/SwiftOBD2/kotlinobd2
-        run: ./gradlew :coreApp:test :coreApp:jacocoTestReport
+        run: |
+          ./gradlew :coreApp:test :coreApp:jacocoTestReport
+          bash ../scripts/verify-kotlin-coverage-for-sonar.sh . --unit-only
 
       - name: Enable KVM for Android emulator
         run: |
@@ -194,6 +200,12 @@ jobs:
         with:
           name: swift-sonar-coverage
           path: coverage-swift
+
+      - name: Verify Kotlin coverage for Sonar
+        run: bash scripts/verify-kotlin-coverage-for-sonar.sh
+
+      - name: Verify Swift coverage for Sonar
+        run: bash scripts/verify-swift-coverage-for-sonar.sh
 
       - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@v7

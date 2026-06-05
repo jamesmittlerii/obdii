@@ -10,6 +10,7 @@ attempt=1
 while [ "$attempt" -le "$max_attempts" ]; do
   echo "createDebugCoverageReport attempt ${attempt}/${max_attempts}"
   if ./gradlew :androidApp:createDebugCoverageReport --no-daemon; then
+    bash ../scripts/verify-kotlin-coverage-for-sonar.sh .
     exit 0
   fi
   if [ "$attempt" -eq "$max_attempts" ]; then
