@@ -10,7 +10,7 @@ plugins {
     id("org.jetbrains.compose")
 }
 
-version = "0.4.35"
+version = "0.4.36"
 
 dependencies {
     implementation(project(":windowsBle"))
