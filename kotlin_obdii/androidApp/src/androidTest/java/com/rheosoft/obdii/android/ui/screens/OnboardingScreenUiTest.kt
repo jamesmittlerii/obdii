@@ -37,7 +37,7 @@ class OnboardingScreenUiTest {
         composeRule.waitForText("Welcome to Rheosoft OBDII")
         composeRule.assertTextVisible("Welcome to Rheosoft OBDII")
         composeRule.onNodeWithText("Try Demo").assertDoesNotExist()
-        composeRule.assertTextVisible("Next")
+        composeRule.assertTextVisibleAfterScroll("Next")
     }
 
     @Test
@@ -63,7 +63,7 @@ class OnboardingScreenUiTest {
 
         composeRule.assertTextVisible("Welcome to Rheosoft OBDII")
         composeRule.assertTextVisible("What you can do")
-        composeRule.assertTextVisible("Next")
+        composeRule.assertTextVisibleAfterScroll("Next")
     }
 
     @Test
@@ -77,6 +77,7 @@ class OnboardingScreenUiTest {
             )
         }
 
+        composeRule.scrollToText("Next")
         composeRule.clickFirstText("Next")
         composeRule.waitForText("Settings")
         composeRule.assertTextVisible("Settings")

@@ -220,6 +220,7 @@ fun KotlinObdiiApp(permissionsReady: Boolean = true) {
         OnboardingContentScrim(
             pageIndex = onboardingPageIndex,
             onPageIndexChange = { onboardingPageIndex = it },
+            bottomInset = 80.dp,
             onComplete = { startDemo ->
                 ConfigData.hasCompletedOnboarding = true
                 showOnboarding = false

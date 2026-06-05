@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -26,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.rheosoft.obdii.screenmodels.MainScaffoldScreenModel
 import com.rheosoft.obdii.screenmodels.OnboardingPageKind
@@ -36,6 +39,7 @@ fun OnboardingContentScrim(
     pageIndex: Int,
     onPageIndexChange: (Int) -> Unit,
     onComplete: (startDemo: Boolean) -> Unit,
+    bottomInset: Dp = 0.dp,
 ) {
     val page = OnboardingScreenModel.pages[pageIndex]
     val compact = OnboardingScreenModel.usesCompactScrim(pageIndex)
@@ -59,8 +63,8 @@ fun OnboardingContentScrim(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.Bottom,
+                .navigationBarsPadding()
+                .padding(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 16.dp + bottomInset),
         ) {
             TextButton(
                 onClick = { onComplete(false) },
@@ -68,27 +72,37 @@ fun OnboardingContentScrim(
             ) {
                 Text("Skip", color = if (compact) MaterialTheme.colorScheme.onSurface else Color.White)
             }
-            PremiumCard(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Text(page.title, style = MaterialTheme.typography.headlineSmall)
-                    Spacer(Modifier.height(10.dp))
-                    Text(page.body, style = MaterialTheme.typography.bodyLarge)
-                    OnboardingPageHints(pageIndex)
-                    if (OnboardingScreenModel.showWelcomeSummary(pageIndex)) {
-                        Spacer(Modifier.height(14.dp))
-                        OnboardingWelcomeSummary()
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.BottomCenter,
+            ) {
+                PremiumCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier
+                            .padding(20.dp)
+                            .verticalScroll(rememberScrollState()),
+                    ) {
+                        Text(page.title, style = MaterialTheme.typography.headlineSmall)
+                        Spacer(Modifier.height(10.dp))
+                        Text(page.body, style = MaterialTheme.typography.bodyLarge)
+                        OnboardingPageHints(pageIndex)
+                        if (OnboardingScreenModel.showWelcomeSummary(pageIndex)) {
+                            Spacer(Modifier.height(14.dp))
+                            OnboardingWelcomeSummary()
+                        }
+                        Spacer(Modifier.height(16.dp))
+                        OnboardingPageIndicators(pageIndex)
+                        Spacer(Modifier.height(16.dp))
+                        OnboardingActions(
+                            pageIndex = pageIndex,
+                            onPageIndexChange = onPageIndexChange,
+                            onComplete = onComplete,
+                        )
                     }
-                    Spacer(Modifier.height(16.dp))
-                    OnboardingPageIndicators(pageIndex)
-                    Spacer(Modifier.height(16.dp))
-                    OnboardingActions(
-                        pageIndex = pageIndex,
-                        onPageIndexChange = onPageIndexChange,
-                        onComplete = onComplete,
-                    )
                 }
             }
-            Spacer(Modifier.height(8.dp))
         }
     }
 }
