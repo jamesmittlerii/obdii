@@ -144,11 +144,11 @@ object ConfigData : SettingsConfigProviding, UnitsProviding {
         _unitsFlow.value = units
     }
 
-    fun resetForTests() {
+    fun resetForTests(connectionType: ConnectionType = ConnectionType.bluetooth) {
         wifiHost = DEFAULT_WIFI_HOST
         wifiPort = 35000
         autoConnectToOBD = true
-        connectionType = ConnectionType.bluetooth
+        this.connectionType = connectionType
         hasCompletedOnboarding = false
         setUnits(MeasurementUnit.Metric)
     }

@@ -12,9 +12,8 @@ import kotlin.test.assertTrue
 class ObdConnectionManagerTest {
     @BeforeTest
     fun setup() {
-        ConfigData.resetForTests()
+        ConfigData.resetForTests(connectionType = ConnectionType.demo)
         OBDConnectionManager.resetForTests()
-        ConfigData.connectionType = ConnectionType.demo
         OBDConnectionManager.initialize()
     }
 

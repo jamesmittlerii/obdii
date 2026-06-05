@@ -11,8 +11,9 @@ import kotlin.test.assertEquals
 class ObdConnectionManagerDemoParityTest {
     @Test
     fun `demo connection transitions disconnected to connected`() = runTest {
+        ConfigData.resetForTests(connectionType = ConnectionType.demo)
         OBDConnectionManager.resetForTests()
-        ConfigData.connectionType = ConnectionType.demo
+        OBDConnectionManager.initialize()
         OBDConnectionManager.connect()
         assertEquals(OBDConnectionState.connected, OBDConnectionManager.connectionState)
     }
