@@ -77,7 +77,7 @@ platform :mac do
     app_store_connect_api_key
     upload_to_testflight(
       # 'platform' is inferred from the build_app output, but you can be explicit
-      skip_waiting_for_build_processing: false
+      skip_waiting_for_build_processing: true
     )
   end
 end
