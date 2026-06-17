@@ -1,0 +1,389 @@
+name: Android Private Release
+
+# Build signed Kotlin and Flutter Android bundles without publishing to Google Play.
+# Artifacts are attached to a GitHub Release (or only to the workflow run) for testers.
+#
+# Required secrets (same upload keystores as main_pipeline / caller workflows):
+#   Kotlin:  KOTLIN_ANDROID_KEYSTORE_BASE64, KOTLIN_ANDROID_KEYSTORE_PASSWORD,
+#            KOTLIN_ANDROID_KEY_PASSWORD, KOTLIN_ANDROID_KEY_ALIAS
+#   Flutter: ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+#            ANDROID_KEY_PASSWORD, ANDROID_KEY_ALIAS
+# Optional: PAT_TOKEN (checkout + private SwiftOBD2 dependency)
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to build (branch or tag)
+        required: false
+        default: main
+      sync_marketing_version:
+        description: Sync release-version.txt into Kotlin/Flutter before building
+        type: boolean
+        default: true
+      include_apk:
+        description: Also build installable APKs (AAB cannot be sideloaded directly)
+        type: boolean
+        default: true
+      create_github_release:
+        description: Create a GitHub Release and attach bundles/APKs
+        type: boolean
+        default: true
+      release_tag:
+        description: Release tag (empty = android-private-v{marketing}-flutter{build}-kotlin{code})
+        required: false
+        default: ""
+      prerelease:
+        description: Mark the GitHub Release as a pre-release
+        type: boolean
+        default: true
+
+concurrency:
+  group: ${{ github.repository }}-android-private-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Prepare versions
+    runs-on: ubuntu-latest
+    outputs:
+      marketing_version: ${{ steps.versions.outputs.marketing_version }}
+      flutter_build: ${{ steps.versions.outputs.flutter_build }}
+      kotlin_version_code: ${{ steps.versions.outputs.kotlin_version_code }}
+      release_tag: ${{ steps.release_tag.outputs.value }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: recursive
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Sync release marketing version
+        if: inputs.sync_marketing_version
+        run: python3 scripts/sync_release_version.py
+
+      - name: Read version metadata
+        id: versions
+        run: |
+          marketing="$(tr -d '[:space:]' < release-version.txt)"
+          flutter_build="$(python3 - <<'PY'
+          import pathlib, re, sys
+          text = pathlib.Path("flutter_obdii/pubspec.yaml").read_text(encoding="utf-8")
+          m = re.search(r"^version:\s*\d+\.\d+\.\d+\+(\d+)\s*$", text, re.MULTILINE)
+          if not m:
+              sys.exit("Could not parse flutter_obdii/pubspec.yaml version")
+          print(m.group(1))
+          PY
+          )"
+          kotlin_version_code="$(python3 - <<'PY'
+          import pathlib, re, sys
+          text = pathlib.Path("kotlin_obdii/androidApp/build.gradle.kts").read_text(encoding="utf-8")
+          m = re.search(r"^\s*versionCode\s*=\s*(\d+)\s*$", text, re.MULTILINE)
+          if not m:
+              sys.exit("Could not parse kotlin_obdii/androidApp/build.gradle.kts versionCode")
+          print(m.group(1))
+          PY
+          )"
+          {
+            echo "marketing_version=$marketing"
+            echo "flutter_build=$flutter_build"
+            echo "kotlin_version_code=$kotlin_version_code"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Resolve release tag
+        id: release_tag
+        run: |
+          if [ -n "${{ inputs.release_tag }}" ]; then
+            tag="${{ inputs.release_tag }}"
+          else
+            tag="android-private-v${{ steps.versions.outputs.marketing_version }}-f${{ steps.versions.outputs.flutter_build }}-k${{ steps.versions.outputs.kotlin_version_code }}"
+          fi
+          echo "value=$tag" >> "$GITHUB_OUTPUT"
+
+  build_kotlin:
+    name: Kotlin Android bundle
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: recursive
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Sync release marketing version
+        if: inputs.sync_marketing_version
+        run: python3 scripts/sync_release_version.py
+
+      - name: Checkout SwiftOBD2
+        uses: actions/checkout@v5
+        with:
+          repository: jamesmittlerii/SwiftOBD2
+          ref: main
+          path: SwiftOBD2
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Preflight Kotlin signing secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.KOTLIN_ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.KOTLIN_ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.KOTLIN_ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.KOTLIN_ANDROID_KEY_ALIAS }}
+        run: |
+          missing=""
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_PASSWORD ANDROID_KEY_ALIAS; do
+            eval "val=\${$name}"
+            if [ -z "$val" ]; then
+              missing="$missing $name"
+            fi
+          done
+          if [ -n "$missing" ]; then
+            echo "Missing required Kotlin signing secrets:$missing" >&2
+            exit 1
+          fi
+
+      - name: Decode Kotlin upload keystore
+        working-directory: kotlin_obdii/androidApp
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.KOTLIN_ANDROID_KEYSTORE_BASE64 }}
+        run: echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > upload-keystore.jks
+
+      - name: Write Kotlin key.properties
+        working-directory: kotlin_obdii/androidApp
+        env:
+          STORE_PASSWORD: ${{ secrets.KOTLIN_ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KOTLIN_ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KOTLIN_ANDROID_KEY_ALIAS }}
+        run: |
+          python3 <<'PY'
+          import os
+          with open("key.properties", "w", encoding="utf-8") as f:
+              f.write(f"storePassword={os.environ['STORE_PASSWORD']}\n")
+              f.write(f"keyPassword={os.environ['KEY_PASSWORD']}\n")
+              f.write(f"keyAlias={os.environ['KEY_ALIAS']}\n")
+              f.write("storeFile=upload-keystore.jks\n")
+          PY
+
+      - name: Build Kotlin release app bundle
+        working-directory: kotlin_obdii
+        env:
+          KOTLINOBD2_DIR: ${{ github.workspace }}/SwiftOBD2/kotlinobd2
+        run: |
+          chmod +x gradlew
+          ./gradlew bundleRelease
+
+      - name: Build Kotlin release APK
+        if: inputs.include_apk
+        working-directory: kotlin_obdii
+        env:
+          KOTLINOBD2_DIR: ${{ github.workspace }}/SwiftOBD2/kotlinobd2
+        run: ./gradlew assembleRelease
+
+      - name: Stage Kotlin artifacts
+        run: |
+          mkdir -p dist/kotlin
+          marketing="${{ needs.prepare.outputs.marketing_version }}"
+          code="${{ needs.prepare.outputs.kotlin_version_code }}"
+          aab="$(ls kotlin_obdii/androidApp/build/outputs/bundle/release/*.aab | head -n 1)"
+          cp "$aab" "dist/kotlin/obdiik-${marketing}-${code}.aab"
+          if [ "${{ inputs.include_apk }}" = "true" ]; then
+            apk="$(ls kotlin_obdii/androidApp/build/outputs/apk/release/*.apk | head -n 1)"
+            cp "$apk" "dist/kotlin/obdiik-${marketing}-${code}.apk"
+          fi
+
+      - name: Upload Kotlin bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kotlin-android-bundle
+          if-no-files-found: error
+          path: dist/kotlin/*.aab
+
+      - name: Upload Kotlin APK artifact
+        if: inputs.include_apk
+        uses: actions/upload-artifact@v4
+        with:
+          name: kotlin-android-apk
+          if-no-files-found: error
+          path: dist/kotlin/*.apk
+
+  build_flutter:
+    name: Flutter Android bundle
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: recursive
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Sync release marketing version
+        if: inputs.sync_marketing_version
+        run: python3 scripts/sync_release_version.py
+
+      - name: Checkout SwiftOBD2
+        uses: actions/checkout@v5
+        with:
+          repository: jamesmittlerii/SwiftOBD2
+          ref: main
+          path: SwiftOBD2
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Preflight Flutter signing secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          missing=""
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_PASSWORD ANDROID_KEY_ALIAS; do
+            eval "val=\${$name}"
+            if [ -z "$val" ]; then
+              missing="$missing $name"
+            fi
+          done
+          if [ -n "$missing" ]; then
+            echo "Missing required Flutter signing secrets:$missing" >&2
+            exit 1
+          fi
+
+      - name: Decode Flutter upload keystore
+        working-directory: flutter_obdii/android/app
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > upload-keystore.jks
+
+      - name: Write Flutter key.properties
+        working-directory: flutter_obdii/android
+        env:
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          python3 <<'PY'
+          import os
+          with open("key.properties", "w", encoding="utf-8") as f:
+              f.write(f"storePassword={os.environ['STORE_PASSWORD']}\n")
+              f.write(f"keyPassword={os.environ['KEY_PASSWORD']}\n")
+              f.write(f"keyAlias={os.environ['KEY_ALIAS']}\n")
+              f.write("storeFile=app/upload-keystore.jks\n")
+          PY
+
+      - name: Build Flutter Material release app bundle
+        working-directory: flutter_obdii
+        run: |
+          flutter config --jdk-dir "$JAVA_HOME"
+          flutter pub get
+          flutter build appbundle --release --flavor material --target lib/main_material.dart
+
+      - name: Build Flutter Material release APK
+        if: inputs.include_apk
+        working-directory: flutter_obdii
+        run: flutter build apk --release --flavor material --target lib/main_material.dart
+
+      - name: Stage Flutter artifacts
+        run: |
+          mkdir -p dist/flutter
+          marketing="${{ needs.prepare.outputs.marketing_version }}"
+          build="${{ needs.prepare.outputs.flutter_build }}"
+          cp flutter_obdii/build/app/outputs/bundle/materialRelease/app-material-release.aab \
+            "dist/flutter/obdiif-material-${marketing}-${build}.aab"
+          if [ "${{ inputs.include_apk }}" = "true" ]; then
+            cp flutter_obdii/build/app/outputs/flutter-apk/app-material-release.apk \
+              "dist/flutter/obdiif-material-${marketing}-${build}.apk"
+          fi
+
+      - name: Upload Flutter bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-android-bundle
+          if-no-files-found: error
+          path: dist/flutter/*.aab
+
+      - name: Upload Flutter APK artifact
+        if: inputs.include_apk
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-android-apk
+          if-no-files-found: error
+          path: dist/flutter/*.apk
+
+  github_release:
+    name: Publish GitHub Release
+    needs: [prepare, build_kotlin, build_flutter]
+    if: inputs.create_github_release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Kotlin bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: kotlin-android-bundle
+          path: release-assets/kotlin
+
+      - name: Download Flutter bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: flutter-android-bundle
+          path: release-assets/flutter
+
+      - name: Download Kotlin APK
+        if: inputs.include_apk
+        uses: actions/download-artifact@v4
+        with:
+          name: kotlin-android-apk
+          path: release-assets/kotlin
+
+      - name: Download Flutter APK
+        if: inputs.include_apk
+        uses: actions/download-artifact@v4
+        with:
+          name: flutter-android-apk
+          path: release-assets/flutter
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.release_tag }}
+          name: Android private build ${{ needs.prepare.outputs.marketing_version }}
+          prerelease: ${{ inputs.prerelease }}
+          generate_release_notes: true
+          body: |
+            Private Android builds from ref `${{ inputs.ref }}` at `${{ github.sha }}`.
+
+            | App | Package | Marketing version | Build |
+            | --- | --- | --- | --- |
+            | Kotlin | `com.rheosoft.obdiik` | ${{ needs.prepare.outputs.marketing_version }} | `${{ needs.prepare.outputs.kotlin_version_code }}` |
+            | Flutter (Material) | `com.rheosoft.obdiif` | ${{ needs.prepare.outputs.marketing_version }} | `${{ needs.prepare.outputs.flutter_build }}` |
+
+            **Install on device:** download the `.apk` for the app you want, enable install from unknown sources if needed, then open the file on the device.
+
+            **Google Play (when ready):** upload the matching `.aab` to the Play Console internal/closed testing track. These builds are signed with the same upload keys as CI deploys.
+
+            This workflow does **not** publish to Google Play.
+          files: |
+            release-assets/kotlin/*
+            release-assets/flutter/*
