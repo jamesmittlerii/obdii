@@ -161,17 +161,13 @@ jobs:
           repository: jamesmittlerii/SwiftOBD2
           path: SwiftOBD2
       - name: Build & Upload to Play Store
-        working-directory: kotlin_obdii
         env:
           KOTLINOBD2_DIR: ${{ github.workspace }}/SwiftOBD2/kotlinobd2
           SP: ${{ secrets.KOTLIN_ANDROID_KEYSTORE_PASSWORD }}
           KP: ${{ secrets.KOTLIN_ANDROID_KEY_PASSWORD }}
           KA: ${{ secrets.KOTLIN_ANDROID_KEY_ALIAS }}
-        run: |
-          echo "${{ secrets.KOTLIN_ANDROID_KEYSTORE_BASE64 }}" | base64 -d > androidApp/upload-keystore.jks
-          printf "storePassword=$SP\nkeyPassword=$KP\nkeyAlias=$KA\nstoreFile=upload-keystore.jks\n" > androidApp/key.properties
-          chmod +x gradlew
-          ./gradlew bundleRelease
+          KOTLIN_ANDROID_KEYSTORE_BASE64: ${{ secrets.KOTLIN_ANDROID_KEYSTORE_BASE64 }}
+        run: bash scripts/ci-kotlin-android-release.sh bundleRelease
       - uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.KOTLIN_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}

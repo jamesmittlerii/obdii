@@ -149,20 +149,17 @@ jobs:
           path: SwiftOBD2
 
       - name: Build Kotlin release Android artifacts
-        working-directory: kotlin_obdii
         env:
           KOTLINOBD2_DIR: ${{ github.workspace }}/SwiftOBD2/kotlinobd2
           SP: ${{ secrets.KOTLIN_ANDROID_KEYSTORE_PASSWORD }}
           KP: ${{ secrets.KOTLIN_ANDROID_KEY_PASSWORD }}
           KA: ${{ secrets.KOTLIN_ANDROID_KEY_ALIAS }}
+          KOTLIN_ANDROID_KEYSTORE_BASE64: ${{ secrets.KOTLIN_ANDROID_KEYSTORE_BASE64 }}
         run: |
-          echo "${{ secrets.KOTLIN_ANDROID_KEYSTORE_BASE64 }}" | base64 -d > androidApp/upload-keystore.jks
-          printf "storePassword=$SP\nkeyPassword=$KP\nkeyAlias=$KA\nstoreFile=upload-keystore.jks\n" > androidApp/key.properties
-          chmod +x gradlew
           if [ "${{ inputs.include_apk }}" = "true" ]; then
-            ./gradlew bundleRelease assembleRelease
+            bash scripts/ci-kotlin-android-release.sh bundleRelease assembleRelease
           else
-            ./gradlew bundleRelease
+            bash scripts/ci-kotlin-android-release.sh bundleRelease
           fi
 
       - name: Stage Kotlin artifacts
