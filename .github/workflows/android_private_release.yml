@@ -69,7 +69,21 @@ jobs:
       - name: Read version metadata
         id: versions
         run: |
-          marketing="$(tr -d '[:space:]' < release-version.txt)"
+          marketing="$(python3 - <<'PY'
+          import pathlib, re, sys
+          marketing = None
+          for line in pathlib.Path("release-version.txt").read_text(encoding="utf-8").splitlines():
+              s = line.strip()
+              if not s or s.startswith("#"):
+                  continue
+              if re.fullmatch(r"\d+\.\d+\.\d+", s):
+                  marketing = s
+                  break
+          if marketing is None:
+              sys.exit("Could not parse release-version.txt marketing version")
+          print(marketing)
+          PY
+          )"
           flutter_build="$(python3 - <<'PY'
           import pathlib, re, sys
           text = pathlib.Path("flutter_obdii/pubspec.yaml").read_text(encoding="utf-8")
