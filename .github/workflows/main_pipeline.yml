@@ -28,7 +28,7 @@ jobs:
       pipeline: ${{ steps.filter.outputs.pipeline }}
     steps:
       - uses: actions/checkout@v5
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -277,7 +277,7 @@ jobs:
 
       - name: Upload Logs on Failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: gym-logs-${{ matrix.platform }}-${{ matrix.project }}
           path: ~/Library/Logs/gym/*.log
@@ -311,7 +311,7 @@ jobs:
           python3 scripts/convert_xccov_to_sonar.py TestResults.xcresult sonarqube-generic-coverage.xml --workspace "$GITHUB_WORKSPACE"
 
       - name: Upload Swift coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: swift-sonar-coverage
           path: sonarqube-generic-coverage.xml
@@ -375,7 +375,7 @@ jobs:
           script: bash scripts/ci-android-ui-coverage.sh
 
       - name: Upload Kotlin coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: kotlin-sonar-coverage
           path: |
@@ -408,7 +408,7 @@ jobs:
           flutter test --coverage
 
       - name: Upload Flutter coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: flutter-sonar-coverage
           path: flutter_obdii/coverage/lcov.info
@@ -427,21 +427,21 @@ jobs:
           token: ${{ secrets.PAT_TOKEN }}
 
       - name: Download Swift coverage
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         continue-on-error: true
         with:
           name: swift-sonar-coverage
           path: coverage-swift
 
       - name: Download Kotlin coverage
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         continue-on-error: true
         with:
           name: kotlin-sonar-coverage
           path: .
 
       - name: Download Flutter coverage
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         continue-on-error: true
         with:
           name: flutter-sonar-coverage
