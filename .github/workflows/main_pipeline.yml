@@ -36,7 +36,7 @@ jobs:
       product: ${{ steps.product.outputs.value }}
     steps:
       - uses: actions/checkout@v5
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -297,7 +297,7 @@ jobs:
 
       - name: Upload Logs on Failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: gym-logs-${{ matrix.platform }}-${{ matrix.project }}
           path: ~/Library/Logs/gym/*.log
@@ -332,7 +332,7 @@ jobs:
           bash scripts/verify-swift-coverage-for-sonar.sh
 
       - name: Upload Swift coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: swift-sonar-coverage
           if-no-files-found: error
@@ -401,7 +401,7 @@ jobs:
         run: bash scripts/verify-kotlin-coverage-for-sonar.sh
 
       - name: Upload Kotlin coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: kotlin-sonar-coverage
           if-no-files-found: error
@@ -438,7 +438,7 @@ jobs:
         run: bash scripts/verify-flutter-coverage-for-sonar.sh
 
       - name: Upload Flutter coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: flutter-sonar-coverage
           if-no-files-found: error
@@ -459,21 +459,21 @@ jobs:
 
       - name: Download Swift coverage
         if: needs.filter.outputs.swift == 'true' || needs.filter.outputs.pipeline == 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: swift-sonar-coverage
           path: coverage-swift
 
       - name: Download Kotlin coverage
         if: needs.filter.outputs.kotlin == 'true' || needs.filter.outputs.pipeline == 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: kotlin-sonar-coverage
           path: kotlin_obdii
 
       - name: Download Flutter coverage
         if: needs.filter.outputs.flutter == 'true' || needs.filter.outputs.pipeline == 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: flutter-sonar-coverage
           path: flutter_obdii/coverage

@@ -106,7 +106,7 @@ jobs:
           bash scripts/verify-swift-coverage-for-sonar.sh
 
       - name: Upload Swift coverage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: swift-sonar-coverage
           path: coverage-swift/sonarqube-generic-coverage.xml
@@ -196,7 +196,7 @@ jobs:
           script: bash scripts/ci-android-ui-coverage.sh
 
       - name: Download Swift coverage artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: swift-sonar-coverage
           path: coverage-swift
